@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Palette, HeartHandshake, Footprints, Brain, CheckCircle } from 'lucide-react';
+import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Palette, HeartHandshake, Footprints, Brain, CheckCircle, Building } from 'lucide-react';
 
 export interface QuizOption {
   value: string;
@@ -31,7 +31,8 @@ export interface QuizQuestion {
   icon?: LucideIcon;
 }
 
-const unidadesComEsteticaAdicional = ['df'];
+// Nenhuma das novas cidades listadas está no DF, então esta pergunta não será acionada.
+const unidadesComEsteticaAdicional: string[] = [];
 
 export const quizQuestions: QuizQuestion[] = [
   {
@@ -77,20 +78,22 @@ export const quizQuestions: QuizQuestion[] = [
     id: 'q4',
     name: 'localizacao',
     icon: MapPin,
-    text: 'Em qual estado você gostaria de realizar o tratamento ou ter mais informações?',
-    explanation: 'Selecione o estado para um atendimento personalizado e informações sobre as unidades Ice Lazer disponíveis.',
+    text: 'Em qual cidade você gostaria de realizar o tratamento ou ter mais informações?',
+    explanation: 'Selecione a cidade para um atendimento personalizado e informações sobre as unidades Ice Lazer disponíveis.',
     type: 'radio',
     options: [
-      { value: 'df', label: 'Distrito Federal' },
-      { value: 'ba', label: 'Bahia' },
-      { value: 'ms', label: 'Mato Grosso do Sul' },
+      { value: 'aracaju_se', label: 'Aracaju, Sergipe' },
+      { value: 'feira_de_santana_ba', label: 'Feira de Santana, Bahia' },
+      { value: 'lauro_de_freitas_ba', label: 'Lauro de Freitas, Bahia' },
+      { value: 'maceio_al', label: 'Maceió, Alagoas' },
+      { value: 'salvador_ba', label: 'Salvador, Bahia' },
     ],
   },
   {
     id: 'q5',
     name: 'interesseEstetica',
     icon: Sparkles,
-    text: 'Além da depilação a laser, as unidades da Ice Lazer no Distrito Federal oferecem outros procedimentos estéticos avançados. Você gostaria de saber mais sobre eles?',
+    text: 'Além da depilação a laser, algumas de nossas unidades oferecem outros procedimentos estéticos avançados. Você gostaria de saber mais sobre eles?',
     explanation: 'Temos tratamentos faciais, corporais e muito mais para realçar sua beleza!',
     type: 'radio',
     options: [
@@ -108,7 +111,7 @@ export const quizQuestions: QuizQuestion[] = [
     type: 'textFields',
     fields: [
       { name: 'nomeCompleto', label: 'Seu nome completo', type: 'text', placeholder: 'Ex: Maria Silva' },
-      { name: 'whatsapp', label: 'Seu WhatsApp (com DDD)', type: 'tel', placeholder: 'Ex: (61) 99999-9999' },
+      { name: 'whatsapp', label: 'Seu WhatsApp (com DDD)', type: 'tel', placeholder: 'Ex: (XX) XXXXX-XXXX ou XXXXXXXXXXX' },
     ],
   },
 ];
