@@ -1,0 +1,308 @@
+"use client";
+
+import { useState, useEffect, useMemo } from 'react';
+import { useForm, FormProvider, Controller, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { quizQuestions, QuizQuestion, WHATSAPP_BRASILIA, WHATSAPP_GENERAL } from '@/config/quizConfig';
+import QuizProgressBar from './QuizProgressBar';
+import { trackEvent, trackCustomEvent } from '@/lib/fpixel';
+import { logQuizAbandonment } from '@/app/actions';
+import { ChevronLeft, ChevronRight, Send, Info, MessageSquare, UserCheck } from 'lucide-react';
+import Image from 'next/image';
+
+type FormData = Record<string, any>;
+
+const contactSchema = z.object({
+  nomeCompleto: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres." }),
+  whatsapp: z.string().min(10, { message: "WhatsApp inválido. Inclua o DDD." }).regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, { message: "Formato de WhatsApp inválido. Use (XX) XXXXX-XXXX ou XXXXXXXXXXX." }),
+});
+
+
+export default function QuizForm() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState<FormData>({});
+  const [animationClass, setAnimationClass] = useState('animate-slide-in');
+  const [isQuizCompleted, setIsQuizCompleted] = useState(false);
+
+  const methods = useForm<FormData>({
+    resolver: currentStep === quizQuestions.length -1 && quizQuestions[currentStep].type === 'textFields' ? zodResolver(contactSchema) : undefined,
+    mode: 'onChange',
+  });
+
+
+  const { control, handleSubmit, setValue, getValues, trigger, formState: { errors, isValid } } = methods;
+
+  const activeQuestions = useMemo(() => {
+    return quizQuestions.filter(q => !q.condition || q.condition(formData));
+  }, [formData]);
+  
+  const currentQuestion = activeQuestions[currentStep];
+
+  useEffect(() => {
+    trackCustomEvent('QuizStart');
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isQuizCompleted && Object.keys(formData).length > 0) {
+        event.preventDefault(); // Standard for some browsers
+        event.returnValue = ''; // Necessary for Chrome
+        
+        // Using navigator.sendBeacon is more reliable for beforeunload
+        const webhookUrl = process.env.NEXT_PUBLIC_QUIZ_ABANDONMENT_WEBHOOK_URL || "YOUR_WEBHOOK_URL_CLIENT";
+        if (webhookUrl !== "YOUR_WEBHOOK_URL_CLIENT") {
+            const dataToLog = { ...formData, abandonedAtStep: currentQuestion?.id || currentStep };
+            const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
+            navigator.sendBeacon(webhookUrl, blob);
+        } else {
+            // Fallback or just log to server action if sendBeacon is not an option or URL is missing.
+            // Server action might be less reliable in beforeunload.
+            logQuizAbandonment({ ...formData, abandonedAtStep: currentQuestion?.id || currentStep });
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [formData, currentStep, isQuizCompleted, currentQuestion]);
+
+  const handleNext = async () => {
+    let stepIsValid = true;
+    if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
+        stepIsValid = await trigger(currentQuestion.fields.map(f => f.name));
+    } else if (currentQuestion.type === 'radio' || currentQuestion.type === 'checkbox') {
+        const value = getValues(currentQuestion.name);
+        stepIsValid = !!value && (Array.isArray(value) ? value.length > 0 : true);
+        if (!stepIsValid) {
+            methods.setError(currentQuestion.name, { type: "manual", message: "Por favor, selecione uma opção."});
+        } else {
+            methods.clearErrors(currentQuestion.name);
+        }
+    }
+
+
+    if (stepIsValid && currentStep < activeQuestions.length - 1) {
+      setAnimationClass('animate-slide-out');
+      setTimeout(() => {
+        setCurrentStep(prev => prev + 1);
+        setAnimationClass('animate-slide-in');
+      }, 300);
+      trackEvent('QuestionAnswered', { question_id: currentQuestion.id, answer: getValues(currentQuestion.name) });
+    } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
+      // This is the final submission
+      handleSubmit(onSubmit)();
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setAnimationClass('animate-slide-out');
+      setTimeout(() => {
+        setCurrentStep(prev => prev - 1);
+        setAnimationClass('animate-slide-in');
+      }, 300);
+    }
+  };
+
+  const handleValueChange = (name: string, value: any) => {
+    setValue(name, value, { shouldValidate: true });
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) methods.clearErrors(name);
+  };
+
+  const onSubmit: SubmitHandler<FormData> = (data) => {
+    const finalData = { ...formData, ...data};
+    setFormData(finalData);
+    setIsQuizCompleted(true);
+    trackCustomEvent('QuizComplete', finalData);
+    trackEvent('Lead', { name: finalData.nomeCompleto, whatsapp: finalData.whatsapp });
+
+    const userLocation = finalData.localizacao;
+    const interestedInAesthetics = finalData.interesseEstetica === 'sim_estetica';
+    
+    let whatsappMessage = `Olá, Ice Lazer! Vim pelo quiz e tenho interesse nos seus serviços. \n\nRespostas:\n`;
+    activeQuestions.forEach(q => {
+      if (finalData[q.name]) {
+        whatsappMessage += `${q.text}: ${Array.isArray(finalData[q.name]) ? (finalData[q.name] as string[]).join(', ') : finalData[q.name]}\n`;
+      }
+    });
+
+    const encodedMessage = encodeURIComponent(whatsappMessage);
+    let targetWhatsAppNumber = WHATSAPP_GENERAL;
+
+    if (userLocation === 'brasilia') {
+      targetWhatsAppNumber = WHATSAPP_BRASILIA;
+      if (interestedInAesthetics) {
+         // Potentially a different number or message for aesthetic interest in Brasilia
+         // For now, keeps Brasilia number but message indicates interest.
+      }
+    }
+    
+    const whatsappUrl = `https://wa.me/${targetWhatsAppNumber}?text=${encodedMessage}`;
+    window.location.href = whatsappUrl;
+  };
+
+  if (!currentQuestion) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Quiz Concluído ou Erro</AlertTitle>
+          <AlertDescription>
+            Obrigado por participar! Seus dados foram processados.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <FormProvider {...methods}>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-background to-primary/30">
+        <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass}`}>
+          <CardHeader className="bg-primary/80 text-primary-foreground p-6">
+             <div className="flex items-center space-x-3">
+                <Image src="https://placehold.co/80x80.png" alt="Ice Lazer Logo" data-ai-hint="ice crystal logo" width={60} height={60} className="rounded-full border-2 border-white" />
+                <div>
+                    <CardTitle className="text-3xl font-headline">Ice Lazer Quiz</CardTitle>
+                    <CardDescription className="text-primary-foreground/80">Descubra o tratamento ideal para você!</CardDescription>
+                </div>
+            </div>
+          </CardHeader>
+          <QuizProgressBar currentStep={currentStep} totalSteps={activeQuestions.length} />
+          <CardContent className="p-6 md:p-8 space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start space-x-3">
+                  {currentQuestion.icon && <currentQuestion.icon className="h-8 w-8 text-primary mt-1 flex-shrink-0" />}
+                  <div>
+                    <Label htmlFor={currentQuestion.name} className="text-xl font-semibold text-foreground mb-1 block font-headline">
+                      {currentQuestion.text}
+                    </Label>
+                    {currentQuestion.explanation && (
+                      <p className="text-sm text-muted-foreground mb-3">{currentQuestion.explanation}</p>
+                    )}
+                  </div>
+                </div>
+
+                {currentQuestion.type === 'radio' && currentQuestion.options && (
+                  <Controller
+                    name={currentQuestion.name}
+                    control={control}
+                    rules={{ required: 'Por favor, selecione uma opção.' }}
+                    render={({ field }) => (
+                      <RadioGroup
+                        onValueChange={(value) => handleValueChange(currentQuestion.name, value)}
+                        value={field.value}
+                        className="space-y-2"
+                      >
+                        {currentQuestion.options!.map(option => (
+                          <div key={option.value} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50">
+                            {option.icon && <option.icon className="h-5 w-5 text-primary" />}
+                            <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="text-primary focus:ring-primary"/>
+                            <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer">
+                              {option.label}
+                              {option.explanation && <p className="text-xs text-muted-foreground mt-1">{option.explanation}</p>}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    )}
+                  />
+                )}
+
+                {currentQuestion.type === 'checkbox' && currentQuestion.options && (
+                  <Controller
+                    name={currentQuestion.name}
+                    control={control}
+                    defaultValue={[]}
+                    rules={{ validate: value => value.length > 0 || 'Selecione ao menos uma opção.' }}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        {currentQuestion.options!.map(option => (
+                          <div key={option.value} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50">
+                            {option.icon && <option.icon className="h-5 w-5 text-primary" />}
+                            <Checkbox
+                              id={`${currentQuestion.name}-${option.value}`}
+                              checked={field.value?.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                const newValue = checked
+                                  ? [...(field.value || []), option.value]
+                                  : (field.value || []).filter((v: string) => v !== option.value);
+                                handleValueChange(currentQuestion.name, newValue);
+                              }}
+                              className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                            />
+                            <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer">
+                              {option.label}
+                               {option.explanation && <p className="text-xs text-muted-foreground mt-1">{option.explanation}</p>}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  />
+                )}
+
+                {currentQuestion.type === 'textFields' && currentQuestion.fields && (
+                  <div className="space-y-4">
+                    {currentQuestion.fields.map(f => (
+                      <div key={f.name} className="space-y-1">
+                         <Label htmlFor={f.name} className="font-medium flex items-center">
+                           {f.icon && <f.icon className="h-4 w-4 mr-2 text-primary" />} 
+                           {f.label}
+                        </Label>
+                        <Controller
+                          name={f.name}
+                          control={control}
+                          defaultValue=""
+                          render={({ field }) => (
+                            <Input 
+                              {...field} 
+                              id={f.name} 
+                              type={f.type} 
+                              placeholder={f.placeholder} 
+                              onChange={(e) => handleValueChange(f.name, e.target.value)} 
+                              className="bg-background border-primary/50 focus:border-primary focus:ring-primary"
+                            />
+                          )}
+                        />
+                        {errors[f.name] && <p className="text-sm text-destructive">{errors[f.name]?.message as string}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {errors[currentQuestion.name] && <p className="text-sm text-destructive mt-2">{errors[currentQuestion.name]?.message as string}</p>}
+              </div>
+            </form>
+          </CardContent>
+          <CardFooter className="flex justify-between p-6 bg-muted/30">
+            <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0} className="hover:bg-accent/30">
+              <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+            </Button>
+            <Button onClick={handleNext} 
+              className="bg-accent text-accent-foreground hover:bg-accent/80"
+              disabled={currentQuestion.type !== 'textFields' && (!getValues(currentQuestion.name) || (Array.isArray(getValues(currentQuestion.name)) && getValues(currentQuestion.name).length === 0)) }
+            >
+              {currentStep === activeQuestions.length - 1 ? 'Finalizar e Contato' : 'Próximo'}
+              {currentStep === activeQuestions.length - 1 ? <Send className="ml-2 h-4 w-4" /> : <ChevronRight className="ml-2 h-4 w-4" />}
+            </Button>
+          </CardFooter>
+        </Card>
+        <p className="text-xs text-center mt-4 text-foreground/60">
+            Ice Lazer &copy; {new Date().getFullYear()}. Todos os direitos reservados.
+        </p>
+      </div>
+    </FormProvider>
+  );
+}
