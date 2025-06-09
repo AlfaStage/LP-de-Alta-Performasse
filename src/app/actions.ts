@@ -44,16 +44,13 @@ export async function logQuizAbandonment(data: Record<string, any>) {
   }
 }
 
-// The SubmittedQuizData interface might not be needed if the webhook expects raw data.
-// If the webhook expects specific metadata like submittedAt or quizType,
-// those should ideally be part of the 'data' object passed from the form,
-// or the webhook should handle timestamping/typing itself.
-// For now, we'll send the raw 'data' as per the request for a direct JSON of answers.
+interface SubmitQuizResponse {
+  status: 'success' | 'invalid_number' | 'webhook_error' | 'network_error';
+  message: string;
+}
 
-export async function submitQuizData(data: Record<string, any>) {
-  const webhookUrl = "https://webhook.workflow.alfastage.com.br/webhook/icelazer";
-
-  // The payload is now the 'data' object itself, which includes all questions and contact info.
+export async function submitQuizData(data: Record<string, any>): Promise<SubmitQuizResponse> {
+  const webhookUrl = "https://webhook.workflow.alfastage.com.br/webhook/icelazerquiz-mensagem";
   const payload = data;
 
   console.log("Attempting to submit quiz data to webhook. URL:", webhookUrl);
@@ -65,29 +62,45 @@ export async function submitQuizData(data: Record<string, any>) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload), // Send the raw data object as JSON
+      body: JSON.stringify(payload),
     });
 
+    const webhookStatusHeader = response.headers.get('status');
+    console.log("Webhook response HTTP status:", response.status);
+    console.log("Webhook response 'status' header:", webhookStatusHeader);
+
     if (!response.ok) {
+      // Mesmo que a resposta HTTP não seja OK, o header 'status' pode dar uma informação mais específica.
+      if (webhookStatusHeader === 'numero incorreto') {
+        console.warn("Webhook returned non-OK HTTP status but 'status' header is 'numero incorreto'.");
+        return { status: 'invalid_number', message: "O número de WhatsApp informado parece estar incorreto. Por favor, verifique e tente novamente." };
+      }
       const errorBody = await response.text();
-      console.error(`Webhook for submitted quiz failed. Status: ${response.status}`);
+      console.error(`Webhook for submitted quiz failed. HTTP Status: ${response.status}`);
       console.error("Response body from webhook:", errorBody);
       console.error("Payload that failed:", JSON.stringify(payload, null, 2));
-      return { success: false, message: `Falha ao enviar os dados (HTTP ${response.status}). Detalhes: ${errorBody}` };
+      return { status: 'webhook_error', message: `Falha ao enviar os dados (HTTP ${response.status}). Detalhes: ${errorBody}` };
     }
 
-    // It's good practice to see what a successful response looks like too, if anything.
-    const successResponseBody = await response.text();
-    console.log("Submitted quiz data sent to webhook successfully. Status:", response.status);
-    if (successResponseBody) {
-      console.log("Response body from webhook (success):", successResponseBody);
+    // Resposta HTTP foi OK (2xx)
+    if (webhookStatusHeader === 'mensagem enviada') {
+      console.log("Submitted quiz data sent to webhook successfully. Webhook 'status' header: mensagem enviada");
+      return { status: 'success', message: "Dados enviados com sucesso!" };
+    } else if (webhookStatusHeader === 'numero incorreto') {
+      console.log("Webhook 'status' header: numero incorreto");
+      return { status: 'invalid_number', message: "O número de WhatsApp informado parece estar incorreto. Por favor, verifique e tente novamente." };
+    } else {
+      const responseBodyText = await response.text(); // Consumir o corpo para liberar a conexão
+      console.warn("Webhook response OK, but 'status' header was missing or unexpected:", webhookStatusHeader);
+      console.warn("Response body (if any):", responseBodyText);
+      // Se o HTTP é OK mas o header não é o esperado, consideramos um erro de lógica do webhook ou contrato.
+      return { status: 'webhook_error', message: `Resposta inesperada do webhook. Header 'status': ${webhookStatusHeader || 'não encontrado'}` };
     }
-    
-    return { success: true, message: "Dados enviados com sucesso para o webhook." };
+
   } catch (error) {
     console.error("Critical error sending submitted quiz data to webhook (catch block):", error);
     console.error("Payload that caused the error:", JSON.stringify(payload, null, 2));
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, message: `Erro ao conectar com o serviço de webhook: ${errorMessage}` };
+    return { status: 'network_error', message: `Erro ao conectar com o serviço de webhook: ${errorMessage}` };
   }
 }
