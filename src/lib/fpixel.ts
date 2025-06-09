@@ -15,3 +15,17 @@ export const trackCustomEvent = (name: string, options = {}) => {
     (window as any).fbq('trackCustom', name, options);
   }
 };
+
+export const trackQuizStep = (stepNumber: number, questionId: string) => {
+  trackCustomEvent('QuizStepViewed', { stepNumber, questionId });
+};
+
+export const trackLeadGenerated = (leadDetails: {
+  quiz_name: string;
+  value?: number;
+  currency?: string;
+  lead_name?: string;
+  lead_whatsapp?: string;
+}) => {
+  trackEvent('Lead', leadDetails);
+};

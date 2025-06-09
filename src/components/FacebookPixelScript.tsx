@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { trackPageView } from '@/lib/fpixel';
 
-const FACEBOOK_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "YOUR_FACEBOOK_PIXEL_ID";
+const FACEBOOK_PIXEL_ID = "724967076682767";
 
 export default function FacebookPixelScript() {
   const pathname = usePathname();
@@ -16,12 +16,7 @@ export default function FacebookPixelScript() {
       trackPageView();
     }
   }, [pathname]);
-
-  if (!FACEBOOK_PIXEL_ID || FACEBOOK_PIXEL_ID === "YOUR_FACEBOOK_PIXEL_ID") {
-    console.warn("Facebook Pixel ID is not configured. Please create a .env.local file in the root of your project and add NEXT_PUBLIC_FACEBOOK_PIXEL_ID=your_pixel_id_here, then restart your development server.");
-    return null;
-  }
-
+  
   return (
     <>
       <Script id="fb-pixel-base" strategy="afterInteractive">

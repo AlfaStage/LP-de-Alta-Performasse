@@ -50,7 +50,9 @@ export default function QuizForm() {
   const currentQuestion = activeQuestions[currentStep];
 
   useEffect(() => {
-    trackCustomEvent('QuizStart', { quiz_name: 'IceLazerLeadFilter_V2' });
+    if (process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID !== "YOUR_FACEBOOK_PIXEL_ID") {
+      trackCustomEvent('QuizStart', { quiz_name: 'IceLazerLeadFilter_V2' });
+    }
   }, []);
 
   useEffect(() => {
@@ -95,19 +97,23 @@ export default function QuizForm() {
         setCurrentStep(prev => prev + 1);
         setAnimationClass('animate-slide-in');
       }, 300);
-      trackEvent('QuestionAnswered', { 
-        question_id: currentQuestion.id, 
-        answer: getValues(currentQuestion.name),
-        step: currentStep + 1,
-        quiz_name: 'IceLazerLeadFilter_V2' 
-      });
+      if (process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID !== "YOUR_FACEBOOK_PIXEL_ID") {
+        trackEvent('QuestionAnswered', { 
+          question_id: currentQuestion.id, 
+          answer: getValues(currentQuestion.name),
+          step: currentStep + 1,
+          quiz_name: 'IceLazerLeadFilter_V2' 
+        });
+      }
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
-      trackEvent('QuestionAnswered', { 
-        question_id: currentQuestion.id, 
-        answer: getValues(currentQuestion.name), // For contact step, this might be an object of fields
-        step: currentStep + 1,
-        quiz_name: 'IceLazerLeadFilter_V2' 
-      });
+      if (process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID !== "YOUR_FACEBOOK_PIXEL_ID") {
+        trackEvent('QuestionAnswered', { 
+          question_id: currentQuestion.id, 
+          answer: getValues(currentQuestion.name), 
+          step: currentStep + 1,
+          quiz_name: 'IceLazerLeadFilter_V2' 
+        });
+      }
       await handleSubmit(onSubmit)();
     }
   };
@@ -140,14 +146,16 @@ export default function QuizForm() {
         if (result.success) {
             setIsQuizCompleted(true);
             setSubmissionStatus('success');
-            trackCustomEvent('QuizComplete', { quiz_name: 'IceLazerLeadFilter_V2', ...finalData });
-            trackEvent('Lead', { 
-                content_name: 'IceLazerLeadFilter_V2_Submission',
-                value: 50.00, // Example value, adjust as needed
-                currency: 'BRL', // Example currency
-                lead_name: finalData.nomeCompleto,
-                lead_whatsapp: finalData.whatsapp
-            });
+            if (process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID !== "YOUR_FACEBOOK_PIXEL_ID") {
+                trackCustomEvent('QuizComplete', { quiz_name: 'IceLazerLeadFilter_V2', ...finalData });
+                trackEvent('Lead', { 
+                    content_name: 'IceLazerLeadFilter_V2_Submission',
+                    value: 50.00, 
+                    currency: 'BRL', 
+                    lead_name: finalData.nomeCompleto,
+                    lead_whatsapp: finalData.whatsapp
+                });
+            }
         } else {
             setSubmissionStatus('error');
             toast({
@@ -285,7 +293,10 @@ export default function QuizForm() {
                           className="space-y-2"
                         >
                           {currentQuestion.options!.map(option => (
-                            <div key={option.value} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50">
+                            <div 
+                              key={option.value} 
+                              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50 has-[:checked]:[&_svg]:text-accent-foreground has-[:checked]:[&>label]:text-accent-foreground has-[:checked]:[&>label>p]:text-accent-foreground/80"
+                            >
                               {option.icon && <option.icon className="h-5 w-5 text-primary" />}
                               <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="text-primary focus:ring-primary"/>
                               <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer">
@@ -308,7 +319,10 @@ export default function QuizForm() {
                       render={({ field }) => (
                         <div className="space-y-2">
                           {currentQuestion.options!.map(option => (
-                            <div key={option.value} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50">
+                            <div 
+                              key={option.value} 
+                              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50 has-[:checked]:[&_svg]:text-accent-foreground has-[:checked]:[&>label]:text-accent-foreground has-[:checked]:[&>label>p]:text-accent-foreground/80"
+                            >
                               {option.icon && <option.icon className="h-5 w-5 text-primary" />}
                               <Checkbox
                                 id={`${currentQuestion.name}-${option.value}`}
@@ -394,3 +408,4 @@ export default function QuizForm() {
     </FormProvider>
   );
 }
+
