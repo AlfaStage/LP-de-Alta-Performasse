@@ -1,3 +1,4 @@
+
 "use client";
 
 import Script from 'next/script';
@@ -17,7 +18,7 @@ export default function FacebookPixelScript() {
   }, [pathname]);
 
   if (!FACEBOOK_PIXEL_ID || FACEBOOK_PIXEL_ID === "YOUR_FACEBOOK_PIXEL_ID") {
-    console.warn("Facebook Pixel ID is not configured. Please set NEXT_PUBLIC_FACEBOOK_PIXEL_ID environment variable.");
+    console.warn("Facebook Pixel ID is not configured. Please create a .env.local file in the root of your project and add NEXT_PUBLIC_FACEBOOK_PIXEL_ID=your_pixel_id_here, then restart your development server.");
     return null;
   }
 
