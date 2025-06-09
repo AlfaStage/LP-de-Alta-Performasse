@@ -229,7 +229,7 @@ export default function QuizForm() {
                 <GlobeIcon className="mr-2 h-5 w-5" />
                 Visite nosso site
               </Link>
-              <Link href="https://instagram.com/SEU_PERFIL_AQUI" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
+              <Link href="https://www.instagram.com/icelaseroficial/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
                 <InstagramIcon className="mr-2 h-5 w-5" />
                 Siga-nos no Instagram
               </Link>
