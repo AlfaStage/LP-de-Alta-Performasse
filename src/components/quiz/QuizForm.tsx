@@ -196,11 +196,11 @@ export default function QuizForm() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-background to-primary/30">
          <div className="w-full max-w-3xl mb-6">
             <Image
-              src="https://espacoicelaser.com/wp-content/uploads/2025/04/BANNER-PRINCIPAL-aspect-ratio-1920-300-2.png"
-              alt="Ice Lazer Banner Principal"
-              data-ai-hint="clinic banner"
+              src="https://storage.googleapis.com/static.aieditor.online/IDE%20custom%20files/icelaser_banner_liberdade.png"
+              alt="Banner Ice Lazer - A liberdade que você procura com o conforto que você merece!"
+              data-ai-hint="mulheres beleza liberdade"
               width={1920}
-              height={300}
+              height={500}
               className="w-full h-auto rounded-lg shadow-lg"
               priority
             />
@@ -265,11 +265,11 @@ export default function QuizForm() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-background to-primary/30">
         <div className="w-full max-w-3xl mb-6">
             <Image
-              src="https://espacoicelaser.com/wp-content/uploads/2025/04/BANNER-PRINCIPAL-aspect-ratio-1920-300-2.png"
-              alt="Ice Lazer Banner Principal"
-              data-ai-hint="clinic banner"
+              src="https://storage.googleapis.com/static.aieditor.online/IDE%20custom%20files/icelaser_banner_liberdade.png"
+              alt="Banner Ice Lazer - A liberdade que você procura com o conforto que você merece!"
+              data-ai-hint="mulheres beleza liberdade"
               width={1920}
-              height={300}
+              height={500}
               className="w-full h-auto rounded-lg shadow-lg"
               priority
             />
