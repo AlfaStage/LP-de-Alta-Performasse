@@ -264,7 +264,7 @@ export default function QuizForm() {
                   className="h-auto w-auto"
                 />
                 <div>
-                    <CardTitle className="text-3xl font-headline text-primary">Ice Lazer Quiz</CardTitle>
+                    <CardTitle className="text-3xl font-headline text-primary">Quiz</CardTitle>
                     <CardDescription className="text-primary/80">Descubra o tratamento ideal para você!</CardDescription>
                 </div>
             </div>
