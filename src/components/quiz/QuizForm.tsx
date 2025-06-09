@@ -194,17 +194,6 @@ export default function QuizForm() {
   if (isQuizCompleted && submissionStatus === 'success') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-background to-primary/30">
-         <div className="w-full max-w-3xl mb-6">
-            <Image
-              src="https://storage.googleapis.com/static.aieditor.online/IDE%20custom%20files/icelaser_banner_liberdade.png"
-              alt="Banner Ice Lazer - A liberdade que você procura com o conforto que você merece!"
-              data-ai-hint="mulheres beleza liberdade"
-              width={1920}
-              height={500}
-              className="w-full h-auto rounded-lg shadow-lg"
-              priority
-            />
-          </div>
         <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center">
           <CardHeader className="bg-primary/80 text-primary-foreground p-6">
             <div className="flex items-center justify-center space-x-3">
@@ -263,18 +252,7 @@ export default function QuizForm() {
   return (
     <FormProvider {...methods}>
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-background to-primary/30">
-        <div className="w-full max-w-3xl mb-6">
-            <Image
-              src="https://storage.googleapis.com/static.aieditor.online/IDE%20custom%20files/icelaser_banner_liberdade.png"
-              alt="Banner Ice Lazer - A liberdade que você procura com o conforto que você merece!"
-              data-ai-hint="mulheres beleza liberdade"
-              width={1920}
-              height={500}
-              className="w-full h-auto rounded-lg shadow-lg"
-              priority
-            />
-        </div>
-        <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass}`}>
+        <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8`}>
           <CardHeader className="bg-primary/80 text-primary-foreground p-6">
              <div className="flex items-center space-x-3">
                 <Image 
@@ -324,11 +302,11 @@ export default function QuizForm() {
                               key={option.value} 
                               className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50 has-[:checked]:text-accent-foreground has-[:checked]:[&_svg]:text-accent-foreground has-[:checked]:[&>label]:text-accent-foreground has-[:checked]:[&>label>p]:text-accent-foreground/80"
                             >
-                              {option.icon && <option.icon className="h-5 w-5 text-primary has-[:checked]:text-accent-foreground" />}
+                              {option.icon && <option.icon className="h-5 w-5 text-primary group-has-[:checked]:text-accent-foreground" />}
                               <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="text-primary focus:ring-primary"/>
-                              <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer">
+                              <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer group-has-[:checked]:text-accent-foreground">
                                 {option.label}
-                                {option.explanation && <p className="text-xs text-muted-foreground mt-1 has-[:checked]:text-accent-foreground/80">{option.explanation}</p>}
+                                {option.explanation && <p className="text-xs text-muted-foreground mt-1 group-has-[:checked]:text-accent-foreground/80">{option.explanation}</p>}
                               </Label>
                             </div>
                           ))}
