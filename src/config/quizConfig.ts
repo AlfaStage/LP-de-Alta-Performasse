@@ -55,7 +55,7 @@ export const quizQuestions: QuizQuestion[] = [
     type: 'checkbox',
     options: [
       { value: 'rosto', label: 'Rosto', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/maxilar.png', icon: Smile, dataAiHint: 'face beauty' },
-      { value: 'axilas', label: 'Axilas', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'armpit body', icon: Palette },
+      { value: 'axilas', label: 'Axilas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/axila-1.png', dataAiHint: 'armpit body', icon: Palette },
       { value: 'virilha', label: 'Virilha (Biquíni)', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/meia-virilha.png', icon: HeartHandshake, dataAiHint: 'bikini area' },
       { value: 'pernas', label: 'Pernas Completas', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'legs body', icon: Footprints },
       { value: 'bracos', label: 'Braços', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'arms body', icon: Sparkles },
