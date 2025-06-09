@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Building, Globe, Palette, HeartHandshake, Footprints, Brain } from 'lucide-react';
+import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Building, Globe, Palette, HeartHandshake, Footprints, Brain, CheckCircle } from 'lucide-react';
 
 export interface QuizOption {
   value: string;
@@ -8,6 +8,7 @@ export interface QuizOption {
   icon?: LucideIcon;
   explanation?: string;
   imageUrl?: string;
+  dataAiHint?: string;
 }
 
 export interface FormFieldConfig {
@@ -30,7 +31,7 @@ export interface QuizQuestion {
   icon?: LucideIcon;
 }
 
-const dfUnidades = ['brasilia_df']; // Atualizado para a nova opção de Brasília
+const dfUnidades = ['brasilia_df'];
 
 export const quizQuestions: QuizQuestion[] = [
   {
@@ -53,13 +54,13 @@ export const quizQuestions: QuizQuestion[] = [
     explanation: 'Você pode selecionar mais de uma opção. Escolha as áreas para uma depilação a laser confortável e eficaz.',
     type: 'checkbox',
     options: [
-      { value: 'rosto', label: 'Rosto', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/maxilar.png', icon: Smile },
+      { value: 'rosto', label: 'Rosto', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/maxilar.png', icon: Smile, dataAiHint: 'face beauty' },
       { value: 'axilas', label: 'Axilas', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'armpit body', icon: Palette },
-      { value: 'virilha', label: 'Virilha (Biquíni)', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/meia-virilha.png', icon: HeartHandshake },
+      { value: 'virilha', label: 'Virilha (Biquíni)', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/meia-virilha.png', icon: HeartHandshake, dataAiHint: 'bikini area' },
       { value: 'pernas', label: 'Pernas Completas', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'legs body', icon: Footprints },
       { value: 'bracos', label: 'Braços', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'arms body', icon: Sparkles },
-      { value: 'costas', label: 'Costas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/costas.png', icon: User },
-      { value: 'peito', label: 'Peito', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/seios.png', icon: Zap },
+      { value: 'costas', label: 'Costas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/costas.png', icon: User, dataAiHint: 'back body' },
+      { value: 'peito', label: 'Peito', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/seios.png', icon: Zap, dataAiHint: 'chest body' },
       { value: 'corpo_todo', label: 'Corpo Todo (Pacote Especial)', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'full body', icon: Brain },
     ],
   },
@@ -82,13 +83,12 @@ export const quizQuestions: QuizQuestion[] = [
     name: 'localizacao',
     icon: MapPin,
     text: 'Qual unidade da Ice Lazer está mais próxima de você ou é de sua preferência?',
-    explanation: 'Selecione a localidade para um atendimento personalizado. Se sua cidade não estiver listada, escolha "Outra Localidade".',
+    explanation: 'Selecione a localidade para um atendimento personalizado.',
     type: 'radio',
     options: [
       { value: 'brasilia_df', label: 'Brasília - DF', icon: Building },
       { value: 'salvador_ba', label: 'Salvador - BA', icon: Building },
       { value: 'campo_grande_ms', label: 'Campo Grande - MS', icon: Building },
-      { value: 'outra_localidade', label: 'Outra Localidade', icon: Globe },
     ],
   },
   {
@@ -117,3 +117,5 @@ export const quizQuestions: QuizQuestion[] = [
     ],
   },
 ];
+
+export const successIcon = CheckCircle;
