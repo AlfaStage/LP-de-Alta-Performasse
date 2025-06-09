@@ -44,20 +44,20 @@ export async function logQuizAbandonment(data: Record<string, any>) {
   }
 }
 
-interface SubmittedQuizData {
-  [key: string]: any;
-  submittedAt: string;
-  quizType: string;
-}
+// The SubmittedQuizData interface might not be needed if the webhook expects raw data.
+// If the webhook expects specific metadata like submittedAt or quizType,
+// those should ideally be part of the 'data' object passed from the form,
+// or the webhook should handle timestamping/typing itself.
+// For now, we'll send the raw 'data' as per the request for a direct JSON of answers.
 
 export async function submitQuizData(data: Record<string, any>) {
   const webhookUrl = "https://webhook.workflow.alfastage.com.br/webhook/icelazer";
 
-  const payload: SubmittedQuizData = {
-    ...data,
-    submittedAt: new Date().toISOString(),
-    quizType: "IceLazerLeadFilter_Submission_V2",
-  };
+  // The payload is now the 'data' object itself, which includes all questions and contact info.
+  const payload = data;
+
+  console.log("Attempting to submit quiz data to webhook. URL:", webhookUrl);
+  console.log("Payload being sent:", JSON.stringify(payload, null, 2));
 
   try {
     const response = await fetch(webhookUrl, {
@@ -65,19 +65,29 @@ export async function submitQuizData(data: Record<string, any>) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload), // Send the raw data object as JSON
     });
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error(`Webhook for submitted quiz failed with status: ${response.status}`, errorBody);
-      return { success: false, message: `Falha ao enviar: ${response.status}. Detalhes: ${errorBody}` };
+      console.error(`Webhook for submitted quiz failed. Status: ${response.status}`);
+      console.error("Response body from webhook:", errorBody);
+      console.error("Payload that failed:", JSON.stringify(payload, null, 2));
+      return { success: false, message: `Falha ao enviar os dados (HTTP ${response.status}). Detalhes: ${errorBody}` };
     }
-    console.log("Submitted quiz data sent to webhook:", payload);
+
+    // It's good practice to see what a successful response looks like too, if anything.
+    const successResponseBody = await response.text();
+    console.log("Submitted quiz data sent to webhook successfully. Status:", response.status);
+    if (successResponseBody) {
+      console.log("Response body from webhook (success):", successResponseBody);
+    }
+    
     return { success: true, message: "Dados enviados com sucesso para o webhook." };
   } catch (error) {
-    console.error("Error sending submitted quiz data to webhook:", error);
+    console.error("Critical error sending submitted quiz data to webhook (catch block):", error);
+    console.error("Payload that caused the error:", JSON.stringify(payload, null, 2));
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, message: `Erro ao enviar dados para o webhook: ${errorMessage}` };
+    return { success: false, message: `Erro ao conectar com o serviço de webhook: ${errorMessage}` };
   }
 }
