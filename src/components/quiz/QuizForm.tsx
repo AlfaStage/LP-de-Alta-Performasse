@@ -15,9 +15,10 @@ import { quizQuestions, successIcon as SuccessIcon } from '@/config/quizConfig';
 import QuizProgressBar from './QuizProgressBar';
 import { trackEvent, trackCustomEvent } from '@/lib/fpixel';
 import { logQuizAbandonment, submitQuizData } from '@/app/actions';
-import { ChevronLeft, ChevronRight, Send, Info, CheckCircle, Loader2, Smartphone } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Send, Info, CheckCircle, Loader2, Smartphone, Globe as GlobeIcon, Instagram as InstagramIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
+import Link from 'next/link';
 
 type FormData = Record<string, any>;
 
@@ -49,7 +50,8 @@ export default function QuizForm() {
   const currentQuestion = activeQuestions[currentStep];
 
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID !== "YOUR_FACEBOOK_PIXEL_ID") {
+    const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
+    if (pixelId && pixelId !== "YOUR_FACEBOOK_PIXEL_ID") {
       trackCustomEvent('QuizStart', { quiz_name: 'IceLazerLeadFilter_V2' });
     }
   }, []);
@@ -62,7 +64,7 @@ export default function QuizForm() {
             const dataToLog = { ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: "IceLazerLeadFilter_Abandonment_V2" };
             const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
             navigator.sendBeacon(webhookUrl, blob);
-        } else if (webhookUrl === "YOUR_WEBHOOK_URL_CLIENT") { // fallback if sendBeacon not supported or URL is placeholder
+        } else if (webhookUrl === "YOUR_WEBHOOK_URL_CLIENT") { 
             logQuizAbandonment({ ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: "IceLazerLeadFilter_Abandonment_V2" });
         }
       }
@@ -96,7 +98,8 @@ export default function QuizForm() {
         setCurrentStep(prev => prev + 1);
         setAnimationClass('animate-slide-in');
       }, 300);
-      if (process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID !== "YOUR_FACEBOOK_PIXEL_ID") {
+      const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
+      if (pixelId && pixelId !== "YOUR_FACEBOOK_PIXEL_ID") {
         trackEvent('QuestionAnswered', { 
           question_id: currentQuestion.id, 
           answer: getValues(currentQuestion.name),
@@ -105,8 +108,8 @@ export default function QuizForm() {
         });
       }
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
-      // This is the final step, so we submit the form.
-      if (process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID !== "YOUR_FACEBOOK_PIXEL_ID") {
+      const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
+      if (pixelId && pixelId !== "YOUR_FACEBOOK_PIXEL_ID") {
         trackEvent('QuestionAnswered', { 
           question_id: currentQuestion.id, 
           answer: getValues(currentQuestion.fields?.map(f => f.name) || []), 
@@ -129,7 +132,7 @@ export default function QuizForm() {
   };
 
   const handleValueChange = (name: string, value: any) => {
-    setValue(name, value, { shouldValidate: true }); // Validate on change for immediate feedback
+    setValue(name, value, { shouldValidate: true }); 
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) methods.clearErrors(name);
   };
@@ -146,7 +149,8 @@ export default function QuizForm() {
         if (result.status === 'success') {
             setIsQuizCompleted(true);
             setSubmissionStatus('success');
-            if (process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID !== "YOUR_FACEBOOK_PIXEL_ID") {
+            const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
+            if (pixelId && pixelId !== "YOUR_FACEBOOK_PIXEL_ID") {
                 trackCustomEvent('QuizComplete', { quiz_name: 'IceLazerLeadFilter_V2', ...finalData });
                 trackEvent('Lead', { 
                     content_name: 'IceLazerLeadFilter_V2_Submission',
@@ -157,7 +161,7 @@ export default function QuizForm() {
                 });
             }
         } else if (result.status === 'invalid_number') {
-            setSubmissionStatus('idle'); // Allow user to correct and resubmit
+            setSubmissionStatus('idle'); 
             methods.setError('whatsapp', {
                 type: 'manual',
                 message: result.message || "O número de WhatsApp informado parece ser inválido. Por favor, corrija e tente novamente."
@@ -167,7 +171,7 @@ export default function QuizForm() {
                 description: result.message || "Por favor, verifique o número de WhatsApp e tente enviar novamente.",
                 variant: "destructive",
             });
-        } else { // 'webhook_error' or 'network_error'
+        } else { 
             setSubmissionStatus('error');
             toast({
                 title: "Erro ao Enviar Respostas",
@@ -219,6 +223,17 @@ export default function QuizForm() {
             <SuccessIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <p className="text-lg font-semibold">Suas respostas foram enviadas com sucesso!</p>
             <p className="text-muted-foreground">Nossa equipe entrará em contato com você em breve.</p>
+            <div className="pt-4 space-y-3">
+              <p className="text-sm text-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
+              <Link href="https://espacoicelaser.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
+                <GlobeIcon className="mr-2 h-5 w-5" />
+                Visite nosso site
+              </Link>
+              <Link href="https://instagram.com/SEU_PERFIL_AQUI" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
+                <InstagramIcon className="mr-2 h-5 w-5" />
+                Siga-nos no Instagram
+              </Link>
+            </div>
           </CardContent>
            <CardFooter className="p-6 bg-muted/30 flex justify-center">
              <p className="text-xs text-foreground/60">
@@ -307,9 +322,9 @@ export default function QuizForm() {
                           {currentQuestion.options!.map(option => (
                             <div 
                               key={option.value} 
-                              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50 has-[:checked]:[&_svg]:text-accent-foreground has-[:checked]:[&>label]:text-accent-foreground has-[:checked]:[&>label>p]:text-accent-foreground/80"
+                              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50 has-[:checked]:text-accent-foreground has-[:checked]:[&_svg]:text-accent-foreground has-[:checked]:[&>label]:text-accent-foreground has-[:checked]:[&>label>p]:text-accent-foreground/80"
                             >
-                              {option.icon && <option.icon className="h-5 w-5 text-primary has-[:checked]:text-accent-foreground" />}
+                              {option.icon && <option.icon className="h-5 w-5 text-primary" />}
                               <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="text-primary focus:ring-primary"/>
                               <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer">
                                 {option.label}
@@ -322,7 +337,7 @@ export default function QuizForm() {
                     />
                   )}
 
-                  {currentQuestion.type === 'checkbox' && currentQuestion.options && (
+                 {currentQuestion.type === 'checkbox' && currentQuestion.options && (
                      <Controller
                         name={currentQuestion.name}
                         control={control}
@@ -342,16 +357,16 @@ export default function QuizForm() {
                                     handleValueChange(currentQuestion.name, newValue);
                                   }}
                                   className={`relative p-3 border rounded-lg cursor-pointer transition-all group hover:shadow-lg
-                                    ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10' : 'border-input hover:border-primary/50'}`}
+                                    ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10 text-accent-foreground' : 'border-input hover:border-primary/50'}`}
                                 >
                                   {option.imageUrl && (
                                     <div className="relative w-full h-24 mb-2 rounded-md overflow-hidden">
-                                      <Image src={option.imageUrl} alt={option.label} data-ai-hint={option.dataAiHint} layout="fill" objectFit="cover" className="transition-transform group-hover:scale-105" />
+                                      <Image src={option.imageUrl} alt={option.label} data-ai-hint={option.dataAiHint || 'body area'} layout="fill" objectFit="cover" className="transition-transform group-hover:scale-105" />
                                     </div>
                                   )}
                                   <div className="text-center">
-                                    <p className={`text-xs font-medium ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>Depilação a laser</p>
-                                    <Label htmlFor={`${currentQuestion.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                                    <p className={`text-xs font-medium ${isSelected ? 'text-primary' : 'text-primary/80'}`}>Depilação a laser</p>
+                                    <Label htmlFor={`${currentQuestion.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-accent-foreground' : 'text-foreground'}`}>
                                       {option.label}
                                     </Label>
                                   </div>
@@ -360,7 +375,7 @@ export default function QuizForm() {
                                       <CheckCircle className="h-4 w-4" />
                                     </div>
                                   )}
-                                  {option.icon && !option.imageUrl && <option.icon className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
+                                  {option.icon && !option.imageUrl && <option.icon className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-accent-foreground' : 'text-muted-foreground'}`} />}
                                 </div>
                               );
                             })}
@@ -432,3 +447,4 @@ export default function QuizForm() {
     </FormProvider>
   );
 }
+
