@@ -19,6 +19,7 @@ import { ChevronLeft, ChevronRight, Send, Info, CheckCircle, Loader2, Smartphone
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
+import { areAnyPixelsConfigured } from '@/config/pixelConfig';
 
 type FormData = Record<string, any>;
 
@@ -50,8 +51,7 @@ export default function QuizForm() {
   const currentQuestion = activeQuestions[currentStep];
 
   useEffect(() => {
-    const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
-    if (pixelId && pixelId !== "YOUR_FACEBOOK_PIXEL_ID") {
+    if (areAnyPixelsConfigured()) {
       trackCustomEvent('QuizStart', { quiz_name: 'IceLazerLeadFilter_V2' });
     }
   }, []);
@@ -98,8 +98,7 @@ export default function QuizForm() {
         setCurrentStep(prev => prev + 1);
         setAnimationClass('animate-slide-in');
       }, 300);
-      const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
-      if (pixelId && pixelId !== "YOUR_FACEBOOK_PIXEL_ID") {
+      if (areAnyPixelsConfigured()) {
         trackEvent('QuestionAnswered', { 
           question_id: currentQuestion.id, 
           answer: getValues(currentQuestion.name),
@@ -108,8 +107,7 @@ export default function QuizForm() {
         });
       }
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
-      const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
-      if (pixelId && pixelId !== "YOUR_FACEBOOK_PIXEL_ID") {
+      if (areAnyPixelsConfigured()) {
         trackEvent('QuestionAnswered', { 
           question_id: currentQuestion.id, 
           answer: getValues(currentQuestion.fields?.map(f => f.name) || []), 
@@ -149,8 +147,7 @@ export default function QuizForm() {
         if (result.status === 'success') {
             setIsQuizCompleted(true);
             setSubmissionStatus('success');
-            const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
-            if (pixelId && pixelId !== "YOUR_FACEBOOK_PIXEL_ID") {
+            if (areAnyPixelsConfigured()) {
                 trackCustomEvent('QuizComplete', { quiz_name: 'IceLazerLeadFilter_V2', ...finalData });
                 trackEvent('Lead', { 
                     content_name: 'IceLazerLeadFilter_V2_Submission',
@@ -425,4 +422,3 @@ export default function QuizForm() {
     </FormProvider>
   );
 }
-

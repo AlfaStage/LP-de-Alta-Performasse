@@ -5,33 +5,28 @@ import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { trackPageView } from '@/lib/fpixel';
-
-const FACEBOOK_PIXEL_ID = "724967076682767"; // Primary Pixel ID
-const FACEBOOK_PIXEL_ID_SECONDARY = "3949746165337932"; // Secondary Pixel ID
-
-// Placeholders to check against, in case these IDs were intended to be configurable
-// and to prevent initialization if they still hold placeholder values.
-const PRIMARY_PLACEHOLDER = "YOUR_FACEBOOK_PIXEL_ID";
-const SECONDARY_PLACEHOLDER = "YOUR_FACEBOOK_PIXEL_ID_SECONDARY_PLACEHOLDER"; // A distinct placeholder for the secondary ID
+import { 
+  FACEBOOK_PIXEL_ID, 
+  FACEBOOK_PIXEL_ID_SECONDARY,
+  isPrimaryPixelConfigured,
+  isSecondaryPixelConfigured,
+  areAnyPixelsConfigured
+} from '@/config/pixelConfig';
 
 export default function FacebookPixelScript() {
   const pathname = usePathname();
-
-  // Determine if pixels are validly configured (i.e., not a placeholder)
-  const isPrimaryPixelConfigured = FACEBOOK_PIXEL_ID && FACEBOOK_PIXEL_ID !== PRIMARY_PLACEHOLDER;
-  const isSecondaryPixelConfigured = FACEBOOK_PIXEL_ID_SECONDARY && FACEBOOK_PIXEL_ID_SECONDARY !== SECONDARY_PLACEHOLDER;
 
   useEffect(() => {
     // If at least one pixel is configured and has been initialized by the script below,
     // then track the PageView. trackPageView() calls fbq('track', 'PageView'),
     // which sends the event to all initialized pixels.
-    if (isPrimaryPixelConfigured || isSecondaryPixelConfigured) {
+    if (areAnyPixelsConfigured()) {
       trackPageView();
     }
-  }, [pathname, isPrimaryPixelConfigured, isSecondaryPixelConfigured]); // Dependencies for the effect
+  }, [pathname]); // Dependencies for the effect
 
   // If neither pixel is configured, don't render the script tag.
-  if (!isPrimaryPixelConfigured && !isSecondaryPixelConfigured) {
+  if (!areAnyPixelsConfigured()) {
     return null;
   }
 
