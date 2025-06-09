@@ -193,9 +193,9 @@ export default function QuizForm() {
 
   if (isQuizCompleted && submissionStatus === 'success') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-background to-primary/30">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center">
-          <CardHeader className="bg-primary/80 text-primary-foreground p-6">
+          <CardHeader className="bg-card p-6">
             <div className="flex items-center justify-center space-x-3">
                 <Image 
                   src="https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png" 
@@ -206,7 +206,7 @@ export default function QuizForm() {
                   className="h-auto w-auto" 
                 />
             </div>
-            <CardTitle className="text-3xl mt-4">Obrigado!</CardTitle>
+            <CardTitle className="text-3xl mt-4 text-primary">Obrigado!</CardTitle>
           </CardHeader>
           <CardContent className="p-6 md:p-8 space-y-4">
             <SuccessIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
@@ -251,9 +251,9 @@ export default function QuizForm() {
 
   return (
     <FormProvider {...methods}>
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-background to-primary/30">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8`}>
-          <CardHeader className="bg-primary/80 text-primary-foreground p-6">
+          <CardHeader className="bg-card p-6">
              <div className="flex items-center space-x-3">
                 <Image 
                   src="https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png" 
@@ -264,8 +264,8 @@ export default function QuizForm() {
                   className="h-auto w-auto"
                 />
                 <div>
-                    <CardTitle className="text-3xl font-headline">Ice Lazer Quiz</CardTitle>
-                    <CardDescription className="text-primary-foreground/80">Descubra o tratamento ideal para você!</CardDescription>
+                    <CardTitle className="text-3xl font-headline text-primary">Ice Lazer Quiz</CardTitle>
+                    <CardDescription className="text-primary/80">Descubra o tratamento ideal para você!</CardDescription>
                 </div>
             </div>
           </CardHeader>
@@ -335,7 +335,7 @@ export default function QuizForm() {
                                     handleValueChange(currentQuestion.name, newValue);
                                   }}
                                   className={`relative p-3 border rounded-lg cursor-pointer transition-all group hover:shadow-lg
-                                    ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10 text-accent-foreground' : 'border-input hover:border-primary/50'}`}
+                                    ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10' : 'border-input hover:border-primary/50'}`}
                                 >
                                   {option.imageUrl && (
                                     <div className="relative w-full h-24 mb-2 rounded-md overflow-hidden">
@@ -343,8 +343,8 @@ export default function QuizForm() {
                                     </div>
                                   )}
                                   <div className="text-center">
-                                    <p className={`text-xs font-medium ${isSelected ? 'text-accent-foreground' : 'text-primary/80'}`}>Depilação a laser</p>
-                                    <Label htmlFor={`${currentQuestion.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-accent-foreground' : 'text-foreground'}`}>
+                                    <p className={`text-xs font-medium ${isSelected ? 'text-primary' : 'text-primary/80'}`}>Depilação a laser</p>
+                                    <Label htmlFor={`${currentQuestion.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-primary font-bold' : 'text-foreground'}`}>
                                       {option.label}
                                     </Label>
                                   </div>
@@ -353,7 +353,7 @@ export default function QuizForm() {
                                       <CheckCircle className="h-4 w-4" />
                                     </div>
                                   )}
-                                  {option.icon && !option.imageUrl && <option.icon className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-accent-foreground' : 'text-muted-foreground'}`} />}
+                                  {option.icon && !option.imageUrl && <option.icon className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
                                 </div>
                               );
                             })}
