@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Building, Palette, HeartHandshake, Footprints, Brain, CheckCircle } from 'lucide-react';
+import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Palette, HeartHandshake, Footprints, Brain, CheckCircle } from 'lucide-react';
 
 export interface QuizOption {
   value: string;
@@ -31,7 +31,7 @@ export interface QuizQuestion {
   icon?: LucideIcon;
 }
 
-const dfUnidades = ['brasilia_df'];
+const unidadesComEsteticaAdicional = ['df'];
 
 export const quizQuestions: QuizQuestion[] = [
   {
@@ -77,27 +77,27 @@ export const quizQuestions: QuizQuestion[] = [
     id: 'q4',
     name: 'localizacao',
     icon: MapPin,
-    text: 'Qual unidade da Ice Lazer está mais próxima de você ou é de sua preferência?',
-    explanation: 'Selecione a localidade para um atendimento personalizado.',
+    text: 'Em qual estado você gostaria de realizar o tratamento ou ter mais informações?',
+    explanation: 'Selecione o estado para um atendimento personalizado e informações sobre as unidades Ice Lazer disponíveis.',
     type: 'radio',
     options: [
-      { value: 'brasilia_df', label: 'Brasília - DF', icon: Building },
-      { value: 'salvador_ba', label: 'Salvador - BA', icon: Building },
-      { value: 'campo_grande_ms', label: 'Campo Grande - MS', icon: Building },
+      { value: 'df', label: 'Distrito Federal' },
+      { value: 'ba', label: 'Bahia' },
+      { value: 'ms', label: 'Mato Grosso do Sul' },
     ],
   },
   {
     id: 'q5',
     name: 'interesseEstetica',
     icon: Sparkles,
-    text: 'Além da depilação a laser, as unidades da Ice Lazer em Brasília - DF oferecem outros procedimentos estéticos avançados. Você gostaria de saber mais sobre eles?',
+    text: 'Além da depilação a laser, as unidades da Ice Lazer no Distrito Federal oferecem outros procedimentos estéticos avançados. Você gostaria de saber mais sobre eles?',
     explanation: 'Temos tratamentos faciais, corporais e muito mais para realçar sua beleza!',
     type: 'radio',
     options: [
       { value: 'sim_estetica', label: 'Sim, tenho interesse!' },
       { value: 'nao_estetica', label: 'Não, obrigado(a). Foco na depilação por agora.' },
     ],
-    condition: (formData) => dfUnidades.includes(formData.localizacao),
+    condition: (formData) => unidadesComEsteticaAdicional.includes(formData.localizacao),
   },
   {
     id: 'q6',
