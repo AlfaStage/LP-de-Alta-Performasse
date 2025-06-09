@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Building, Globe, Palette, HeartHandshake, Footprints, Brain, CheckCircle } from 'lucide-react';
+import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Building, Palette, HeartHandshake, Footprints, Brain, CheckCircle } from 'lucide-react';
 
 export interface QuizOption {
   value: string;
@@ -54,14 +54,44 @@ export const quizQuestions: QuizQuestion[] = [
     explanation: 'Você pode selecionar mais de uma opção. Escolha as áreas para uma depilação a laser confortável e eficaz.',
     type: 'checkbox',
     options: [
-      { value: 'rosto', label: 'Rosto', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/maxilar.png', icon: Smile, dataAiHint: 'face beauty' },
-      { value: 'axilas', label: 'Axilas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/axila-1.png', dataAiHint: 'armpit body', icon: Palette },
-      { value: 'virilha', label: 'Virilha (Biquíni)', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/meia-virilha.png', icon: HeartHandshake, dataAiHint: 'bikini area' },
-      { value: 'pernas', label: 'Pernas Completas', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'legs body', icon: Footprints },
-      { value: 'bracos', label: 'Braços', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'arms body', icon: Sparkles },
-      { value: 'costas', label: 'Costas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/costas.png', icon: User, dataAiHint: 'back body' },
-      { value: 'peito', label: 'Peito', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/seios.png', icon: Zap, dataAiHint: 'chest body' },
-      { value: 'corpo_todo', label: 'Corpo Todo (Pacote Especial)', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'full body', icon: Brain },
+      // Rosto
+      { value: 'buco', label: 'Buço', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/buco.png', dataAiHint: 'upper lip face' },
+      { value: 'queixo', label: 'Queixo', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/queixo.png', dataAiHint: 'chin face' },
+      { value: 'maxilar', label: 'Maxilar', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/maxilar.png', dataAiHint: 'jawline face' },
+      { value: 'testa', label: 'Testa', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/testa.png', dataAiHint: 'forehead face' },
+      { value: 'bochechas', label: 'Bochechas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/bochechas.png', dataAiHint: 'cheeks face' },
+      { value: 'nariz', label: 'Nariz', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/nariz.png', dataAiHint: 'nose face' },
+      { value: 'glabela', label: 'Glabela (Entre Sobrancelhas)', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/glabela.png', dataAiHint: 'eyebrows face' },
+      // Membros Superiores
+      { value: 'axilas', label: 'Axilas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/axila-1.png', dataAiHint: 'armpit body' },
+      { value: 'antebracos', label: 'Antebraços', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/antebraco.png', dataAiHint: 'forearms body' },
+      { value: 'bracos_completos', label: 'Braços Completos', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/bracos-completos.png', dataAiHint: 'full arms body' },
+      { value: 'maos_dedos', label: 'Mãos e Dedos', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/maos.png', dataAiHint: 'hands fingers' },
+      // Tronco
+      { value: 'areolas', label: 'Aréolas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/aureola.png', dataAiHint: 'areolas chest' },
+      { value: 'seios', label: 'Seios', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/seios.png', dataAiHint: 'breasts chest' },
+      { value: 'abdomen', label: 'Abdômen', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/abdomen.png', dataAiHint: 'abdomen body' },
+      { value: 'linha_alba', label: 'Linha Alba', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/linha-alba.png', dataAiHint: 'linea alba stomach' },
+      { value: 'costas', label: 'Costas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/costas.png', dataAiHint: 'back body' },
+      { value: 'lombar', label: 'Lombar', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/lombar.png', dataAiHint: 'lower back' },
+      // Região Íntima
+      { value: 'virilha_simples', label: 'Virilha Simples (Biquíni)', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/meia-virilha.png', dataAiHint: 'bikini line simple' },
+      { value: 'virilha_cavada', label: 'Virilha Cavada', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/virilha-cavada.png', dataAiHint: 'deep bikini line' },
+      { value: 'virilha_completa', label: 'Virilha Completa', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/virilha-total.png', dataAiHint: 'full bikini area' },
+      { value: 'perianal', label: 'Perianal', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/perianal.png', dataAiHint: 'perianal area' },
+      { value: 'coccix', label: 'Cóccix', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/coccix.png', dataAiHint: 'tailbone area' },
+      // Membros Inferiores
+      { value: 'meia_perna', label: 'Meia Perna', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/meia-perna.png', dataAiHint: 'half leg' },
+      { value: 'coxas', label: 'Coxas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/coxa.png', dataAiHint: 'thighs body' },
+      { value: 'pernas_completas', label: 'Pernas Completas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/pernas-completas.png', dataAiHint: 'full legs body' },
+      { value: 'pes_dedos', label: 'Pés e Dedos', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/pes.png', dataAiHint: 'feet toes' },
+      { value: 'interno_coxa', label: 'Interno de Coxa', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/entre-coxas.png', dataAiHint: 'inner thigh' }, // 'entre-coxas.png' seemed most appropriate
+      // Outros
+      { value: 'pescoco', label: 'Pescoço', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/pescoco.png', dataAiHint: 'neck area' },
+      { value: 'nuca', label: 'Nuca', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/nuca.png', dataAiHint: 'nape area' },
+      { value: 'gluteos', label: 'Glúteos', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/gluteos.png', dataAiHint: 'buttocks body' },
+      // Pacote
+      { value: 'corpo_todo', label: 'Corpo Todo (Pacote Especial)', imageUrl: 'https://placehold.co/150x100.png', dataAiHint: 'full body offer' },
     ],
   },
   {
@@ -119,3 +149,5 @@ export const quizQuestions: QuizQuestion[] = [
 ];
 
 export const successIcon = CheckCircle;
+
+    
