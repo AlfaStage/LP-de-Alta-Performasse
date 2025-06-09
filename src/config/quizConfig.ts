@@ -1,5 +1,6 @@
+
 import type { LucideIcon } from 'lucide-react';
-import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, ChevronRight, Smile, Activity, Zap } from 'lucide-react';
+import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Building, Globe } from 'lucide-react';
 
 export interface QuizOption {
   value: string;
@@ -27,6 +28,8 @@ export interface QuizQuestion {
   condition?: (formData: Record<string, any>) => boolean;
   icon?: LucideIcon;
 }
+
+const dfUnidades = ['aguas_claras_df', 'asa_sul_df', 'asa_norte_df', 'taguatinga_df'];
 
 export const quizQuestions: QuizQuestion[] = [
   {
@@ -77,26 +80,33 @@ export const quizQuestions: QuizQuestion[] = [
     id: 'q4',
     name: 'localizacao',
     icon: MapPin,
-    text: 'Para direcionarmos você ao melhor atendimento, por favor, informe sua localização:',
-    explanation: 'A Ice Lazer possui unidades em todo o Brasil, com serviços especiais em Brasília.',
+    text: 'Qual unidade da Ice Lazer está mais próxima de você ou é de sua preferência?',
+    explanation: 'Selecione a unidade para um atendimento personalizado. Se sua cidade não estiver listada, escolha "Outra Localidade".',
     type: 'radio',
     options: [
-      { value: 'brasilia', label: 'Brasília, DF' },
-      { value: 'outra', label: 'Outra cidade/estado' },
+      { value: 'aguas_claras_df', label: 'Águas Claras - DF', icon: Building },
+      { value: 'asa_sul_df', label: 'Asa Sul - DF', icon: Building },
+      { value: 'asa_norte_df', label: 'Asa Norte - DF', icon: Building },
+      { value: 'taguatinga_df', label: 'Taguatinga - DF', icon: Building },
+      { value: 'goiania_go', label: 'Goiânia - GO', icon: Building },
+      { value: 'anapolis_go', label: 'Anápolis - GO', icon: Building },
+      { value: 'valparaiso_go', label: 'Valparaíso - GO', icon: Building },
+      { value: 'belem_pa', label: 'Belém - PA', icon: Building },
+      { value: 'outra_localidade', label: 'Outra Localidade', icon: Globe },
     ],
   },
   {
     id: 'q5',
     name: 'interesseEstetica',
     icon: Sparkles,
-    text: 'Além da depilação a laser, a Ice Lazer em Brasília oferece outros procedimentos estéticos avançados. Você gostaria de saber mais sobre eles?',
+    text: 'Além da depilação a laser, as unidades da Ice Lazer no DF oferecem outros procedimentos estéticos avançados. Você gostaria de saber mais sobre eles?',
     explanation: 'Temos tratamentos faciais, corporais e muito mais para realçar sua beleza!',
     type: 'radio',
     options: [
       { value: 'sim_estetica', label: 'Sim, tenho interesse!' },
       { value: 'nao_estetica', label: 'Não, obrigado(a). Foco na depilação por agora.' },
     ],
-    condition: (formData) => formData.localizacao === 'brasilia',
+    condition: (formData) => dfUnidades.includes(formData.localizacao),
   },
   {
     id: 'q6',
@@ -111,6 +121,3 @@ export const quizQuestions: QuizQuestion[] = [
     ],
   },
 ];
-
-export const WHATSAPP_BRASILIA = process.env.NEXT_PUBLIC_WHATSAPP_BRASILIA || "5561999999999"; // Example number
-export const WHATSAPP_GENERAL = process.env.NEXT_PUBLIC_WHATSAPP_GENERAL || "5511988888888"; // Example number
