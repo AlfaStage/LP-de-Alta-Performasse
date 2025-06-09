@@ -38,7 +38,7 @@ export default function QuizForm() {
 
   const methods = useForm<FormData>({
     resolver: currentStep === quizQuestions.length -1 && quizQuestions[currentStep]?.type === 'textFields' ? zodResolver(contactSchema) : undefined,
-    mode: 'onChange', // Validar onChange para feedback imediato
+    mode: 'onChange',
   });
 
   const { control, handleSubmit, setValue, getValues, trigger, formState: { errors } } = methods;
@@ -324,11 +324,11 @@ export default function QuizForm() {
                               key={option.value} 
                               className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50 has-[:checked]:text-accent-foreground has-[:checked]:[&_svg]:text-accent-foreground has-[:checked]:[&>label]:text-accent-foreground has-[:checked]:[&>label>p]:text-accent-foreground/80"
                             >
-                              {option.icon && <option.icon className="h-5 w-5 text-primary" />}
+                              {option.icon && <option.icon className="h-5 w-5 text-primary has-[:checked]:text-accent-foreground" />}
                               <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="text-primary focus:ring-primary"/>
                               <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer">
                                 {option.label}
-                                {option.explanation && <p className="text-xs text-muted-foreground mt-1">{option.explanation}</p>}
+                                {option.explanation && <p className="text-xs text-muted-foreground mt-1 has-[:checked]:text-accent-foreground/80">{option.explanation}</p>}
                               </Label>
                             </div>
                           ))}
@@ -365,7 +365,7 @@ export default function QuizForm() {
                                     </div>
                                   )}
                                   <div className="text-center">
-                                    <p className={`text-xs font-medium ${isSelected ? 'text-primary' : 'text-primary/80'}`}>Depilação a laser</p>
+                                    <p className={`text-xs font-medium ${isSelected ? 'text-accent-foreground' : 'text-primary/80'}`}>Depilação a laser</p>
                                     <Label htmlFor={`${currentQuestion.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-accent-foreground' : 'text-foreground'}`}>
                                       {option.label}
                                     </Label>
