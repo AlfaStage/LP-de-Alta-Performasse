@@ -50,20 +50,19 @@ export default function QuizForm() {
   const currentQuestion = activeQuestions[currentStep];
 
   useEffect(() => {
-    trackCustomEvent('QuizStart');
+    trackCustomEvent('QuizStart', { quiz_name: 'IceLazerLeadFilter_V2' });
   }, []);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success') {
-        // Using navigator.sendBeacon is more reliable for beforeunload
         const webhookUrl = process.env.NEXT_PUBLIC_QUIZ_ABANDONMENT_WEBHOOK_URL || "YOUR_WEBHOOK_URL_CLIENT";
         if (webhookUrl !== "YOUR_WEBHOOK_URL_CLIENT") {
-            const dataToLog = { ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep };
+            const dataToLog = { ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: "IceLazerLeadFilter_Abandonment_V2" };
             const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
             navigator.sendBeacon(webhookUrl, blob);
         } else {
-            logQuizAbandonment({ ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep });
+            logQuizAbandonment({ ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: "IceLazerLeadFilter_Abandonment_V2" });
         }
       }
     };
@@ -96,8 +95,19 @@ export default function QuizForm() {
         setCurrentStep(prev => prev + 1);
         setAnimationClass('animate-slide-in');
       }, 300);
-      trackEvent('QuestionAnswered', { question_id: currentQuestion.id, answer: getValues(currentQuestion.name) });
+      trackEvent('QuestionAnswered', { 
+        question_id: currentQuestion.id, 
+        answer: getValues(currentQuestion.name),
+        step: currentStep + 1,
+        quiz_name: 'IceLazerLeadFilter_V2' 
+      });
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
+      trackEvent('QuestionAnswered', { 
+        question_id: currentQuestion.id, 
+        answer: getValues(currentQuestion.name), // For contact step, this might be an object of fields
+        step: currentStep + 1,
+        quiz_name: 'IceLazerLeadFilter_V2' 
+      });
       await handleSubmit(onSubmit)();
     }
   };
@@ -114,7 +124,7 @@ export default function QuizForm() {
 
   const handleValueChange = (name: string, value: any) => {
     setValue(name, value, { shouldValidate: true });
-    setFormData(prev => ({ ...prev, [name]: value })); // Keep local formData for conditions
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) methods.clearErrors(name);
   };
 
@@ -122,7 +132,7 @@ export default function QuizForm() {
     if (submissionStatus === 'pending') return;
 
     setSubmissionStatus('pending');
-    const finalData = { ...formData, ...data}; // Combine local formData with hook-form data
+    const finalData = { ...formData, ...data}; 
 
     try {
         const result = await submitQuizData(finalData);
@@ -130,8 +140,14 @@ export default function QuizForm() {
         if (result.success) {
             setIsQuizCompleted(true);
             setSubmissionStatus('success');
-            trackCustomEvent('QuizComplete', finalData);
-            trackEvent('Lead', { name: finalData.nomeCompleto, whatsapp: finalData.whatsapp });
+            trackCustomEvent('QuizComplete', { quiz_name: 'IceLazerLeadFilter_V2', ...finalData });
+            trackEvent('Lead', { 
+                content_name: 'IceLazerLeadFilter_V2_Submission',
+                value: 50.00, // Example value, adjust as needed
+                currency: 'BRL', // Example currency
+                lead_name: finalData.nomeCompleto,
+                lead_whatsapp: finalData.whatsapp
+            });
         } else {
             setSubmissionStatus('error');
             toast({
@@ -142,9 +158,10 @@ export default function QuizForm() {
         }
     } catch (error) {
         setSubmissionStatus('error');
+        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
         toast({
             title: "Erro Inesperado",
-            description: "Ocorreu um erro inesperado ao processar sua solicitação. Tente novamente mais tarde.",
+            description: `Ocorreu um erro inesperado ao processar sua solicitação: ${errorMessage}. Tente novamente mais tarde.`,
             variant: "destructive",
         });
     }
@@ -167,7 +184,14 @@ export default function QuizForm() {
         <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center">
           <CardHeader className="bg-primary/80 text-primary-foreground p-6">
             <div className="flex items-center justify-center space-x-3">
-                <Image src="https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png" alt="Ice Lazer Logo" data-ai-hint="company logo" width={150} height={50} />
+                <Image 
+                  src="https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png" 
+                  alt="Ice Lazer Logo" 
+                  data-ai-hint="company logo" 
+                  width={150} 
+                  height={50} 
+                  className="h-auto"
+                />
             </div>
             <CardTitle className="text-3xl mt-4">Obrigado!</CardTitle>
           </CardHeader>
@@ -187,7 +211,6 @@ export default function QuizForm() {
   }
   
   if (!currentQuestion && !isQuizCompleted) {
-    // This case should ideally not be reached if activeQuestions is managed correctly
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <Alert>
@@ -219,7 +242,14 @@ export default function QuizForm() {
         <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass}`}>
           <CardHeader className="bg-primary/80 text-primary-foreground p-6">
              <div className="flex items-center space-x-3">
-                <Image src="https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png" alt="Ice Lazer Logo" data-ai-hint="company logo" width={150} height={50} />
+                <Image 
+                  src="https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png" 
+                  alt="Ice Lazer Logo" 
+                  data-ai-hint="company logo" 
+                  width={150} 
+                  height={50}
+                  className="h-auto" 
+                />
                 <div>
                     <CardTitle className="text-3xl font-headline">Ice Lazer Quiz</CardTitle>
                     <CardDescription className="text-primary-foreground/80">Descubra o tratamento ideal para você!</CardDescription>
@@ -321,7 +351,7 @@ export default function QuizForm() {
                                 type={f.type} 
                                 placeholder={f.placeholder} 
                                 onChange={(e) => handleValueChange(f.name, e.target.value)} 
-                                className="bg-background border-primary/50 focus:border-primary focus:ring-primary"
+                                className="bg-background border-input focus:border-primary focus:ring-primary"
                               />
                             )}
                           />
