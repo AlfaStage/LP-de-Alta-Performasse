@@ -200,7 +200,7 @@ export default function QuizForm() {
                   data-ai-hint="company logo" 
                   width={150} 
                   height={50} 
-                  className="h-auto w-auto" 
+                  className="h-auto w-28 md:w-36" 
                 />
             </div>
             <CardTitle className="text-3xl mt-4 text-primary">Obrigado!</CardTitle>
@@ -258,7 +258,7 @@ export default function QuizForm() {
                   data-ai-hint="company logo" 
                   width={150} 
                   height={50}
-                  className="h-auto w-auto"
+                  className="h-auto w-28 md:w-36"
                 />
                 <div>
                     <CardTitle className="text-3xl font-headline text-primary">Quiz</CardTitle>
