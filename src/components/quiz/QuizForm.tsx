@@ -13,7 +13,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { quizQuestions, successIcon as SuccessIcon } from '@/config/quizConfig';
 import QuizProgressBar from './QuizProgressBar';
-import { trackEvent, trackCustomEvent } from '@/lib/fpixel';
+import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent } from '@/lib/fpixel';
+import { event as gaEvent } from '@/lib/gtag'; // Import GA event tracker
 import { logQuizAbandonment, submitQuizData } from '@/app/actions';
 import { ChevronLeft, ChevronRight, Send, Info, CheckCircle, Loader2, Smartphone, Globe as GlobeIcon, Instagram as InstagramIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -51,9 +52,13 @@ export default function QuizForm() {
   const currentQuestion = activeQuestions[currentStep];
 
   useEffect(() => {
+    // Track Quiz Start for both FB and GA
     if (areAnyPixelsConfigured()) {
-      trackCustomEvent('QuizStart', { quiz_name: 'IceLazerLeadFilter_V2' });
+      console.log("FB Pixel: QuizStart event triggered.");
+      fbTrackCustomEvent('QuizStart', { quiz_name: 'IceLazerLeadFilter_V2' });
     }
+    console.log("GA: quiz_start event triggered.");
+    gaEvent({ action: 'quiz_start', category: 'Quiz', label: 'IceLazerLeadFilter_V2_Start' });
   }, []);
 
   useEffect(() => {
@@ -92,6 +97,22 @@ export default function QuizForm() {
         }
     }
 
+    const answerData = {
+      question_id: currentQuestion.id,
+      answer: getValues(currentQuestion.name),
+      step: currentStep + 1,
+      quiz_name: 'IceLazerLeadFilter_V2'
+    };
+    const gaAnswerData = {
+      category: 'Quiz',
+      label: `Question: ${currentQuestion.id}`,
+      question_id: currentQuestion.id,
+      answer: getValues(currentQuestion.name)?.toString(),
+      step_number: currentStep + 1,
+      quiz_name: 'IceLazerLeadFilter_V2'
+    };
+
+
     if (stepIsValid && currentStep < activeQuestions.length - 1) {
       setAnimationClass('animate-slide-out');
       setTimeout(() => {
@@ -99,22 +120,33 @@ export default function QuizForm() {
         setAnimationClass('animate-slide-in');
       }, 300);
       if (areAnyPixelsConfigured()) {
-        trackEvent('QuestionAnswered', { 
-          question_id: currentQuestion.id, 
-          answer: getValues(currentQuestion.name),
-          step: currentStep + 1,
-          quiz_name: 'IceLazerLeadFilter_V2' 
-        });
+        console.log("FB Pixel: QuestionAnswered event triggered.", answerData);
+        fbTrackEvent('QuestionAnswered', answerData);
       }
+      console.log("GA: question_answered event triggered.", gaAnswerData);
+      gaEvent({ action: 'question_answered', ...gaAnswerData });
+
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
+      // Last question before submission
       if (areAnyPixelsConfigured()) {
-        trackEvent('QuestionAnswered', { 
-          question_id: currentQuestion.id, 
-          answer: getValues(currentQuestion.fields?.map(f => f.name) || []), 
+        console.log("FB Pixel: QuestionAnswered event triggered (last question).", answerData);
+        fbTrackEvent('QuestionAnswered', {
+          question_id: currentQuestion.id,
+          answer: getValues(currentQuestion.fields?.map(f => f.name) || []),
           step: currentStep + 1,
-          quiz_name: 'IceLazerLeadFilter_V2' 
+          quiz_name: 'IceLazerLeadFilter_V2'
         });
       }
+      const lastGaAnswerData = {
+        category: 'Quiz',
+        label: `Question: ${currentQuestion.id}`,
+        question_id: currentQuestion.id,
+        answer: getValues(currentQuestion.fields?.map(f => f.name) || [])?.toString(),
+        step_number: currentStep + 1,
+        quiz_name: 'IceLazerLeadFilter_V2'
+      };
+      console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
+      gaEvent({ action: 'question_answered', ...lastGaAnswerData });
       await handleSubmit(onSubmit)();
     }
   };
@@ -147,16 +179,40 @@ export default function QuizForm() {
         if (result.status === 'success') {
             setIsQuizCompleted(true);
             setSubmissionStatus('success');
+            
+            const leadDataFb = {
+                content_name: 'IceLazerLeadFilter_V2_Submission',
+                value: 50.00, 
+                currency: 'BRL', 
+                lead_name: finalData.nomeCompleto,
+                lead_whatsapp: finalData.whatsapp // Ensure whatsapp is included
+            };
+            const quizCompleteDataFb = { quiz_name: 'IceLazerLeadFilter_V2', ...finalData };
+            
+            const leadDataGa = {
+                category: 'Quiz',
+                label: 'IceLazerLeadFilter_V2_Lead',
+                value: 50, // GA typically uses integers for value if not currency
+                lead_name: finalData.nomeCompleto,
+            };
+            const quizCompleteDataGa = {
+                category: 'Quiz',
+                label: 'IceLazerLeadFilter_V2_Complete',
+                quiz_name: 'IceLazerLeadFilter_V2',
+                 ...finalData 
+            };
+
             if (areAnyPixelsConfigured()) {
-                trackCustomEvent('QuizComplete', { quiz_name: 'IceLazerLeadFilter_V2', ...finalData });
-                trackEvent('Lead', { 
-                    content_name: 'IceLazerLeadFilter_V2_Submission',
-                    value: 50.00, 
-                    currency: 'BRL', 
-                    lead_name: finalData.nomeCompleto,
-                    lead_whatsapp: finalData.whatsapp
-                });
+                console.log("FB Pixel: QuizComplete event triggered.", quizCompleteDataFb);
+                fbTrackCustomEvent('QuizComplete', quizCompleteDataFb);
+                console.log("FB Pixel: Lead event triggered.", leadDataFb);
+                fbTrackEvent('Lead', leadDataFb);
             }
+            console.log("GA: quiz_complete event triggered.", quizCompleteDataGa);
+            gaEvent({action: 'quiz_complete', ...quizCompleteDataGa});
+            console.log("GA: generate_lead event triggered.", leadDataGa);
+            gaEvent({action: 'generate_lead', ...leadDataGa});
+
         } else if (result.status === 'invalid_number') {
             setSubmissionStatus('idle'); 
             methods.setError('whatsapp', {
@@ -187,6 +243,22 @@ export default function QuizForm() {
         console.error("Client-side error during onSubmit:", error);
     }
   };
+  
+  const loadingJsx = (
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertTitle>Carregando Quiz...</AlertTitle>
+        <AlertDescription>
+          Por favor, aguarde enquanto preparamos as perguntas.
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+
+  if (!currentQuestion && !isQuizCompleted) {
+    return loadingJsx;
+  }
 
   if (isQuizCompleted && submissionStatus === 'success') {
     return (
@@ -230,21 +302,6 @@ export default function QuizForm() {
       </div>
     );
   }
-  
-  if (!currentQuestion && !isQuizCompleted) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Carregando Quiz...</AlertTitle>
-          <AlertDescription>
-            Por favor, aguarde enquanto preparamos as perguntas.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
 
   return (
     <FormProvider {...methods}>

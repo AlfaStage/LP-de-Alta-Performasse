@@ -4,7 +4,8 @@
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { trackPageView } from '@/lib/fpixel';
+import { trackPageView as fbTrackPageView } from '@/lib/fpixel'; // Renomeado para evitar conflito
+import { pageview as gaTrackPageView } from '@/lib/gtag'; // Import GA pageview tracker
 import { 
   FACEBOOK_PIXEL_ID, 
   FACEBOOK_PIXEL_ID_SECONDARY,
@@ -12,26 +13,32 @@ import {
   isSecondaryPixelConfigured,
   areAnyPixelsConfigured
 } from '@/config/pixelConfig';
+import { GA_TRACKING_ID } from '@/lib/gtag';
+
 
 export default function FacebookPixelScript() {
   const pathname = usePathname();
 
   useEffect(() => {
-    // If at least one pixel is configured and has been initialized by the script below,
-    // then track the PageView. trackPageView() calls fbq('track', 'PageView'),
-    // which sends the event to all initialized pixels.
+    // Track PageView for Facebook Pixel on route change
     if (areAnyPixelsConfigured()) {
-      trackPageView();
+      console.log("FB Pixel: PageView event triggered by route change.", pathname);
+      fbTrackPageView();
     }
-  }, [pathname]); // Dependencies for the effect
 
-  // If neither pixel is configured, don't render the script tag.
-  if (!areAnyPixelsConfigured()) {
+    // Track PageView for Google Analytics on route change
+    if (GA_TRACKING_ID && typeof window.gtag === 'function') {
+      console.log("GA: pageview event triggered by route change.", pathname);
+      gaTrackPageView(new URL(pathname, window.location.origin));
+    }
+
+  }, [pathname]);
+
+  if (!areAnyPixelsConfigured() && !GA_TRACKING_ID) {
+    console.warn("Neither Facebook Pixel nor Google Analytics is configured. No tracking scripts rendered.");
     return null;
   }
-
-  // Construct the Facebook Pixel script content.
-  // This includes the base loader and conditional initialization for each pixel.
+  
   const pixelScriptContent = `
     !function(f,b,e,v,n,t,s)
     {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -43,15 +50,17 @@ export default function FacebookPixelScript() {
     'https://connect.facebook.net/en_US/fbevents.js');
     ${isPrimaryPixelConfigured ? `fbq('init', '${FACEBOOK_PIXEL_ID}');` : ''}
     ${isSecondaryPixelConfigured ? `fbq('init', '${FACEBOOK_PIXEL_ID_SECONDARY}');` : ''}
+    ${areAnyPixelsConfigured() ? `fbq('track', 'PageView'); console.log("FB Pixel: Initial PageView event sent via script.");` : `console.warn("FB Pixel: No pixels configured, initial PageView not sent.");`}
   `;
-  // The PageView event itself is sent via the trackPageView() call in the useEffect hook,
-  // which is standard for SPA/Next.js applications to correctly track initial loads and client-side navigations.
 
   return (
     <>
-      <Script id="fb-pixel-base" strategy="afterInteractive">
-        {pixelScriptContent}
-      </Script>
+      {areAnyPixelsConfigured() && (
+        <Script id="fb-pixel-base" strategy="afterInteractive">
+          {pixelScriptContent}
+        </Script>
+      )}
+      {!areAnyPixelsConfigured() && GA_TRACKING_ID && console.warn("Facebook Pixel not configured, but Google Analytics is.")}
     </>
   );
 }
