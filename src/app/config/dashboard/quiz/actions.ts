@@ -37,7 +37,7 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
   if (!/^[a-z0-9-]+$/.test(slug)) {
       return { success: false, message: "Slug inválido. Use apenas letras minúsculas, números e hífens."};
   }
-  if (slug === 'config' || slug === 'api' || slug === 'public' || slug === 'assets') {
+  if (slug === 'config' || slug === 'api' || slug === 'public' || slug === 'assets' || slug === 'images' || slug === '_next') {
       return { success: false, message: "Este slug é reservado e não pode ser usado."};
   }
 
@@ -86,7 +86,6 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
     const fileContents = await fs.readFile(filePath, 'utf8');
     const quizData = JSON.parse(fileContents) as QuizConfig;
     
-    // Filter out the default contact step before stringifying for the editor
     const questionsForEditing = quizData.questions.filter(q => q.id !== defaultContactStep.id);
     
     return {
@@ -120,21 +119,19 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
   const filePath = path.join(quizzesDirectory, `${slug}.json`);
 
   try {
-    // Check if the file exists (it should for an update)
     await fs.access(filePath);
   } catch {
     return { success: false, message: `Quiz com o slug "${slug}" não encontrado para atualização.` };
   }
 
-  // Ensure the default contact step is the last one
   const questionsWithoutExistingContact = questions.filter(q => q.id !== defaultContactStep.id);
   const questionsWithContactStep = [...questionsWithoutExistingContact, defaultContactStep];
 
   const quizConfig: QuizConfig = {
     title,
-    slug, // Slug remains the same
+    slug, 
     questions: questionsWithContactStep,
-    successIcon: 'CheckCircle', // Or fetch existing icon if it can vary
+    successIcon: 'CheckCircle', 
   };
 
   try {
@@ -151,30 +148,72 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
   }
 }
 
+export async function deleteQuizAction(slug: string): Promise<{ success: boolean; message?: string }> {
+  await ensureQuizzesDirectoryExists();
+  if (!slug) {
+    return { success: false, message: "Slug do quiz é obrigatório para apagar." };
+  }
 
-export async function getQuizzesList(): Promise<Omit<QuizConfig, 'questions'>[]> {
+  const filePath = path.join(quizzesDirectory, `${slug}.json`);
+
+  try {
+    await fs.access(filePath); // Verifica se o arquivo existe
+  } catch {
+    return { success: false, message: `Quiz com o slug "${slug}" não encontrado.` };
+  }
+
+  try {
+    await fs.unlink(filePath); // Apaga o arquivo
+    revalidatePath('/'); // Revalida a página inicial que lista os quizzes (se aplicável)
+    revalidatePath('/config/dashboard'); // Revalida a página do dashboard
+    revalidatePath(`/${slug}`); // Revalida o caminho do quiz apagado (resultará em 404)
+    // Revalida também a página de edição para o caso de alguém estar nela
+    revalidatePath(`/config/dashboard/quiz/edit/${slug}`); 
+    
+    return { success: true, message: `Quiz "${slug}" apagado com sucesso.` };
+  } catch (error) {
+    console.error(`Failed to delete quiz file for slug ${slug}:`, error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    return { success: false, message: `Erro ao apagar o arquivo do quiz: ${errorMessage}` };
+  }
+}
+
+
+export async function getQuizzesList(): Promise<QuizListItem[]> {
   await ensureQuizzesDirectoryExists();
   try {
     const filenames = await fs.readdir(quizzesDirectory);
     const quizFiles = filenames.filter(filename => filename.endsWith('.json'));
     
-    const quizzes = await Promise.all(quizFiles.map(async (filename) => {
+    const quizzesPromises = quizFiles.map(async (filename) => {
       const filePath = path.join(quizzesDirectory, filename);
-      const fileContents = await fs.readFile(filePath, 'utf8');
-      const quizData = JSON.parse(fileContents) as QuizConfig;
-      return { 
-        title: quizData.title || "Quiz sem título",
-        slug: quizData.slug || filename.replace('.json', ''),
-        successIcon: quizData.successIcon,
-        // questions array is not needed for the list
-      };
-    }));
-    // Type assertion if Omit<QuizConfig, 'questions'> doesn't fully match
-    return quizzes as Omit<QuizConfig, 'questions'>[];
+      try {
+        const fileContents = await fs.readFile(filePath, 'utf8');
+        const quizData = JSON.parse(fileContents) as QuizConfig;
+        return { 
+          title: quizData.title || `Quiz ${filename.replace('.json', '')}`,
+          slug: quizData.slug || filename.replace('.json', ''),
+          successIcon: quizData.successIcon,
+        };
+      } catch (parseError) {
+        console.error(`Failed to parse quiz file ${filename}:`, parseError);
+        // Retorna um objeto parcial para não quebrar a lista inteira
+        return {
+          title: `Erro ao carregar: ${filename}`,
+          slug: filename.replace('.json', ''),
+          successIcon: undefined, // ou um ícone de erro padrão
+        };
+      }
+    });
+    const quizzes = await Promise.all(quizzesPromises);
+    // Filtrar quaisquer quizzes que falharam completamente em carregar e retornaram null (se ajustado para isso)
+    return quizzes.filter(q => q !== null) as QuizListItem[];
   } catch (error) {
     console.error("Failed to read quizzes directory for list:", error);
     return [];
   }
 }
 
-    
+interface QuizListItem extends Omit<QuizConfig, 'questions'> {
+  // Adicione quaisquer outros campos que você deseja na lista, se necessário
+}
