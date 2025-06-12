@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, ListPlus, PlusCircle } from 'lucide-react';
+import { FileText, ListPlus, PlusCircle, Edit } from 'lucide-react';
 import { getQuizzesList } from './quiz/actions';
 // Removido APP_BASE_URL pois os links serão relativos ou à raiz
 
@@ -41,9 +41,11 @@ export default async function DashboardPage() {
                     <Link href={`/${quiz.slug}`} target="_blank">
                        <Button variant="outline" size="sm">Visualizar</Button>
                     </Link>
-                    {/* <Link href={`/config/dashboard/quiz/edit/${quiz.slug}`}>
-                       <Button variant="outline" size="sm" disabled>Editar (Em breve)</Button>
-                    </Link> */}
+                    <Link href={`/config/dashboard/quiz/edit/${quiz.slug}`}>
+                       <Button variant="outline" size="sm" className="flex items-center gap-1">
+                         <Edit className="h-3 w-3" /> Editar
+                       </Button>
+                    </Link>
                   </div>
                 </li>
               ))}
@@ -74,3 +76,4 @@ export default async function DashboardPage() {
     </div>
   );
 }
+

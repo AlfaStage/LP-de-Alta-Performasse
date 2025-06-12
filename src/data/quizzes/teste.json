@@ -1,0 +1,50 @@
+{
+  "title": "teste",
+  "slug": "teste",
+  "questions": [
+    {
+      "id": "q_example",
+      "name": "exampleQuestion",
+      "icon": "HelpCircle",
+      "text": "Esta é uma pergunta de exemplo?",
+      "type": "radio",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Sim",
+          "icon": "ThumbsUp"
+        },
+        {
+          "value": "no",
+          "label": "Não",
+          "icon": "ThumbsDown"
+        }
+      ]
+    },
+    {
+      "id": "final_contact_step",
+      "name": "contato",
+      "icon": "MessageSquare",
+      "text": "Excelente! Para finalizarmos e nossa equipe entrar em contato com as melhores ofertas para você, por favor, deixe seu nome e WhatsApp:",
+      "explanation": "Suas informações estão seguras conosco e serão usadas apenas para o contato sobre nossos serviços.",
+      "type": "textFields",
+      "fields": [
+        {
+          "name": "nomeCompleto",
+          "label": "Seu nome completo",
+          "type": "text",
+          "placeholder": "Ex: Maria Silva",
+          "icon": "User"
+        },
+        {
+          "name": "whatsapp",
+          "label": "Seu WhatsApp (com DDD)",
+          "type": "tel",
+          "placeholder": "Ex: (XX) XXXXX-XXXX ou XXXXXXXXXXX",
+          "icon": "Smartphone"
+        }
+      ]
+    }
+  ],
+  "successIcon": "CheckCircle"
+}
