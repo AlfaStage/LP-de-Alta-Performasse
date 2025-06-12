@@ -1,7 +1,9 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import QuizForm from '@/components/quiz/QuizForm';
+// import QuizForm from '@/components/quiz/QuizForm'; // Importação original
+import dynamic from 'next/dynamic';
+import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import type { QuizConfig } from '@/types/quiz';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
@@ -9,6 +11,12 @@ import Link from 'next/link';
 import { defaultContactStep } from '@/config/quizConfig';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
+
+const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
+  // ssr: false, // Removido: Não permitido em Server Components
+  loading: () => <QuizFormLoading />,
+});
+
 
 interface QuizPageProps {
   params: {
@@ -65,7 +73,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
     return (
       <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
         <Alert variant="destructive" className="w-full max-w-lg bg-card text-card-foreground shadow-lg">
-          <AlertTriangle className="h-6 w-6" />
+          <AlertTriangle className="h-8 w-8" /> {/* Aumentado o ícone */}
           <AlertTitle className="text-xl">Quiz não encontrado ou mal configurado</AlertTitle>
           <AlertDescription>
             O quiz com o identificador "{quizSlug}" não pôde ser carregado ou está vazio.

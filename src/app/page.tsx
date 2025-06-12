@@ -7,9 +7,16 @@ import { Button } from '@/components/ui/button';
 import { AlertTriangle, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { QuizConfig } from '@/types/quiz';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
-import QuizForm from '@/components/quiz/QuizForm'; 
+// import QuizForm from '@/components/quiz/QuizForm'; // Importação original
+import dynamic from 'next/dynamic';
+import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { defaultContactStep } from '@/config/quizConfig';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
+
+const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
+  // ssr: false, // Removido: Não permitido em Server Components
+  loading: () => <QuizFormLoading />,
+});
 
 const DEFAULT_QUIZ_SLUG = "default";
 
@@ -65,7 +72,7 @@ export default async function HomePage() {
                 </Button>
             </Link>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="p-6 bg-muted/30 flex justify-center">
              <p className="text-xs text-muted-foreground text-center w-full">
                 {footerText}
             </p>

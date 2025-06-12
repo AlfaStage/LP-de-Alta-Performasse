@@ -43,6 +43,9 @@ interface QuizFormProps {
   isPreview?: boolean;
 }
 
+// Otimização de ícones: Importar todos de uma vez
+const IconComponents = LucideIcons;
+
 export default function QuizForm({ 
   quizQuestions, 
   quizSlug, 
@@ -93,7 +96,8 @@ export default function QuizForm({
         console.log("GA: quiz_start event triggered for", quizNameForTracking);
         gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
     }
-  }, [quizSlug, quizQuestions, isFbPixelConfigured, isGaConfigured, isPreview]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview]); // Removido quizQuestions da dependência para evitar re-trigger excessivo se o objeto for recriado
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -121,8 +125,13 @@ export default function QuizForm({
             const webhookUrl = clientAbandonmentWebhookUrl; 
             if (webhookUrl && webhookUrl !== "YOUR_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL") {
               if (navigator.sendBeacon) {
-                const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
-                navigator.sendBeacon(webhookUrl, blob);
+                try {
+                  const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
+                  navigator.sendBeacon(webhookUrl, blob);
+                } catch (e) {
+                  // Fallback se sendBeacon falhar (raro, mas pode acontecer com dados muito grandes ou outras restrições)
+                   fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
+                }
               } else {
                 fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
               }
@@ -137,7 +146,8 @@ export default function QuizForm({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [formData, currentStep, isQuizCompleted, currentQuestion, getValues, submissionStatus, quizSlug, quizQuestions, clientAbandonmentWebhookUrl, onAbandonmentOverride, isPreview]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, currentStep, isQuizCompleted, submissionStatus, quizSlug, clientAbandonmentWebhookUrl, onAbandonmentOverride, isPreview, getValues, currentQuestion]); // Adicionado getValues e currentQuestion
 
   const handleNext = async () => {
     if (submissionStatus === 'pending' || !currentQuestion) return;
@@ -346,15 +356,15 @@ export default function QuizForm({
     }
   };
   
-  const getIconComponent = (iconName?: keyof typeof LucideIcons): React.ElementType | undefined => {
-    if (!iconName) return undefined;
-    return LucideIcons[iconName];
+  const getIconComponent = (iconName?: keyof typeof IconComponents): React.ElementType | undefined => {
+    if (!iconName || !IconComponents[iconName]) return undefined;
+    return IconComponents[iconName];
   };
   
-  const loadingJsx = (
+  const loadingJsx = ( // Este loading só é usado se QuizForm for renderizado antes de quizQuestions estar pronto (raro com dynamic import)
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
       <Alert className="bg-card text-card-foreground">
-        <LucideIcons.Info className="h-4 w-4" />
+        <IconComponents.Info className="h-4 w-4" />
         <AlertTitle>Carregando Quiz...</AlertTitle>
         <AlertDescription>
           Por favor, aguarde enquanto preparamos as perguntas.
@@ -364,6 +374,8 @@ export default function QuizForm({
   );
 
   if ((!quizQuestions || quizQuestions.length === 0) && !isQuizCompleted) {
+    // O componente QuizFormLoading será exibido pelo next/dynamic
+    // Se chegar aqui, é um estado inesperado ou o dynamic import falhou em mostrar seu loading.
     return loadingJsx;
   }
   
@@ -371,7 +383,7 @@ export default function QuizForm({
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
           <Alert variant="destructive" className="bg-card text-card-foreground">
-            <LucideIcons.AlertTriangle className="h-4 w-4" />
+            <IconComponents.AlertTriangle className="h-4 w-4" />
             <AlertTitle>Erro no Quiz</AlertTitle>
             <AlertDescription>
               Não foi possível carregar as perguntas do quiz. Tente recarregar a página.
@@ -394,6 +406,7 @@ export default function QuizForm({
                   width={150} 
                   height={50} 
                   className="h-auto w-28 md:w-36" 
+                  priority={true} // Priorizar carregamento do logo
                 />
             </div>
             <CardTitle className="text-3xl mt-4 text-primary">{quizTitle}</CardTitle>
@@ -406,11 +419,11 @@ export default function QuizForm({
               <div className="pt-4 space-y-3">
                 <p className="text-sm text-card-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
                 <Link href="https://espacoicelaser.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                  <LucideIcons.Globe className="mr-2 h-5 w-5" />
+                  <IconComponents.Globe className="mr-2 h-5 w-5" />
                   Visite nosso site
                 </Link>
                 <Link href="https://www.instagram.com/icelaseroficial/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                  <LucideIcons.Instagram className="mr-2 h-5 w-5" />
+                  <IconComponents.Instagram className="mr-2 h-5 w-5" />
                   Siga-nos no Instagram
                 </Link>
               </div>
@@ -439,6 +452,7 @@ export default function QuizForm({
                   width={150} 
                   height={50}
                   className="h-auto w-28 md:w-36"
+                  priority={true} // Priorizar carregamento do logo
                 />
                 <div>
                     <CardTitle className="text-3xl font-headline text-primary">{quizTitle}</CardTitle>
@@ -531,7 +545,7 @@ export default function QuizForm({
                                   </div>
                                   {isSelected && (
                                     <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                                      <LucideIcons.CheckCircle className="h-4 w-4" />
+                                      <IconComponents.CheckCircle className="h-4 w-4" />
                                     </div>
                                   )}
                                   {OptionIcon && !option.imageUrl && <OptionIcon className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
@@ -582,7 +596,7 @@ export default function QuizForm({
           {currentQuestion && (
              <CardFooter className="flex justify-between p-6 bg-muted/30">
                 <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0 || submissionStatus === 'pending'} className="px-6 py-3 text-base">
-                    <LucideIcons.ChevronLeft className="mr-2 h-5 w-5" /> Voltar
+                    <IconComponents.ChevronLeft className="mr-2 h-5 w-5" /> Voltar
                 </Button>
                 <Button 
                     onClick={handleNext} 
@@ -594,10 +608,10 @@ export default function QuizForm({
                     }
                 >
                     {submissionStatus === 'pending' ? (
-                    <LucideIcons.Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     ) : null}
                     {submissionStatus === 'pending' ? 'Enviando...' : (currentStep === activeQuestions.length - 1 ? 'Finalizar e Contato' : 'Próximo')}
-                    {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? <LucideIcons.Send className="ml-2 h-5 w-5" /> : <LucideIcons.ChevronRight className="ml-2 h-5 w-5" />)}
+                    {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? <IconComponents.Send className="ml-2 h-5 w-5" /> : <IconComponents.ChevronRight className="ml-2 h-5 w-5" />)}
                 </Button>
             </CardFooter>
           )}

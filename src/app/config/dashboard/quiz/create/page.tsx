@@ -10,15 +10,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, Image as ImageIcon, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail } from 'lucide-react';
 import { createQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
 import { APP_BASE_URL } from '@/config/appConfig';
-import QuizForm from '@/components/quiz/QuizForm';
-import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions'; // ALTERADO AQUI
+// import QuizForm from '@/components/quiz/QuizForm'; // Original
+import dynamic from 'next/dynamic';
+import QuizFormLoading from '@/components/quiz/QuizFormLoading';
+import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
 import type { WhitelabelConfig } from '@/types/quiz';
+
+const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
+  ssr: false,
+  loading: () => <div className="p-4"><QuizFormLoading/></div>,
+});
 
 
 const exampleQuestion: QuizQuestion = {
@@ -54,7 +61,7 @@ export default function CreateQuizPage() {
 
   useEffect(() => {
     async function fetchPreviewConfig() {
-      const config = await fetchWhitelabelSettings(); // ALTERADO AQUI
+      const config = await fetchWhitelabelSettings();
       setWhitelabelSettings(config);
     }
     fetchPreviewConfig();
@@ -495,7 +502,7 @@ export default function CreateQuizPage() {
             <DialogTitle>Pré-visualização do Quiz: {title || "Novo Quiz"}</DialogTitle>
           </DialogHeader>
           <div className="flex-grow overflow-y-auto bg-background">
-            {previewQuizData && (
+            {previewQuizData ? (
               <QuizForm
                 quizQuestions={previewQuizData}
                 quizSlug={slug || "preview-slug"}
@@ -508,7 +515,7 @@ export default function CreateQuizPage() {
                 onAbandonmentOverride={async () => { console.log("Preview abandonment") }}
                 isPreview={true}
               />
-            )}
+            ) : <div className="p-4"><QuizFormLoading /></div> }
           </div>
           <DialogFooter className="p-4 border-t">
             <DialogClose asChild>

@@ -52,10 +52,6 @@ export interface WhitelabelConfig {
   footerCopyrightText?: string;
 }
 
-
-// Helper to get Lucide icon components dynamically
-export const getLucideIcon = (iconName?: keyof typeof import('lucide-react')): LucideIcon | undefined => {
-  if (!iconName) return undefined;
-  const icons = require('lucide-react');
-  return icons[iconName] as LucideIcon;
-};
+// Removida a função getLucideIcon daqui. Ela será gerenciada localmente nos componentes que precisam de carregamento dinâmico de ícones.
+// O QuizForm.tsx terá sua própria implementação otimizada.
+// Outros componentes que usam poucos ícones específicos podem importá-los diretamente de 'lucide-react'.
