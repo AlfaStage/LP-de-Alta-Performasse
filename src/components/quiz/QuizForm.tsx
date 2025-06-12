@@ -15,7 +15,7 @@ import { getSuccessIcon } from '@/config/quizConfig';
 import QuizProgressBar from './QuizProgressBar';
 import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent } from '@/lib/fpixel';
 import { event as gaEvent } from '@/lib/gtag';
-import { logQuizAbandonment, submitQuizData } from '@/app/actions';
+import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
 import * as LucideIcons from 'lucide-react'; 
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +38,10 @@ interface QuizFormProps {
   googleAnalyticsId?: string; 
   clientAbandonmentWebhookUrl?: string; 
   footerCopyrightText?: string;
+  // Props for preview mode
+  onSubmitOverride?: (data: FormData) => Promise<void>;
+  onAbandonmentOverride?: (data: FormData, quizSlug?: string) => Promise<void>;
+  isPreview?: boolean;
 }
 
 export default function QuizForm({ 
@@ -48,7 +52,10 @@ export default function QuizForm({
   facebookPixelId,
   googleAnalyticsId,
   clientAbandonmentWebhookUrl,
-  footerCopyrightText = `© ${new Date().getFullYear()} Quiz. Todos os direitos reservados.`
+  footerCopyrightText = `© ${new Date().getFullYear()} Quiz. Todos os direitos reservados.`,
+  onSubmitOverride,
+  onAbandonmentOverride,
+  isPreview = false
 }: QuizFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
@@ -64,7 +71,7 @@ export default function QuizForm({
     mode: 'onChange',
   });
 
-  const { control, handleSubmit, setValue, getValues, trigger, formState: { errors } } = methods;
+  const { control, handleSubmit, setValue, getValues, trigger, formState: { errors, isValid: formIsValid } } = methods;
 
   const activeQuestions = useMemo(() => {
     if (!quizQuestions) return [];
@@ -77,7 +84,7 @@ export default function QuizForm({
   const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId !== "YOUR_GA_ID";
 
   useEffect(() => {
-    if (!quizQuestions || quizQuestions.length === 0) return;
+    if (isPreview || !quizQuestions || quizQuestions.length === 0) return;
     const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
     if (isFbPixelConfigured) {
       console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking);
@@ -87,22 +94,27 @@ export default function QuizForm({
         console.log("GA: quiz_start event triggered for", quizNameForTracking);
         gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
     }
-  }, [quizSlug, quizQuestions, isFbPixelConfigured, isGaConfigured]);
+  }, [quizSlug, quizQuestions, isFbPixelConfigured, isGaConfigured, isPreview]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
-        const webhookUrl = clientAbandonmentWebhookUrl; 
-        if (webhookUrl && webhookUrl !== "YOUR_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL") {
-          const dataToLog = { ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}`, quizSlug };
-          if (navigator.sendBeacon) {
-            const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
-            navigator.sendBeacon(webhookUrl, blob);
-          } else {
-            fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
-          }
+      if (isPreview || !isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
+        const dataToLog = { ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}`, quizSlug };
+        
+        if (onAbandonmentOverride) {
+          onAbandonmentOverride(dataToLog, quizSlug);
         } else {
-           logQuizAbandonment({ ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}` }, quizSlug);
+            const webhookUrl = clientAbandonmentWebhookUrl; 
+            if (webhookUrl && webhookUrl !== "YOUR_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL") {
+              if (navigator.sendBeacon) {
+                const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
+                navigator.sendBeacon(webhookUrl, blob);
+              } else {
+                fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
+              }
+            } else {
+               serverLogQuizAbandonment({ ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}` }, quizSlug);
+            }
         }
       }
     };
@@ -111,7 +123,7 @@ export default function QuizForm({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [formData, currentStep, isQuizCompleted, currentQuestion, getValues, submissionStatus, quizSlug, quizQuestions, clientAbandonmentWebhookUrl]);
+  }, [formData, currentStep, isQuizCompleted, currentQuestion, getValues, submissionStatus, quizSlug, quizQuestions, clientAbandonmentWebhookUrl, onAbandonmentOverride, isPreview]);
 
   const handleNext = async () => {
     if (submissionStatus === 'pending' || !currentQuestion) return;
@@ -119,7 +131,8 @@ export default function QuizForm({
 
     let stepIsValid = true;
     if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
-        stepIsValid = await trigger(currentQuestion.fields.map(f => f.name));
+        const fieldNamesToValidate = currentQuestion.fields.map(f => f.name);
+        stepIsValid = await trigger(fieldNamesToValidate);
     } else if (currentQuestion.type === 'radio' || currentQuestion.type === 'checkbox') {
         const value = getValues(currentQuestion.name);
         stepIsValid = !!value && (Array.isArray(value) ? value.length > 0 : true);
@@ -129,6 +142,7 @@ export default function QuizForm({
             methods.clearErrors(currentQuestion.name);
         }
     }
+
 
     const answerData = {
       question_id: currentQuestion.id,
@@ -151,36 +165,40 @@ export default function QuizForm({
         setCurrentStep(prev => prev + 1);
         setAnimationClass('animate-slide-in');
       }, 300);
-      if (isFbPixelConfigured) {
-        console.log("FB Pixel: QuestionAnswered event triggered.", answerData);
-        fbTrackEvent('QuestionAnswered', answerData);
-      }
-      if(isGaConfigured) {
-        console.log("GA: question_answered event triggered.", gaAnswerData);
-        gaEvent({ action: 'question_answered', ...gaAnswerData });
+      if (!isPreview) {
+        if (isFbPixelConfigured) {
+          console.log("FB Pixel: QuestionAnswered event triggered.", answerData);
+          fbTrackEvent('QuestionAnswered', answerData);
+        }
+        if(isGaConfigured) {
+          console.log("GA: question_answered event triggered.", gaAnswerData);
+          gaEvent({ action: 'question_answered', ...gaAnswerData });
+        }
       }
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
-      if (isFbPixelConfigured) {
-        console.log("FB Pixel: QuestionAnswered event triggered (last question).", answerData);
-        fbTrackEvent('QuestionAnswered', {
-          question_id: currentQuestion.id,
-          answer: getValues(currentQuestion.fields?.map(f => f.name) || []),
-          step: currentStep + 1,
-          quiz_name: quizNameForTracking
-        });
-      }
-      const lastGaAnswerData = {
-        category: 'Quiz',
-        label: `Question: ${currentQuestion.id}`,
-        question_id: currentQuestion.id,
-        answer: getValues(currentQuestion.fields?.map(f => f.name) || [])?.toString(),
-        step_number: currentStep + 1,
-        quiz_name: quizNameForTracking
-      };
-      if(isGaConfigured){
-        console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
-        gaEvent({ action: 'question_answered', ...lastGaAnswerData });
-      }
+       if (!isPreview) {
+            if (isFbPixelConfigured) {
+                console.log("FB Pixel: QuestionAnswered event triggered (last question).", answerData);
+                fbTrackEvent('QuestionAnswered', {
+                question_id: currentQuestion.id,
+                answer: getValues(currentQuestion.fields?.map(f => f.name) || []),
+                step: currentStep + 1,
+                quiz_name: quizNameForTracking
+                });
+            }
+            const lastGaAnswerData = {
+                category: 'Quiz',
+                label: `Question: ${currentQuestion.id}`,
+                question_id: currentQuestion.id,
+                answer: getValues(currentQuestion.fields?.map(f => f.name) || [])?.toString(),
+                step_number: currentStep + 1,
+                quiz_name: quizNameForTracking
+            };
+            if(isGaConfigured){
+                console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
+                gaEvent({ action: 'question_answered', ...lastGaAnswerData });
+            }
+       }
       await handleSubmit(onSubmit)();
     }
   };
@@ -208,8 +226,24 @@ export default function QuizForm({
     setSubmissionStatus('pending');
     const finalData = { ...formData, ...data, quizSlug, quizTitle }; 
 
+    if (isPreview && onSubmitOverride) {
+        await onSubmitOverride(finalData);
+        setSubmissionStatus('success'); // Simulate success for preview
+        setIsQuizCompleted(true); // Show success screen in preview
+        return;
+    }
+    
+    if (isPreview && !onSubmitOverride) {
+        console.log("Preview mode: onSubmit called but no override provided.", finalData);
+        toast({title: "Pré-visualização", description: "Submissão simulada. Nenhum dado enviado."})
+        setSubmissionStatus('success'); 
+        setIsQuizCompleted(true);
+        return;
+    }
+
+
     try {
-        const result = await submitQuizData(finalData);
+        const result = await serverSubmitQuizData(finalData);
 
         if (result.status === 'success') {
             setIsQuizCompleted(true);
@@ -320,7 +354,7 @@ export default function QuizForm({
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
         <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center bg-card text-card-foreground">
-          <CardHeader className="p-6">
+          <CardHeader className="p-6 bg-card">
             <div className="flex items-center justify-center space-x-3">
                 <Image 
                   src={logoUrl}
@@ -333,21 +367,23 @@ export default function QuizForm({
             </div>
             <CardTitle className="text-3xl mt-4 text-primary">{quizTitle}</CardTitle>
           </CardHeader>
-          <CardContent className="p-6 md:p-8 space-y-4">
+          <CardContent className="p-6 md:p-8 space-y-4 bg-card">
             <SuccessIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <p className="text-lg font-semibold text-card-foreground">Suas respostas foram enviadas com sucesso!</p>
             <p className="text-muted-foreground">Nossa equipe entrará em contato com você em breve.</p>
-            <div className="pt-4 space-y-3">
-              <p className="text-sm text-card-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
-              <Link href="https://espacoicelaser.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                <LucideIcons.Globe className="mr-2 h-5 w-5" />
-                Visite nosso site
-              </Link>
-              <Link href="https://www.instagram.com/icelaseroficial/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                <LucideIcons.Instagram className="mr-2 h-5 w-5" />
-                Siga-nos no Instagram
-              </Link>
-            </div>
+            {!isPreview && (
+              <div className="pt-4 space-y-3">
+                <p className="text-sm text-card-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
+                <Link href="https://espacoicelaser.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
+                  <LucideIcons.Globe className="mr-2 h-5 w-5" />
+                  Visite nosso site
+                </Link>
+                <Link href="https://www.instagram.com/icelaseroficial/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
+                  <LucideIcons.Instagram className="mr-2 h-5 w-5" />
+                  Siga-nos no Instagram
+                </Link>
+              </div>
+            )}
           </CardContent>
            <CardFooter className="p-6 bg-muted/30 flex justify-center">
              <p className="text-xs text-muted-foreground">
@@ -361,9 +397,9 @@ export default function QuizForm({
 
   return (
     <FormProvider {...methods}>
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
+      <div className={`flex flex-col items-center justify-center min-h-screen p-4 text-foreground ${isPreview ? 'h-full overflow-y-auto' : 'bg-background'}`}>
         <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8 bg-card text-card-foreground`}>
-          <CardHeader className="p-6">
+          <CardHeader className="p-6 bg-card">
              <div className="flex items-center space-x-3">
                 <Image 
                   src={logoUrl}
@@ -380,7 +416,7 @@ export default function QuizForm({
             </div>
           </CardHeader>
           {currentQuestion && <QuizProgressBar currentStep={currentStep} totalSteps={activeQuestions.length} />}
-          <CardContent className="p-6 md:p-8 space-y-6">
+          <CardContent className="p-6 md:p-8 space-y-6 bg-card">
             {currentQuestion && (
               <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-4 mb-6">
@@ -521,8 +557,9 @@ export default function QuizForm({
                     onClick={handleNext} 
                     className="px-6 py-3 text-base" 
                     disabled={
-                    submissionStatus === 'pending' ||
-                    (currentQuestion.type !== 'textFields' && (!getValues(currentQuestion.name) || (Array.isArray(getValues(currentQuestion.name)) && getValues(currentQuestion.name).length === 0)))
+                        submissionStatus === 'pending' ||
+                        (currentQuestion.type !== 'textFields' && (!getValues(currentQuestion.name) || (Array.isArray(getValues(currentQuestion.name)) && getValues(currentQuestion.name).length === 0))) ||
+                        (currentQuestion.type === 'textFields' && !formIsValid && Object.keys(errors).length > 0) // Check formIsValid only for textFields and if there are errors
                     }
                 >
                     {submissionStatus === 'pending' ? (
@@ -534,10 +571,15 @@ export default function QuizForm({
             </CardFooter>
           )}
         </Card>
-        <p className="text-xs text-center mt-4 text-foreground/60">
-            {footerCopyrightText}
-        </p>
+        {!isPreview && (
+            <p className="text-xs text-center mt-4 text-foreground/60">
+                {footerCopyrightText}
+            </p>
+        )}
       </div>
     </FormProvider>
   );
 }
+
+
+    

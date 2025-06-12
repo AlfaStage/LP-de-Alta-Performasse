@@ -1,11 +1,11 @@
 {
-  "title": "Quiz Padrão - Vitrine Ice Lazer",
+  "title": "Quiz",
   "slug": "default",
   "questions": [
     {
-      "id": "q1_default_main",
+      "id": "q1_default",
       "name": "experienciaPrevia",
-      "icon": "UserCheck",
+      "icon": "User",
       "text": "Você já realizou algum tratamento de depilação a laser anteriormente?",
       "explanation": "Saber sobre suas experiências anteriores nos ajuda a personalizar nossa abordagem.",
       "type": "radio",
@@ -17,16 +17,16 @@
         },
         {
           "value": "nao",
-          "label": "Não, esta é minha primeira vez",
+          "label": "Não, primeira vez",
           "icon": "Sparkles"
         }
       ]
     },
     {
-      "id": "q2_default_main",
+      "id": "q2_default",
       "name": "areasInteresse",
-      "icon": "Target",
-      "text": "Quais áreas do corpo você tem mais interesse em tratar?",
+      "icon": "ShoppingBag",
+      "text": "Quais áreas do corpo você tem mais interesse em tratar com a depilação a laser Ice Lazer?",
       "explanation": "Você pode selecionar mais de uma opção. Escolha as áreas para uma depilação a laser confortável e eficaz.",
       "type": "checkbox",
       "options": [
@@ -38,28 +38,22 @@
         },
         {
           "value": "virilha",
-          "label": "Virilha Completa",
+          "label": "Virilha",
           "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/meia-virilha.png",
-          "dataAiHint": "bikini line"
+          "dataAiHint": "bikini line simple"
         },
         {
-          "value": "pernas",
-          "label": "Pernas Inteiras",
-          "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/pernas-inteiras.png",
-          "dataAiHint": "legs"
-        },
-        {
-          "value": "buco",
-          "label": "Buço",
-          "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/bucco.png",
-          "dataAiHint": "upper lip"
+          "value": "perianal",
+          "label": "Perianal",
+          "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/perianal.png",
+          "dataAiHint": "perianal area"
         }
       ]
     },
     {
-      "id": "q3_default_main",
+      "id": "q3_default",
       "name": "objetivoPrincipal",
-      "icon": "Goal",
+      "icon": "Zap",
       "text": "Qual o seu principal objetivo ao buscar a depilação a laser?",
       "explanation": "Compreender seu objetivo principal nos permite focar no que é mais importante para você.",
       "type": "radio",
@@ -78,9 +72,38 @@
           "value": "praticidade",
           "label": "Praticidade e economia de tempo",
           "explanation": "Liberte-se da rotina de depilação frequente."
+        },
+        {
+          "value": "pele_lisa",
+          "label": "Melhorar a aparência e textura da pele",
+          "explanation": "Conquiste uma pele mais suave e uniforme."
+        }
+      ]
+    },
+    {
+      "id": "final_contact_step",
+      "name": "contato",
+      "icon": "MessageSquare",
+      "text": "Excelente! Para finalizarmos e nossa equipe entrar em contato com as melhores ofertas para você, por favor, deixe seu nome e WhatsApp:",
+      "explanation": "Suas informações estão seguras conosco e serão usadas apenas para o contato sobre nossos serviços.",
+      "type": "textFields",
+      "fields": [
+        {
+          "name": "nomeCompleto",
+          "label": "Seu nome completo",
+          "type": "text",
+          "placeholder": "Ex: Maria Silva",
+          "icon": "User"
+        },
+        {
+          "name": "whatsapp",
+          "label": "Seu WhatsApp (com DDD)",
+          "type": "tel",
+          "placeholder": "Ex: (XX) XXXXX-XXXX ou XXXXXXXXXXX",
+          "icon": "Smartphone"
         }
       ]
     }
   ],
-  "successIcon": "PartyPopper"
+  "successIcon": "CheckCircle"
 }

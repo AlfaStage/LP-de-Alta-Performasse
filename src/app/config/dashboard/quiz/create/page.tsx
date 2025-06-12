@@ -1,6 +1,6 @@
 
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,21 +10,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, Image as ImageIcon, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail } from 'lucide-react';
 import { createQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
 import { APP_BASE_URL } from '@/config/appConfig';
+import QuizForm from '@/components/quiz/QuizForm';
+import { getWhitelabelConfig } from '@/lib/whitelabel'; // For preview logo/footer
+import type { WhitelabelConfig } from '@/types/quiz';
+
 
 const exampleQuestion: QuizQuestion = {
   id: "q_example",
   name: "exampleQuestion",
   icon: "HelpCircle",
   text: "Esta é uma pergunta de exemplo?",
+  explanation: "Esta é uma explicação adicional para a pergunta de exemplo.",
   type: "radio",
   options: [
-    { value: "yes", label: "Sim", icon: "ThumbsUp" },
-    { value: "no", label: "Não", icon: "ThumbsDown" }
+    { value: "yes", label: "Sim", icon: "ThumbsUp", explanation: "Escolha sim se for verdade." },
+    { value: "no", label: "Não", icon: "ThumbsDown", explanation: "Escolha não se for falso." }
   ]
 };
 const exampleQuizJson = JSON.stringify([exampleQuestion], null, 2);
@@ -36,11 +42,23 @@ export default function CreateQuizPage() {
   const [slug, setSlug] = useState('');
   const [questionsJson, setQuestionsJson] = useState('');
   const [interactiveQuestions, setInteractiveQuestions] = useState<QuizQuestion[]>([]);
-  const [currentTab, setCurrentTab] = useState<'json' | 'interactive'>('interactive');
+  const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive');
   
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [previewQuizData, setPreviewQuizData] = useState<QuizQuestion[] | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [whitelabelSettings, setWhitelabelSettings] = useState<Partial<WhitelabelConfig>>({});
+
+  useEffect(() => {
+    async function fetchPreviewConfig() {
+      const config = await getWhitelabelConfig();
+      setWhitelabelSettings(config);
+    }
+    fetchPreviewConfig();
+  }, []);
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawSlug = e.target.value;
@@ -58,6 +76,7 @@ export default function CreateQuizPage() {
         id: `q_${interactiveQuestions.length + 1}_${Date.now().toString(36)}`, 
         name: `question${interactiveQuestions.length + 1}`, 
         text: '', 
+        explanation: '',
         type: 'radio', 
         icon: 'HelpCircle', 
         options: [], 
@@ -69,7 +88,7 @@ export default function CreateQuizPage() {
   const updateQuestion = (index: number, field: keyof QuizQuestion, value: any) => {
     const newQuestions = [...interactiveQuestions];
     newQuestions[index] = { ...newQuestions[index], [field]: value };
-    if (field === 'type') { // Reset options/fields if type changes
+    if (field === 'type') { 
         newQuestions[index].options = [];
         newQuestions[index].fields = [];
     }
@@ -83,7 +102,7 @@ export default function CreateQuizPage() {
   const addOption = (qIndex: number) => {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
-    question.options = [...(question.options || []), { value: `opt${(question.options?.length || 0) + 1}`, label: '' }];
+    question.options = [...(question.options || []), { value: `opt${(question.options?.length || 0) + 1}_${Date.now().toString(36)}`, label: '', icon: undefined, explanation: '', imageUrl: '', dataAiHint: '' }];
     setInteractiveQuestions(newQuestions);
   };
 
@@ -108,7 +127,7 @@ export default function CreateQuizPage() {
   const addFormField = (qIndex: number) => {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
-    question.fields = [...(question.fields || []), { name: `field${(question.fields?.length || 0) + 1}`, label: '', type: 'text', icon: 'Type' }];
+    question.fields = [...(question.fields || []), { name: `field${(question.fields?.length || 0) + 1}_${Date.now().toString(36)}`, label: '', type: 'text', placeholder: '', icon: 'Type' }];
     setInteractiveQuestions(newQuestions);
   };
 
@@ -130,6 +149,54 @@ export default function CreateQuizPage() {
     }
   };
 
+  const handleTabChange = (newTab: 'interactive' | 'json') => {
+    if (newTab === 'json' && currentTab === 'interactive') {
+      setQuestionsJson(JSON.stringify(interactiveQuestions, null, 2));
+    } else if (newTab === 'interactive' && currentTab === 'json') {
+      try {
+        if (questionsJson.trim()) {
+          const parsed = JSON.parse(questionsJson);
+          if (Array.isArray(parsed)) {
+            setInteractiveQuestions(parsed);
+          } else {
+            alert("JSON inválido: deve ser um array de perguntas.");
+          }
+        } else {
+          setInteractiveQuestions([]); // Clear if JSON is empty
+        }
+      } catch (e) {
+        alert("Erro ao parsear JSON. Verifique a sintaxe.");
+      }
+    }
+    setCurrentTab(newTab);
+  };
+
+  const handleOpenPreview = () => {
+    let questionsForPreview: QuizQuestion[];
+    if (currentTab === 'interactive') {
+      questionsForPreview = interactiveQuestions;
+    } else {
+      try {
+        questionsForPreview = questionsJson.trim() ? JSON.parse(questionsJson) : [];
+        if (!Array.isArray(questionsForPreview)) {
+          alert("JSON inválido para pré-visualização.");
+          return;
+        }
+      } catch (e) {
+        alert("JSON inválido para pré-visualização.");
+        return;
+      }
+    }
+    setPreviewQuizData([...questionsForPreview, defaultContactStep]);
+    setIsPreviewModalOpen(true);
+  };
+  
+  const mockSubmitOverride = async (data: Record<string, any>) => {
+    console.log("Preview Submit:", data);
+    alert("Submissão simulada! Verifique o console para os dados.");
+    // In a real preview, you might want to show a success-like message in the modal
+  };
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -137,8 +204,13 @@ export default function CreateQuizPage() {
     setSuccess(null);
     setIsLoading(true);
 
-    if (!title.trim() || !slug.trim()) {
-      setError("Título e slug são obrigatórios.");
+    if (!title.trim()) {
+      setError("Título é obrigatório.");
+      setIsLoading(false);
+      return;
+    }
+     if (!slug.trim()) {
+      setError("Slug é obrigatório.");
       setIsLoading(false);
       return;
     }
@@ -146,47 +218,43 @@ export default function CreateQuizPage() {
     let parsedQuestions: QuizQuestion[];
     if (currentTab === 'json') {
       if (!questionsJson.trim()) {
-        setError("JSON das perguntas é obrigatório no modo JSON.");
-        setIsLoading(false);
-        return;
-      }
-      try {
-        parsedQuestions = JSON.parse(questionsJson);
-        if (!Array.isArray(parsedQuestions)) {
-          setError("O JSON das perguntas deve ser um array.");
+         parsedQuestions = []; // Allow empty questions if creating
+      } else {
+        try {
+          parsedQuestions = JSON.parse(questionsJson);
+          if (!Array.isArray(parsedQuestions)) {
+            setError("O JSON das perguntas deve ser um array.");
+            setIsLoading(false);
+            return;
+          }
+        } catch (jsonError) {
+          setError("JSON das perguntas inválido. Verifique a sintaxe.");
           setIsLoading(false);
           return;
         }
-      } catch (jsonError) {
-        setError("JSON das perguntas inválido. Verifique a sintaxe.");
-        setIsLoading(false);
-        return;
       }
     } else {
-      if (interactiveQuestions.length === 0) {
-        setError("Adicione ao menos uma pergunta no construtor interativo.");
-        setIsLoading(false);
-        return;
-      }
       parsedQuestions = interactiveQuestions;
     }
     
-    if (parsedQuestions.length === 0 && currentTab === 'json') {
-         setError("O JSON das perguntas não pode ser um array vazio.");
-         setIsLoading(false);
-         return;
-    }
+    // No longer checking for empty questions here, server-side will add contact step regardless
+    // if (parsedQuestions.length === 0) {
+    //      setError("Adicione ao menos uma pergunta no construtor interativo ou no JSON.");
+    //      setIsLoading(false);
+    //      return;
+    // }
 
 
     try {
       const result = await createQuizAction({ title, slug, questions: parsedQuestions });
       if (result.success) {
         setSuccess(`Quiz "${title}" criado com sucesso! Acessível em /${result.slug}`);
-        setTitle('');
-        setSlug('');
-        setQuestionsJson('');
-        setInteractiveQuestions([]);
-        // router.push('/config/dashboard'); // Optionally redirect
+        // Optionally reset fields or redirect
+        // setTitle('');
+        // setSlug('');
+        // setQuestionsJson('');
+        // setInteractiveQuestions([]);
+        router.push(`/config/dashboard/quiz/edit/${result.slug}`);
       } else {
         setError(result.message || 'Falha ao criar o quiz.');
       }
@@ -200,7 +268,12 @@ export default function CreateQuizPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold md:text-3xl">Criar Novo Quiz</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-semibold md:text-3xl">Criar Novo Quiz</h1>
+         <Button onClick={handleOpenPreview} variant="outline" disabled={!title.trim()}>
+            <Eye className="mr-2 h-4 w-4" /> Pré-visualizar Quiz
+        </Button>
+      </div>
       <form onSubmit={handleSubmit}>
         <Card className="shadow-lg mb-6">
             <CardHeader>
@@ -236,7 +309,7 @@ export default function CreateQuizPage() {
             </CardContent>
         </Card>
 
-        <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as 'json' | 'interactive')} className="mb-6">
+        <Tabs value={currentTab} onValueChange={(value) => handleTabChange(value as 'json' | 'interactive')} className="mb-6">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="interactive"><Wand2 className="mr-2 h-4 w-4" />Construtor Interativo</TabsTrigger>
                 <TabsTrigger value="json"><FileJson className="mr-2 h-4 w-4" />Entrada JSON</TabsTrigger>
@@ -251,82 +324,113 @@ export default function CreateQuizPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {interactiveQuestions.map((q, qIndex) => (
-                        <Card key={q.id} className="p-4 space-y-3 bg-muted/30">
-                            <div className="flex justify-between items-center">
-                                <Label className="text-base font-semibold">Pergunta {qIndex + 1}</Label>
+                        <Card key={q.id} className="p-4 space-y-3 bg-muted/30 shadow-md">
+                            <div className="flex justify-between items-center mb-3">
+                                <Label className="text-lg font-semibold text-foreground">Pergunta {qIndex + 1}</Label>
                                 <Button variant="ghost" size="icon" onClick={() => removeQuestion(qIndex)} className="text-destructive hover:text-destructive/80">
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-5 w-5" /> <span className="sr-only">Remover Pergunta</span>
                                 </Button>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <Input placeholder="ID da Pergunta (ex: q1_pele)" value={q.id} onChange={(e) => updateQuestion(qIndex, 'id', e.target.value)} />
-                                <Input placeholder="Nome/Chave (ex: tipoPele)" value={q.name} onChange={(e) => updateQuestion(qIndex, 'name', e.target.value)} />
-                            </div>
-                            <Textarea placeholder="Texto da Pergunta" value={q.text} onChange={(e) => updateQuestion(qIndex, 'text', e.target.value)} />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <Input placeholder="Ícone Lucide (ex: User)" value={q.icon || ''} onChange={(e) => updateQuestion(qIndex, 'icon', e.target.value)} />
-                                <Select value={q.type} onValueChange={(value) => updateQuestion(qIndex, 'type', value)}>
-                                    <SelectTrigger><SelectValue placeholder="Tipo de Pergunta" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="radio">Radio (Escolha Única)</SelectItem>
-                                        <SelectItem value="checkbox">Checkbox (Múltipla Escolha)</SelectItem>
-                                        <SelectItem value="textFields">Campos de Texto</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><Label htmlFor={`q-${qIndex}-id`}>ID da Pergunta</Label><Input id={`q-${qIndex}-id`} placeholder="Ex: q1_pele (único)" value={q.id} onChange={(e) => updateQuestion(qIndex, 'id', e.target.value)} /></div>
+                                <div><Label htmlFor={`q-${qIndex}-name`}>Nome/Chave (form)</Label><Input id={`q-${qIndex}-name`} placeholder="Ex: tipoPele" value={q.name} onChange={(e) => updateQuestion(qIndex, 'name', e.target.value)} /></div>
                             </div>
 
-                            {q.type === 'radio' || q.type === 'checkbox' ? (
-                            <div className="space-y-2 pl-4 border-l-2 border-primary/30">
-                                <Label className="text-sm font-medium">Opções:</Label>
-                                {(q.options || []).map((opt, oIndex) => (
-                                <div key={oIndex} className="flex items-center gap-2">
-                                    <Input placeholder="Valor da Opção" value={opt.value} onChange={(e) => updateOption(qIndex, oIndex, 'value', e.target.value)} className="flex-1" />
-                                    <Input placeholder="Label da Opção" value={opt.label} onChange={(e) => updateOption(qIndex, oIndex, 'label', e.target.value)} className="flex-1" />
-                                    {/* Placeholder for Icon, ImageUrl, etc. in future iteration */}
-                                    <Button variant="ghost" size="icon" onClick={() => removeOption(qIndex, oIndex)} className="text-destructive hover:text-destructive/80">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                            <div><Label htmlFor={`q-${qIndex}-text`}>Texto da Pergunta</Label><Textarea id={`q-${qIndex}-text`} placeholder="Qual o seu tipo de pele?" value={q.text} onChange={(e) => updateQuestion(qIndex, 'text', e.target.value)} /></div>
+                            <div><Label htmlFor={`q-${qIndex}-explanation`}>Explicação (Opcional)</Label><Textarea id={`q-${qIndex}-explanation`} placeholder="Ajude o usuário a entender a pergunta." value={q.explanation || ''} onChange={(e) => updateQuestion(qIndex, 'explanation', e.target.value)} /></div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor={`q-${qIndex}-icon`}>Ícone da Pergunta (Lucide)</Label>
+                                    <Input id={`q-${qIndex}-icon`} placeholder="Ex: UserCircle" value={q.icon || ''} onChange={(e) => updateQuestion(qIndex, 'icon', e.target.value)} />
                                 </div>
-                                ))}
-                                <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)} className="mt-1">
-                                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Opção
-                                </Button>
-                            </div>
-                            ) : null}
-
-                            {q.type === 'textFields' ? (
-                            <div className="space-y-2 pl-4 border-l-2 border-primary/30">
-                                <Label className="text-sm font-medium">Campos de Texto:</Label>
-                                {(q.fields || []).map((field, fIndex) => (
-                                <div key={fIndex} className="space-y-1 p-2 border rounded bg-background">
-                                    <div className="flex items-center gap-2">
-                                    <Input placeholder="Nome/Chave do Campo" value={field.name} onChange={(e) => updateFormField(qIndex, fIndex, 'name', e.target.value)} className="flex-1"/>
-                                    <Input placeholder="Label do Campo" value={field.label} onChange={(e) => updateFormField(qIndex, fIndex, 'label', e.target.value)} className="flex-1"/>
-                                    <Button variant="ghost" size="icon" onClick={() => removeFormField(qIndex, fIndex)} className="text-destructive hover:text-destructive/80">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                    <Select value={field.type} onValueChange={(val) => updateFormField(qIndex, fIndex, 'type', val as 'text'|'tel'|'email')}>
-                                        <SelectTrigger className="flex-1"><SelectValue placeholder="Tipo do Campo" /></SelectTrigger>
+                                <div>
+                                    <Label htmlFor={`q-${qIndex}-type`}>Tipo de Pergunta</Label>
+                                    <Select value={q.type} onValueChange={(value) => updateQuestion(qIndex, 'type', value)}>
+                                        <SelectTrigger id={`q-${qIndex}-type`}><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="text">Texto</SelectItem>
-                                            <SelectItem value="tel">Telefone</SelectItem>
-                                            <SelectItem value="email">Email</SelectItem>
+                                            <SelectItem value="radio"><ListChecks className="mr-2 h-4 w-4 inline-block" />Radio (Escolha Única)</SelectItem>
+                                            <SelectItem value="checkbox"><MessageSquareText className="mr-2 h-4 w-4 inline-block" />Checkbox (Múltipla Escolha)</SelectItem>
+                                            <SelectItem value="textFields"><Edit3 className="mr-2 h-4 w-4 inline-block" />Campos de Texto</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <Input placeholder="Ícone Lucide (ex: User)" value={field.icon || ''} onChange={(e) => updateFormField(qIndex, fIndex, 'icon', e.target.value)} className="flex-1" />
-                                    </div>
                                 </div>
-                                ))}
-                                <Button type="button" variant="outline" size="sm" onClick={() => addFormField(qIndex)} className="mt-1">
-                                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Campo de Texto
-                                </Button>
                             </div>
-                            ) : null}
+
+                            {/* Opções para Radio/Checkbox */}
+                            {(q.type === 'radio' || q.type === 'checkbox') && (
+                            <Card className="p-3 mt-2 bg-background/70">
+                                <CardHeader className="p-2"><CardTitle className="text-md">Opções da Pergunta</CardTitle></CardHeader>
+                                <CardContent className="space-y-3 p-2">
+                                    {(q.options || []).map((opt, oIndex) => (
+                                    <Card key={oIndex} className="p-3 space-y-2 bg-muted/40">
+                                        <div className="flex justify-between items-center">
+                                            <Label className="text-sm font-medium">Opção {oIndex + 1}</Label>
+                                            <Button variant="ghost" size="sm" onClick={() => removeOption(qIndex, oIndex)} className="text-destructive hover:text-destructive/80 -mr-2">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-value`} className="text-xs">Valor</Label><Input id={`q-${qIndex}-opt-${oIndex}-value`} placeholder="Ex: opcao_a" value={opt.value} onChange={(e) => updateOption(qIndex, oIndex, 'value', e.target.value)} /></div>
+                                            <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-opt-${oIndex}-label`} placeholder="Ex: Opção A" value={opt.label} onChange={(e) => updateOption(qIndex, oIndex, 'label', e.target.value)} /></div>
+                                        </div>
+                                        <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-icon`} className="text-xs">Ícone (Lucide)</Label><Input id={`q-${qIndex}-opt-${oIndex}-icon`} placeholder="Ex: Smile (Opcional)" value={opt.icon || ''} onChange={(e) => updateOption(qIndex, oIndex, 'icon', e.target.value)} /></div>
+                                        <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-explanation`} className="text-xs">Explicação (Opcional)</Label><Textarea id={`q-${qIndex}-opt-${oIndex}-explanation`} placeholder="Detalhe esta opção" value={opt.explanation || ''} onChange={(e) => updateOption(qIndex, oIndex, 'explanation', e.target.value)} rows={2}/></div>
+                                        <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-imageUrl`} className="text-xs">URL da Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-imageUrl`} placeholder="https://exemplo.com/imagem.png" value={opt.imageUrl || ''} onChange={(e) => updateOption(qIndex, oIndex, 'imageUrl', e.target.value)} /></div>
+                                        <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-dataAiHint`} className="text-xs">Dica IA Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-dataAiHint`} placeholder="Ex: pele clara" value={opt.dataAiHint || ''} onChange={(e) => updateOption(qIndex, oIndex, 'dataAiHint', e.target.value)} /></div>
+                                    </Card>
+                                    ))}
+                                    <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)} className="mt-2 w-full">
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Opção
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                            )}
+
+                            {/* Campos para textFields */}
+                            {q.type === 'textFields' && (
+                            <Card className="p-3 mt-2 bg-background/70">
+                                <CardHeader className="p-2"><CardTitle className="text-md">Campos de Entrada</CardTitle></CardHeader>
+                                <CardContent className="space-y-3 p-2">
+                                    {(q.fields || []).map((field, fIndex) => (
+                                    <Card key={fIndex} className="p-3 space-y-2 bg-muted/40">
+                                        <div className="flex justify-between items-center">
+                                             <Label className="text-sm font-medium">Campo {fIndex + 1}</Label>
+                                            <Button variant="ghost" size="sm" onClick={() => removeFormField(qIndex, fIndex)} className="text-destructive hover:text-destructive/80 -mr-2">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <div><Label htmlFor={`q-${qIndex}-field-${fIndex}-name`} className="text-xs">Nome/Chave (form)</Label><Input id={`q-${qIndex}-field-${fIndex}-name`} placeholder="Ex: nomeCompleto" value={field.name} onChange={(e) => updateFormField(qIndex, fIndex, 'name', e.target.value)} /></div>
+                                            <div><Label htmlFor={`q-${qIndex}-field-${fIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-field-${fIndex}-label`} placeholder="Ex: Nome Completo" value={field.label} onChange={(e) => updateFormField(qIndex, fIndex, 'label', e.target.value)} /></div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <div>
+                                                <Label htmlFor={`q-${qIndex}-field-${fIndex}-type`} className="text-xs">Tipo do Campo</Label>
+                                                <Select value={field.type} onValueChange={(val) => updateFormField(qIndex, fIndex, 'type', val as 'text'|'tel'|'email')}>
+                                                    <SelectTrigger id={`q-${qIndex}-field-${fIndex}-type`}><SelectValue placeholder="Tipo do Campo" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="text"><Text className="mr-2 h-4 w-4 inline-block" />Texto</SelectItem>
+                                                        <SelectItem value="tel"><Phone className="mr-2 h-4 w-4 inline-block" />Telefone</SelectItem>
+                                                        <SelectItem value="email"><Mail className="mr-2 h-4 w-4 inline-block" />Email</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div><Label htmlFor={`q-${qIndex}-field-${fIndex}-icon`} className="text-xs">Ícone (Lucide)</Label><Input id={`q-${qIndex}-field-${fIndex}-icon`} placeholder="Ex: User (Opcional)" value={field.icon || ''} onChange={(e) => updateFormField(qIndex, fIndex, 'icon', e.target.value)} /></div>
+                                        </div>
+                                        <div><Label htmlFor={`q-${qIndex}-field-${fIndex}-placeholder`} className="text-xs">Placeholder (Opcional)</Label><Input id={`q-${qIndex}-field-${fIndex}-placeholder`} placeholder="Ex: Digite seu nome" value={field.placeholder || ''} onChange={(e) => updateFormField(qIndex, fIndex, 'placeholder', e.target.value)} /></div>
+                                    </Card>
+                                    ))}
+                                    <Button type="button" variant="outline" size="sm" onClick={() => addFormField(qIndex)} className="mt-2 w-full">
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Campo de Entrada
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                            )}
                         </Card>
                         ))}
-                        <Button type="button" onClick={addQuestion} variant="outline" className="w-full mt-4 py-3">
+                        <Button type="button" onClick={addQuestion} variant="outline" className="w-full mt-6 py-3 text-base shadow-sm">
                             <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Nova Pergunta
                         </Button>
                     </CardContent>
@@ -347,13 +451,13 @@ export default function CreateQuizPage() {
                             onChange={(e) => setQuestionsJson(e.target.value)}
                             placeholder="Cole aqui o array de objetos das perguntas em formato JSON."
                             rows={15}
-                            className="font-mono text-xs"
+                            className="font-mono text-xs bg-muted/20"
                         />
                         <Alert variant="default" className="mt-2">
                             <Info className="h-4 w-4" />
                             <AlertTitle>Exemplo de Estrutura JSON para Perguntas</AlertTitle>
                             <AlertDescription>
-                            <p className="mb-2">Cada pergunta deve ser um objeto com `id`, `name`, `text`, `type`, e `options` (para radio/checkbox) ou `fields` (para textFields). Nomes de ícones devem ser de `lucide-react` (ex: "User", "Smile").</p>
+                            <p className="mb-2">Cada pergunta deve ser um objeto com `id`, `name`, `text`, `type`, `icon` (opcional), `explanation` (opcional), e `options` (para radio/checkbox) ou `fields` (para textFields). Nomes de ícones devem ser de `lucide-react`.</p>
                             <details>
                                 <summary className="cursor-pointer text-primary hover:underline">Ver exemplo JSON (sem etapa de contato)</summary>
                                 <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-x-auto">
@@ -383,7 +487,7 @@ export default function CreateQuizPage() {
                     <AlertDescription>{success}</AlertDescription>
                 </Alert>
                 )}
-                <Button type="submit" className="text-base py-3" disabled={isLoading}>
+                <Button type="submit" className="text-base py-3 px-6 shadow-md" disabled={isLoading}>
                 {isLoading ? (
                     <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -399,6 +503,38 @@ export default function CreateQuizPage() {
             </CardFooter>
         </Card>
       </form>
+
+      <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
+        <DialogContent className="max-w-2xl w-[95vw] h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle>Pré-visualização do Quiz: {title || "Novo Quiz"}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-grow overflow-y-auto">
+            {previewQuizData && whitelabelSettings.logoUrl && (
+              <QuizForm
+                quizQuestions={previewQuizData}
+                quizSlug={slug || "preview-slug"}
+                quizTitle={title || "Pré-visualização do Quiz"}
+                logoUrl={whitelabelSettings.logoUrl}
+                footerCopyrightText={whitelabelSettings.footerCopyrightText}
+                facebookPixelId="" // Not needed for preview
+                googleAnalyticsId="" // Not needed for preview
+                onSubmitOverride={mockSubmitOverride}
+                onAbandonmentOverride={async () => { console.log("Preview abandonment") }}
+                isPreview={true}
+              />
+            )}
+          </div>
+          <DialogFooter className="p-4 border-t">
+            <DialogClose asChild>
+              <Button variant="outline">Fechar Pré-visualização</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
+
+    
