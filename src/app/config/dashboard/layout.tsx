@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Home, ListPlus, Settings, LogOut, ShieldCheck } from "lucide-react";
 import { logoutAction } from "../actions";
-import { APP_BASE_URL } from "@/config/appConfig";
+// Removido APP_BASE_URL pois os links serão relativos
 
 export const metadata: Metadata = {
   title: "Dashboard de Configuração",
@@ -27,7 +27,7 @@ export default function DashboardLayout({
       <div className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href={`${APP_BASE_URL}/config/dashboard`} className="flex items-center gap-2 font-semibold">
+            <Link href="/config/dashboard" className="flex items-center gap-2 font-semibold">
               <ShieldCheck className="h-6 w-6 text-primary" />
               <span className="">Painel Ice Lazer</span>
             </Link>
@@ -35,14 +35,14 @@ export default function DashboardLayout({
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
               <Link
-                href={`${APP_BASE_URL}/config/dashboard`}
+                href="/config/dashboard"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Home className="h-4 w-4" />
                 Início
               </Link>
               <Link
-                href={`${APP_BASE_URL}/config/dashboard/quiz/create`}
+                href="/config/dashboard/quiz/create"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <ListPlus className="h-4 w-4" />
@@ -84,21 +84,21 @@ export default function DashboardLayout({
             <SheetContent side="left" className="flex flex-col">
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
-                  href={`${APP_BASE_URL}/config/dashboard`}
+                  href="/config/dashboard"
                   className="flex items-center gap-2 text-lg font-semibold mb-4"
                 >
                   <ShieldCheck className="h-6 w-6 text-primary" />
                   <span>Painel Ice Lazer</span>
                 </Link>
                 <Link
-                  href={`${APP_BASE_URL}/config/dashboard`}
+                  href="/config/dashboard"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Home className="h-5 w-5" />
                   Início
                 </Link>
                 <Link
-                  href={`${APP_BASE_URL}/config/dashboard/quiz/create`}
+                  href="/config/dashboard/quiz/create"
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <ListPlus className="h-5 w-5" />

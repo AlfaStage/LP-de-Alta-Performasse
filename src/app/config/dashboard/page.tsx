@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, ListPlus, PlusCircle } from 'lucide-react';
 import { getQuizzesList } from './quiz/actions';
-import { APP_BASE_URL } from '@/config/appConfig';
+// Removido APP_BASE_URL pois os links serão relativos ou à raiz
 
 export default async function DashboardPage() {
   const quizzes = await getQuizzesList();
@@ -13,7 +13,7 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold md:text-3xl">Visão Geral do Dashboard</h1>
-        <Link href={`${APP_BASE_URL}/config/dashboard/quiz/create`}>
+        <Link href="/config/dashboard/quiz/create">
           <Button className="flex items-center gap-2">
             <ListPlus className="h-5 w-5" />
             Criar Novo Quiz
@@ -38,7 +38,7 @@ export default async function DashboardPage() {
                     <span className="font-medium">{quiz.title} (/{quiz.slug})</span>
                   </div>
                   <div className="space-x-2">
-                    <Link href={`${APP_BASE_URL}/${quiz.slug}`} target="_blank">
+                    <Link href={`/${quiz.slug}`} target="_blank">
                        <Button variant="outline" size="sm">Visualizar</Button>
                     </Link>
                     {/* <Link href={`/config/dashboard/quiz/edit/${quiz.slug}`}>
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <p className="mb-2">Nenhum quiz encontrado.</p>
-              <Link href={`${APP_BASE_URL}/config/dashboard/quiz/create`}>
+              <Link href="/config/dashboard/quiz/create">
                 <Button variant="secondary">
                   <PlusCircle className="mr-2 h-4 w-4" /> Criar seu primeiro quiz
                 </Button>
