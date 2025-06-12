@@ -11,16 +11,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { quizQuestions, successIcon as SuccessIcon } from '@/config/quizConfig';
+import { getSuccessIcon } from '@/config/quizConfig'; // Keep for success icon
 import QuizProgressBar from './QuizProgressBar';
 import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent } from '@/lib/fpixel';
-import { event as gaEvent } from '@/lib/gtag'; // Import GA event tracker
+import { event as gaEvent } from '@/lib/gtag';
 import { logQuizAbandonment, submitQuizData } from '@/app/actions';
-import { ChevronLeft, ChevronRight, Send, Info, CheckCircle, Loader2, Smartphone, Globe as GlobeIcon, Instagram as InstagramIcon } from 'lucide-react';
+import * as LucideIcons from 'lucide-react'; // Import all for dynamic icons
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
 import { areAnyPixelsConfigured } from '@/config/pixelConfig';
+import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
+import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig';
 
 type FormData = Record<string, any>;
 
@@ -29,8 +31,13 @@ const contactSchema = z.object({
   whatsapp: z.string().min(10, { message: "WhatsApp inválido. Inclua o DDD." }).regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, { message: "Formato de WhatsApp inválido. Use (XX) XXXXX-XXXX ou XXXXXXXXXXX." }),
 });
 
+interface QuizFormProps {
+  quizQuestions: QuizQuestion[];
+  quizSlug: string;
+  quizTitle?: string;
+}
 
-export default function QuizForm() {
+export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }: QuizFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
   const [animationClass, setAnimationClass] = useState('animate-slide-in');
@@ -38,39 +45,50 @@ export default function QuizForm() {
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const { toast } = useToast();
 
+  const SuccessIcon = getSuccessIcon();
+
   const methods = useForm<FormData>({
-    resolver: currentStep === quizQuestions.length -1 && quizQuestions[currentStep]?.type === 'textFields' ? zodResolver(contactSchema) : undefined,
+    resolver: quizQuestions && quizQuestions.length > 0 && currentStep === quizQuestions.length -1 && quizQuestions[currentStep]?.type === 'textFields' ? zodResolver(contactSchema) : undefined,
     mode: 'onChange',
   });
 
   const { control, handleSubmit, setValue, getValues, trigger, formState: { errors } } = methods;
 
   const activeQuestions = useMemo(() => {
+    if (!quizQuestions) return [];
+    // Simplified condition handling for now. Complex conditions from JSON are hard.
     return quizQuestions.filter(q => !q.condition || q.condition(formData));
-  }, [formData]);
+  }, [formData, quizQuestions]);
   
   const currentQuestion = activeQuestions[currentStep];
 
   useEffect(() => {
-    // Track Quiz Start for both FB and GA
+    if (!quizQuestions || quizQuestions.length === 0) return;
+    const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
     if (areAnyPixelsConfigured()) {
-      console.log("FB Pixel: QuizStart event triggered.");
-      fbTrackCustomEvent('QuizStart', { quiz_name: 'IceLazerLeadFilter_V2' });
+      console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking);
+      fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking });
     }
-    console.log("GA: quiz_start event triggered.");
-    gaEvent({ action: 'quiz_start', category: 'Quiz', label: 'IceLazerLeadFilter_V2_Start' });
-  }, []);
+    console.log("GA: quiz_start event triggered for", quizNameForTracking);
+    gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
+  }, [quizSlug, quizQuestions]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success') {
-        const webhookUrl = process.env.NEXT_PUBLIC_QUIZ_ABANDONMENT_WEBHOOK_URL || "YOUR_WEBHOOK_URL_CLIENT";
-        if (webhookUrl !== "YOUR_WEBHOOK_URL_CLIENT" && navigator.sendBeacon) {
-            const dataToLog = { ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: "IceLazerLeadFilter_Abandonment_V2" };
+      if (!isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
+        const webhookUrl = CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
+        if (webhookUrl && webhookUrl !== "YOUR_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL") {
+          const dataToLog = { ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}`, quizSlug };
+          if (navigator.sendBeacon) {
             const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
             navigator.sendBeacon(webhookUrl, blob);
-        } else if (webhookUrl === "YOUR_WEBHOOK_URL_CLIENT") { 
-            logQuizAbandonment({ ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: "IceLazerLeadFilter_Abandonment_V2" });
+          } else {
+            // Fallback for browsers that don't support sendBeacon - less reliable
+            fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
+          }
+        } else {
+          // If client-side URL isn't set, try server-side action (might not always execute on page close)
+           logQuizAbandonment({ ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}` }, quizSlug);
         }
       }
     };
@@ -79,10 +97,11 @@ export default function QuizForm() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [formData, currentStep, isQuizCompleted, currentQuestion, getValues, submissionStatus]);
+  }, [formData, currentStep, isQuizCompleted, currentQuestion, getValues, submissionStatus, quizSlug, quizQuestions]);
 
   const handleNext = async () => {
-    if (submissionStatus === 'pending') return;
+    if (submissionStatus === 'pending' || !currentQuestion) return;
+    const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
 
     let stepIsValid = true;
     if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
@@ -101,7 +120,7 @@ export default function QuizForm() {
       question_id: currentQuestion.id,
       answer: getValues(currentQuestion.name),
       step: currentStep + 1,
-      quiz_name: 'IceLazerLeadFilter_V2'
+      quiz_name: quizNameForTracking
     };
     const gaAnswerData = {
       category: 'Quiz',
@@ -109,9 +128,8 @@ export default function QuizForm() {
       question_id: currentQuestion.id,
       answer: getValues(currentQuestion.name)?.toString(),
       step_number: currentStep + 1,
-      quiz_name: 'IceLazerLeadFilter_V2'
+      quiz_name: quizNameForTracking
     };
-
 
     if (stepIsValid && currentStep < activeQuestions.length - 1) {
       setAnimationClass('animate-slide-out');
@@ -125,16 +143,14 @@ export default function QuizForm() {
       }
       console.log("GA: question_answered event triggered.", gaAnswerData);
       gaEvent({ action: 'question_answered', ...gaAnswerData });
-
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
-      // Last question before submission
       if (areAnyPixelsConfigured()) {
         console.log("FB Pixel: QuestionAnswered event triggered (last question).", answerData);
         fbTrackEvent('QuestionAnswered', {
           question_id: currentQuestion.id,
           answer: getValues(currentQuestion.fields?.map(f => f.name) || []),
           step: currentStep + 1,
-          quiz_name: 'IceLazerLeadFilter_V2'
+          quiz_name: quizNameForTracking
         });
       }
       const lastGaAnswerData = {
@@ -143,7 +159,7 @@ export default function QuizForm() {
         question_id: currentQuestion.id,
         answer: getValues(currentQuestion.fields?.map(f => f.name) || [])?.toString(),
         step_number: currentStep + 1,
-        quiz_name: 'IceLazerLeadFilter_V2'
+        quiz_name: quizNameForTracking
       };
       console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
       gaEvent({ action: 'question_answered', ...lastGaAnswerData });
@@ -169,9 +185,10 @@ export default function QuizForm() {
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     if (submissionStatus === 'pending') return;
+    const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
 
     setSubmissionStatus('pending');
-    const finalData = { ...formData, ...data}; 
+    const finalData = { ...formData, ...data, quizSlug, quizTitle }; 
 
     try {
         const result = await submitQuizData(finalData);
@@ -181,24 +198,24 @@ export default function QuizForm() {
             setSubmissionStatus('success');
             
             const leadDataFb = {
-                content_name: 'IceLazerLeadFilter_V2_Submission',
+                content_name: `${quizNameForTracking}_Submission`,
                 value: 50.00, 
                 currency: 'BRL', 
                 lead_name: finalData.nomeCompleto,
-                lead_whatsapp: finalData.whatsapp // Ensure whatsapp is included
+                lead_whatsapp: finalData.whatsapp
             };
-            const quizCompleteDataFb = { quiz_name: 'IceLazerLeadFilter_V2', ...finalData };
+            const quizCompleteDataFb = { quiz_name: quizNameForTracking, ...finalData };
             
             const leadDataGa = {
                 category: 'Quiz',
-                label: 'IceLazerLeadFilter_V2_Lead',
-                value: 50, // GA typically uses integers for value if not currency
+                label: `${quizNameForTracking}_Lead`,
+                value: 50,
                 lead_name: finalData.nomeCompleto,
             };
             const quizCompleteDataGa = {
                 category: 'Quiz',
-                label: 'IceLazerLeadFilter_V2_Complete',
-                quiz_name: 'IceLazerLeadFilter_V2',
+                label: `${quizNameForTracking}_Complete`,
+                quiz_name: quizNameForTracking,
                  ...finalData 
             };
 
@@ -244,10 +261,15 @@ export default function QuizForm() {
     }
   };
   
+  const getIconComponent = (iconName?: keyof typeof LucideIcons): React.ElementType | undefined => {
+    if (!iconName) return undefined;
+    return LucideIcons[iconName];
+  };
+  
   const loadingJsx = (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <Alert>
-        <Info className="h-4 w-4" />
+        <LucideIcons.Info className="h-4 w-4" />
         <AlertTitle>Carregando Quiz...</AlertTitle>
         <AlertDescription>
           Por favor, aguarde enquanto preparamos as perguntas.
@@ -256,9 +278,26 @@ export default function QuizForm() {
     </div>
   );
 
-  if (!currentQuestion && !isQuizCompleted) {
+  if ((!quizQuestions || quizQuestions.length === 0) && !isQuizCompleted) {
     return loadingJsx;
   }
+  
+  if (!currentQuestion && !isQuizCompleted && quizQuestions && quizQuestions.length > 0) {
+      // This might happen if activeQuestions becomes empty after filtering,
+      // or if quizQuestions is initially set but then becomes empty.
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+          <Alert variant="destructive">
+            <LucideIcons.AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Erro no Quiz</AlertTitle>
+            <AlertDescription>
+              Não foi possível carregar as perguntas do quiz. Tente recarregar a página.
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
+  }
+
 
   if (isQuizCompleted && submissionStatus === 'success') {
     return (
@@ -284,11 +323,11 @@ export default function QuizForm() {
             <div className="pt-4 space-y-3">
               <p className="text-sm text-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
               <Link href="https://espacoicelaser.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                <GlobeIcon className="mr-2 h-5 w-5" />
+                <LucideIcons.Globe className="mr-2 h-5 w-5" />
                 Visite nosso site
               </Link>
               <Link href="https://www.instagram.com/icelaseroficial/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                <InstagramIcon className="mr-2 h-5 w-5" />
+                <LucideIcons.Instagram className="mr-2 h-5 w-5" />
                 Siga-nos no Instagram
               </Link>
             </div>
@@ -318,7 +357,7 @@ export default function QuizForm() {
                   className="h-auto w-28 md:w-36"
                 />
                 <div>
-                    <CardTitle className="text-3xl font-headline text-primary">Quiz</CardTitle>
+                    <CardTitle className="text-3xl font-headline text-primary">{quizTitle}</CardTitle>
                     <CardDescription className="text-primary/80">Descubra o tratamento ideal para você!</CardDescription>
                 </div>
             </div>
@@ -329,7 +368,7 @@ export default function QuizForm() {
               <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-4 mb-6">
                   <div className="flex items-start space-x-3">
-                    {currentQuestion.icon && <currentQuestion.icon className="h-8 w-8 text-primary mt-1 flex-shrink-0" />}
+                    {currentQuestion.icon && React.createElement(getIconComponent(currentQuestion.icon)!, { className: "h-8 w-8 text-primary mt-1 flex-shrink-0" })}
                     <div>
                       <Label htmlFor={currentQuestion.name} className="text-xl font-semibold text-foreground mb-1 block font-headline">
                         {currentQuestion.text}
@@ -351,19 +390,22 @@ export default function QuizForm() {
                           value={field.value}
                           className="space-y-2"
                         >
-                          {currentQuestion.options!.map(option => (
+                          {currentQuestion.options!.map(option => {
+                            const OptionIcon = getIconComponent(option.icon);
+                            return (
                             <div 
                               key={option.value} 
                               className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50 has-[:checked]:text-accent-foreground has-[:checked]:[&_svg]:text-accent-foreground has-[:checked]:[&>label]:text-accent-foreground has-[:checked]:[&>label>p]:text-accent-foreground/80"
                             >
-                              {option.icon && <option.icon className="h-5 w-5 text-primary group-has-[:checked]:text-accent-foreground" />}
+                              {OptionIcon && <OptionIcon className="h-5 w-5 text-primary group-has-[:checked]:text-accent-foreground" />}
                               <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="text-primary focus:ring-primary"/>
                               <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer group-has-[:checked]:text-accent-foreground">
                                 {option.label}
                                 {option.explanation && <p className="text-xs text-muted-foreground mt-1 group-has-[:checked]:text-accent-foreground/80">{option.explanation}</p>}
                               </Label>
                             </div>
-                          ))}
+                          );
+                        })}
                         </RadioGroup>
                       )}
                     />
@@ -379,6 +421,7 @@ export default function QuizForm() {
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {currentQuestion.options!.map(option => {
                               const isSelected = field.value?.includes(option.value);
+                              const OptionIcon = getIconComponent(option.icon);
                               return (
                                 <div
                                   key={option.value}
@@ -404,10 +447,10 @@ export default function QuizForm() {
                                   </div>
                                   {isSelected && (
                                     <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                                      <CheckCircle className="h-4 w-4" />
+                                      <LucideIcons.CheckCircle className="h-4 w-4" />
                                     </div>
                                   )}
-                                  {option.icon && !option.imageUrl && <option.icon className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
+                                  {OptionIcon && !option.imageUrl && <OptionIcon className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
                                 </div>
                               );
                             })}
@@ -416,22 +459,23 @@ export default function QuizForm() {
                       />
                   )}
 
-
                   {currentQuestion.type === 'textFields' && currentQuestion.fields && (
                     <div className="space-y-4">
-                      {currentQuestion.fields.map(f => (
+                      {currentQuestion.fields.map(f => {
+                        const FieldIcon = getIconComponent(f.icon);
+                        return (
                         <div key={f.name} className="space-y-1">
                            <Label htmlFor={f.name} className="font-medium flex items-center">
-                             {f.icon && <f.icon className="h-4 w-4 mr-2 text-primary" />} 
+                             {FieldIcon && <FieldIcon className="h-4 w-4 mr-2 text-primary" />} 
                              {f.label}
                           </Label>
                           <Controller
                             name={f.name}
                             control={control}
                             defaultValue=""
-                            render={({ field }) => (
+                            render={({ field: controllerField }) => (
                               <Input 
-                                {...field} 
+                                {...controllerField} 
                                 id={f.name} 
                                 type={f.type} 
                                 placeholder={f.placeholder} 
@@ -442,7 +486,8 @@ export default function QuizForm() {
                           />
                           {errors[f.name] && <p className="text-sm text-destructive">{errors[f.name]?.message as string}</p>}
                         </div>
-                      ))}
+                      );
+                      })}
                     </div>
                   )}
                   {errors[currentQuestion.name] && !currentQuestion.fields && <p className="text-sm text-destructive mt-2">{errors[currentQuestion.name]?.message as string}</p>}
@@ -453,7 +498,7 @@ export default function QuizForm() {
           {currentQuestion && (
              <CardFooter className="flex justify-between p-6 bg-muted/30">
                 <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0 || submissionStatus === 'pending'} className="hover:bg-accent/30 px-6 py-3 text-base">
-                    <ChevronLeft className="mr-2 h-5 w-5" /> Voltar
+                    <LucideIcons.ChevronLeft className="mr-2 h-5 w-5" /> Voltar
                 </Button>
                 <Button 
                     onClick={handleNext} 
@@ -464,10 +509,10 @@ export default function QuizForm() {
                     }
                 >
                     {submissionStatus === 'pending' ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <LucideIcons.Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     ) : null}
                     {submissionStatus === 'pending' ? 'Enviando...' : (currentStep === activeQuestions.length - 1 ? 'Finalizar e Contato' : 'Próximo')}
-                    {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? <Send className="ml-2 h-5 w-5" /> : <ChevronRight className="ml-2 h-5 w-5" />)}
+                    {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? <LucideIcons.Send className="ml-2 h-5 w-5" /> : <LucideIcons.ChevronRight className="ml-2 h-5 w-5" />)}
                 </Button>
             </CardFooter>
           )}

@@ -1,0 +1,62 @@
+
+{
+  "title": "Quiz Padrão Ice Lazer",
+  "slug": "default",
+  "successIcon": "CheckCircle",
+  "questions": [
+    {
+      "id": "q1_default",
+      "name": "experienciaPrevia",
+      "icon": "User",
+      "text": "Você já realizou algum tratamento de depilação a laser anteriormente?",
+      "explanation": "Saber sobre suas experiências anteriores nos ajuda a personalizar nossa abordagem.",
+      "type": "radio",
+      "options": [
+        { "value": "sim", "label": "Sim, já fiz", "icon": "Smile" },
+        { "value": "nao", "label": "Não, primeira vez", "icon": "Sparkles" }
+      ]
+    },
+    {
+      "id": "q2_default",
+      "name": "areasInteresse",
+      "icon": "ShoppingBag",
+      "text": "Quais áreas do corpo você tem mais interesse em tratar com a depilação a laser Ice Lazer?",
+      "explanation": "Você pode selecionar mais de uma opção. Escolha as áreas para uma depilação a laser confortável e eficaz.",
+      "type": "checkbox",
+      "options": [
+        { "value": "axilas", "label": "Axilas", "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/axila-1.png", "dataAiHint": "armpit body" },
+        { "value": "virilha", "label": "Virilha", "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/meia-virilha.png", "dataAiHint": "bikini line simple" },
+        { "value": "perianal", "label": "Perianal", "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/perianal.png", "dataAiHint": "perianal area" }
+      ]
+    },
+    {
+      "id": "q3_default",
+      "name": "objetivoPrincipal",
+      "icon": "Zap",
+      "text": "Qual o seu principal objetivo ao buscar a depilação a laser?",
+      "explanation": "Compreender seu objetivo principal nos permite focar no que é mais importante para você.",
+      "type": "radio",
+      "options": [
+        { "value": "reducao_permanente", "label": "Redução permanente dos pelos", "explanation": "Para uma pele lisa por muito mais tempo." },
+        { "value": "evitar_foliculite", "label": "Evitar pelos encravados e foliculite", "explanation": "Diga adeus à irritação e inflamação." },
+        { "value": "praticidade", "label": "Praticidade e economia de tempo", "explanation": "Liberte-se da rotina de depilação frequente." },
+        { "value": "pele_lisa", "label": "Melhorar a aparência e textura da pele", "explanation": "Conquiste uma pele mais suave e uniforme." }
+      ]
+    },
+    {
+      "id": "q4_default",
+      "name": "localizacao",
+      "icon": "MapPin",
+      "text": "Em qual cidade você gostaria de realizar o tratamento ou ter mais informações?",
+      "explanation": "Selecione a cidade para um atendimento personalizado e informações sobre as unidades Ice Lazer disponíveis.",
+      "type": "radio",
+      "options": [
+        { "value": "aracaju_se", "label": "Aracaju, Sergipe" },
+        { "value": "feira_de_santana_ba", "label": "Feira de Santana, Bahia" },
+        { "value": "lauro_de_freitas_ba", "label": "Lauro de Freitas, Bahia" },
+        { "value": "maceio_al", "label": "Maceió, Alagoas" },
+        { "value": "salvador_ba", "label": "Salvador, Bahia" }
+      ]
+    }
+  ]
+}

@@ -1,119 +1,34 @@
 
+// This file is now primarily for icon exports or default structures if needed,
+// as quiz questions are loaded dynamically from JSON files.
+
 import type { LucideIcon } from 'lucide-react';
-import { User, MapPin, Sparkles, MessageSquare, ShoppingBag, Smile, Zap, Palette, HeartHandshake, Footprints, Brain, CheckCircle, Building } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import type { FormFieldConfig, QuizOption, QuizQuestion } from '@/types/quiz'; // Import from new types file
 
-export interface QuizOption {
-  value: string;
-  label: string;
-  icon?: LucideIcon;
-  explanation?: string;
-  imageUrl?: string;
-  dataAiHint?: string;
-}
-
-export interface FormFieldConfig {
-  name: string;
-  label: string;
-  type: 'text' | 'tel' | 'email';
-  placeholder?: string;
-  icon?: LucideIcon;
-}
-
-export interface QuizQuestion {
-  id: string;
-  name: string; // for form data
-  text: string;
-  explanation?: string;
-  type: 'radio' | 'checkbox' | 'textFields';
-  options?: QuizOption[];
-  fields?: FormFieldConfig[];
-  condition?: (formData: Record<string, any>) => boolean;
-  icon?: LucideIcon;
-}
-
-// Nenhuma das novas cidades listadas está no DF, então esta pergunta não será acionada.
-const unidadesComEsteticaAdicional: string[] = [];
-
-export const quizQuestions: QuizQuestion[] = [
-  {
-    id: 'q1',
-    name: 'experienciaPrevia',
-    icon: User,
-    text: 'Você já realizou algum tratamento de depilação a laser anteriormente?',
-    explanation: 'Saber sobre suas experiências anteriores nos ajuda a personalizar nossa abordagem.',
-    type: 'radio',
-    options: [
-      { value: 'sim', label: 'Sim, já fiz', icon: Smile },
-      { value: 'nao', label: 'Não, primeira vez', icon: Sparkles },
-    ],
-  },
-  {
-    id: 'q2',
-    name: 'areasInteresse',
-    icon: ShoppingBag,
-    text: 'Quais áreas do corpo você tem mais interesse em tratar com a depilação a laser Ice Lazer?',
-    explanation: 'Você pode selecionar mais de uma opção. Escolha as áreas para uma depilação a laser confortável e eficaz.',
-    type: 'checkbox',
-    options: [
-      { value: 'axilas', label: 'Axilas', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/axila-1.png', dataAiHint: 'armpit body' },
-      { value: 'virilha', label: 'Virilha', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/meia-virilha.png', dataAiHint: 'bikini line simple' },
-      { value: 'perianal', label: 'Perianal', imageUrl: 'https://espacoicelaser.com/wp-content/uploads/2021/09/perianal.png', dataAiHint: 'perianal area' },
-    ],
-  },
-  {
-    id: 'q3',
-    name: 'objetivoPrincipal',
-    icon: Zap,
-    text: 'Qual o seu principal objetivo ao buscar a depilação a laser?',
-    explanation: 'Compreender seu objetivo principal nos permite focar no que é mais importante para você.',
-    type: 'radio',
-    options: [
-      { value: 'reducao_permanente', label: 'Redução permanente dos pelos', explanation: 'Para uma pele lisa por muito mais tempo.' },
-      { value: 'evitar_foliculite', label: 'Evitar pelos encravados e foliculite', explanation: 'Diga adeus à irritação e inflamação.' },
-      { value: 'praticidade', label: 'Praticidade e economia de tempo', explanation: 'Liberte-se da rotina de depilação frequente.' },
-      { value: 'pele_lisa', label: 'Melhorar a aparência e textura da pele', explanation: 'Conquiste uma pele mais suave e uniforme.' },
-    ],
-  },
-  {
-    id: 'q4',
-    name: 'localizacao',
-    icon: MapPin,
-    text: 'Em qual cidade você gostaria de realizar o tratamento ou ter mais informações?',
-    explanation: 'Selecione a cidade para um atendimento personalizado e informações sobre as unidades Ice Lazer disponíveis.',
-    type: 'radio',
-    options: [
-      { value: 'aracaju_se', label: 'Aracaju, Sergipe' },
-      { value: 'feira_de_santana_ba', label: 'Feira de Santana, Bahia' },
-      { value: 'lauro_de_freitas_ba', label: 'Lauro de Freitas, Bahia' },
-      { value: 'maceio_al', label: 'Maceió, Alagoas' },
-      { value: 'salvador_ba', label: 'Salvador, Bahia' },
-    ],
-  },
-  {
-    id: 'q5',
-    name: 'interesseEstetica',
-    icon: Sparkles,
-    text: 'Além da depilação a laser, algumas de nossas unidades oferecem outros procedimentos estéticos avançados. Você gostaria de saber mais sobre eles?',
-    explanation: 'Temos tratamentos faciais, corporais e muito mais para realçar sua beleza!',
-    type: 'radio',
-    options: [
-      { value: 'sim_estetica', label: 'Sim, tenho interesse!' },
-      { value: 'nao_estetica', label: 'Não, obrigado(a). Foco na depilação por agora.' },
-    ],
-    condition: (formData) => unidadesComEsteticaAdicional.includes(formData.localizacao),
-  },
-  {
-    id: 'q6',
+// Example of how the contact step is structured, to be appended by the server action.
+export const defaultContactStep: QuizQuestion = {
+    id: 'final_contact_step',
     name: 'contato',
-    icon: MessageSquare,
+    icon: 'MessageSquare',
     text: 'Excelente! Para finalizarmos e nossa equipe entrar em contato com as melhores ofertas para você, por favor, deixe seu nome e WhatsApp:',
     explanation: 'Suas informações estão seguras conosco e serão usadas apenas para o contato sobre nossos serviços.',
     type: 'textFields',
     fields: [
-      { name: 'nomeCompleto', label: 'Seu nome completo', type: 'text', placeholder: 'Ex: Maria Silva' },
-      { name: 'whatsapp', label: 'Seu WhatsApp (com DDD)', type: 'tel', placeholder: 'Ex: (XX) XXXXX-XXXX ou XXXXXXXXXXX' },
+      { name: 'nomeCompleto', label: 'Seu nome completo', type: 'text', placeholder: 'Ex: Maria Silva', icon: 'User' },
+      { name: 'whatsapp', label: 'Seu WhatsApp (com DDD)', type: 'tel', placeholder: 'Ex: (XX) XXXXX-XXXX ou XXXXXXXXXXX', icon: 'Smartphone' },
     ],
-  },
-];
+};
 
-export const successIcon = CheckCircle;
+export const successIconName: keyof typeof import('lucide-react') = 'CheckCircle';
+export const getSuccessIcon = (): LucideIcon => CheckCircle;
+
+// Conditional logic for q5 (interesseEstetica) is complex for simple JSON.
+// It's removed from the default JSON and would need careful handling if re-added to the dynamic quiz builder.
+// For now, dynamic quizzes won't support this specific conditional question easily unless the condition logic is simplified or handled differently.
+// const unidadesComEsteticaAdicional: string[] = []; // Example: ['brasilia_df', 'taguatinga_df'];
+// export const q5Condition = (formData: Record<string, any>) => unidadesComEsteticaAdicional.includes(formData.localizacao);
+
+// This file can also export default option structures or icons if needed elsewhere.
+// For example:
+// export const defaultUserIcon: keyof typeof import('lucide-react') = 'User';
