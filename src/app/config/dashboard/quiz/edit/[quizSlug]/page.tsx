@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Save, AlertTriangle, Info, Loader2, ArrowLeft } from 'lucide-react';
-import { getQuizForEdit, updateQuizAction, type QuizEditData } from '../actions';
+import { getQuizForEdit, updateQuizAction, type QuizEditData } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
 import { APP_BASE_URL } from '@/config/appConfig';
@@ -245,3 +245,7 @@ export default function EditQuizPage() {
     </div>
   );
 }
+
+    
+
+    

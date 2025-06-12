@@ -176,3 +176,5 @@ export async function getQuizzesList(): Promise<Omit<QuizConfig, 'questions'>[]>
     return [];
   }
 }
+
+    
