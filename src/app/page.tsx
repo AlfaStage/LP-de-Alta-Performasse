@@ -21,13 +21,13 @@ async function getAvailableQuizzes(): Promise<QuizConfig[]> {
       return {
         title: quizData.title || "Quiz sem título",
         slug: quizData.slug || filename.replace('.json', ''),
-        questions: quizData.questions || [], // keep questions for potential length check or other metadata
+        questions: quizData.questions || [], 
       };
     }));
     return quizzes;
   } catch (error) {
     console.error("Failed to read quizzes directory:", error);
-    return []; // Return empty array if directory doesn't exist or other error
+    return []; 
   }
 }
 
@@ -50,13 +50,11 @@ export default async function HomePage() {
               <ul className="space-y-3">
                 {quizzes.map((quiz) => (
                   <li key={quiz.slug}>
-                    <Link href={`/${quiz.slug}`} legacyBehavior>
-                      <a className="block">
-                        <Button variant="outline" className="w-full justify-start text-lg py-6 hover:bg-accent/80 hover:text-accent-foreground">
-                          <List className="mr-3 h-5 w-5 text-primary" />
-                          {quiz.title}
-                        </Button>
-                      </a>
+                    <Link href={`/${quiz.slug}`} className="block">
+                      <Button variant="outline" className="w-full justify-start text-lg py-6 hover:bg-accent/80 hover:text-accent-foreground">
+                        <List className="mr-3 h-5 w-5 text-primary" />
+                        {quiz.title}
+                      </Button>
                     </Link>
                   </li>
                 ))}
@@ -74,10 +72,8 @@ export default async function HomePage() {
             </div>
           )}
           <div className="mt-8 text-center">
-             <Link href="/config/login" legacyBehavior>
-                <a className="text-sm text-primary hover:underline">
-                    Acessar Painel de Configuração
-                </a>
+             <Link href="/config/login" className="text-sm text-primary hover:underline">
+                Acessar Painel de Configuração
               </Link>
           </div>
         </CardContent>
