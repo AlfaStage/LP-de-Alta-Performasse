@@ -40,15 +40,16 @@ export interface QuizConfig {
 export interface WhitelabelConfig {
   projectName: string;
   logoUrl: string;
-  primaryColorHex: string; 
-  secondaryColorHex: string; 
+  primaryColorHex: string; // Cor primária do tema (para anéis de foco, gráficos, etc.)
+  secondaryColorHex: string; // Cor secundária do tema
   buttonPrimaryBgColorHex?: string; // Cor de fundo específica para botões primários
-  pageBackgroundColorHex: string;
-  quizBackgroundColorHex: string; 
+  pageBackgroundColorHex: string; // Cor de fundo da página inteira
+  quizBackgroundColorHex: string; // Cor de fundo do card/container do quiz
   quizSubmissionWebhookUrl: string;
   facebookPixelId?: string;
   facebookPixelIdSecondary?: string;
   googleAnalyticsId?: string;
+  footerCopyrightText?: string;
 }
 
 
@@ -58,4 +59,3 @@ export const getLucideIcon = (iconName?: keyof typeof import('lucide-react')): L
   const icons = require('lucide-react');
   return icons[iconName] as LucideIcon;
 };
-

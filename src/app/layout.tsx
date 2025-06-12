@@ -33,24 +33,25 @@ export default async function RootLayout({
   const pageBackgroundColorHslString = whitelabelConfig.pageBackgroundColorHex ? hexToHslString(whitelabelConfig.pageBackgroundColorHex) : null;
   const quizBackgroundColorHslString = whitelabelConfig.quizBackgroundColorHex ? hexToHslString(whitelabelConfig.quizBackgroundColorHex) : null;
   
-  let buttonPrimaryBgHslString: string | null = null;
+  let buttonSpecificPrimaryHslString: string | null = null;
   if (whitelabelConfig.buttonPrimaryBgColorHex && whitelabelConfig.buttonPrimaryBgColorHex.trim() !== "") {
-    buttonPrimaryBgHslString = hexToHslString(whitelabelConfig.buttonPrimaryBgColorHex);
+    buttonSpecificPrimaryHslString = hexToHslString(whitelabelConfig.buttonPrimaryBgColorHex);
   }
-  const finalPrimaryForButtonsHsl = buttonPrimaryBgHslString || themePrimaryColorHslString;
+  // --primary is for interactive elements like button backgrounds
+  const finalPrimaryInteractiveHsl = buttonSpecificPrimaryHslString || themePrimaryColorHslString;
 
-  // Make --accent follow --secondary for consistent hover on outline buttons
+  // --accent will follow --secondary for consistent hover on outline/ghost buttons
   const accentColorHslString = secondaryColorHslString;
 
   const dynamicStyles = `
     :root {
       ${pageBackgroundColorHslString ? `--background: ${pageBackgroundColorHslString};` : ''}
       ${quizBackgroundColorHslString ? `--card: ${quizBackgroundColorHslString};` : ''}
-      ${finalPrimaryForButtonsHsl ? `--primary: ${finalPrimaryForButtonsHsl};` : ''}
+      ${finalPrimaryInteractiveHsl ? `--primary: ${finalPrimaryInteractiveHsl};` : ''}
       ${secondaryColorHslString ? `--secondary: ${secondaryColorHslString};` : ''}
       ${accentColorHslString ? `--accent: ${accentColorHslString};` : ''}
       
-      /* --ring and --chart-1 will use the theme's primary color (not necessarily the button color) */
+      /* --ring and --chart-1 will consistently use the theme's primary color */
       ${themePrimaryColorHslString ? `--ring: ${themePrimaryColorHslString};` : ''}
       ${themePrimaryColorHslString ? `--chart-1: ${themePrimaryColorHslString};` : ''}
     }

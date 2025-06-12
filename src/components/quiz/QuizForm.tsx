@@ -37,6 +37,7 @@ interface QuizFormProps {
   facebookPixelId?: string; 
   googleAnalyticsId?: string; 
   clientAbandonmentWebhookUrl?: string; 
+  footerCopyrightText?: string;
 }
 
 export default function QuizForm({ 
@@ -46,7 +47,8 @@ export default function QuizForm({
   logoUrl,
   facebookPixelId,
   googleAnalyticsId,
-  clientAbandonmentWebhookUrl
+  clientAbandonmentWebhookUrl,
+  footerCopyrightText = `© ${new Date().getFullYear()} Quiz. Todos os direitos reservados.`
 }: QuizFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
@@ -285,8 +287,8 @@ export default function QuizForm({
   };
   
   const loadingJsx = (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-      <Alert>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
+      <Alert className="bg-card text-card-foreground">
         <LucideIcons.Info className="h-4 w-4" />
         <AlertTitle>Carregando Quiz...</AlertTitle>
         <AlertDescription>
@@ -302,8 +304,8 @@ export default function QuizForm({
   
   if (!currentQuestion && !isQuizCompleted && quizQuestions && quizQuestions.length > 0) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-          <Alert variant="destructive">
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
+          <Alert variant="destructive" className="bg-card text-card-foreground">
             <LucideIcons.AlertTriangle className="h-4 w-4" />
             <AlertTitle>Erro no Quiz</AlertTitle>
             <AlertDescription>
@@ -316,8 +318,8 @@ export default function QuizForm({
 
   if (isQuizCompleted && submissionStatus === 'success') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-        <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center bg-card">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
+        <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center bg-card text-card-foreground">
           <CardHeader className="p-6">
             <div className="flex items-center justify-center space-x-3">
                 <Image 
@@ -329,14 +331,14 @@ export default function QuizForm({
                   className="h-auto w-28 md:w-36" 
                 />
             </div>
-            <CardTitle className="text-3xl mt-4 text-primary">Obrigado!</CardTitle>
+            <CardTitle className="text-3xl mt-4 text-primary">{quizTitle}</CardTitle>
           </CardHeader>
           <CardContent className="p-6 md:p-8 space-y-4">
             <SuccessIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <p className="text-lg font-semibold">Suas respostas foram enviadas com sucesso!</p>
+            <p className="text-lg font-semibold text-card-foreground">Suas respostas foram enviadas com sucesso!</p>
             <p className="text-muted-foreground">Nossa equipe entrará em contato com você em breve.</p>
             <div className="pt-4 space-y-3">
-              <p className="text-sm text-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
+              <p className="text-sm text-card-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
               <Link href="https://espacoicelaser.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
                 <LucideIcons.Globe className="mr-2 h-5 w-5" />
                 Visite nosso site
@@ -348,8 +350,8 @@ export default function QuizForm({
             </div>
           </CardContent>
            <CardFooter className="p-6 bg-muted/30 flex justify-center">
-             <p className="text-xs text-foreground/60">
-                &copy; {new Date().getFullYear()}. Todos os direitos reservados.
+             <p className="text-xs text-muted-foreground">
+                {footerCopyrightText}
             </p>
            </CardFooter>
         </Card>
@@ -359,8 +361,8 @@ export default function QuizForm({
 
   return (
     <FormProvider {...methods}>
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-        <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8 bg-card`}>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
+        <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8 bg-card text-card-foreground`}>
           <CardHeader className="p-6">
              <div className="flex items-center space-x-3">
                 <Image 
@@ -385,7 +387,7 @@ export default function QuizForm({
                   <div className="flex items-start space-x-3">
                     {currentQuestion.icon && React.createElement(getIconComponent(currentQuestion.icon)!, { className: "h-8 w-8 text-primary mt-1 flex-shrink-0" })}
                     <div>
-                      <Label htmlFor={currentQuestion.name} className="text-xl font-semibold text-foreground mb-1 block font-headline">
+                      <Label htmlFor={currentQuestion.name} className="text-xl font-semibold text-card-foreground mb-1 block font-headline">
                         {currentQuestion.text}
                       </Label>
                       {currentQuestion.explanation && (
@@ -410,11 +412,11 @@ export default function QuizForm({
                             return (
                             <div 
                               key={option.value} 
-                              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80"
+                              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80"
                             >
-                              {OptionIcon && <OptionIcon className="h-5 w-5 text-primary group-has-[:checked]:text-primary" />}
-                              <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="text-primary focus:ring-primary"/>
-                              <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer group-has-[:checked]:text-primary">
+                              {OptionIcon && <OptionIcon className="h-5 w-5 text-muted-foreground group-has-[:checked]:text-primary" />}
+                              <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="border-muted-foreground text-primary focus:ring-primary"/>
+                              <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer text-card-foreground group-has-[:checked]:text-primary">
                                 {option.label}
                                 {option.explanation && <p className="text-xs text-muted-foreground mt-1 group-has-[:checked]:text-primary/80">{option.explanation}</p>}
                               </Label>
@@ -455,8 +457,8 @@ export default function QuizForm({
                                     </div>
                                   )}
                                   <div className="text-center">
-                                    <p className={`text-xs font-medium ${isSelected ? 'text-primary' : 'text-primary/80'}`}>Depilação a laser</p>
-                                    <Label htmlFor={`${currentQuestion.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-primary font-bold' : 'text-foreground'}`}>
+                                    <p className={`text-xs font-medium ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>Depilação a laser</p>
+                                    <Label htmlFor={`${currentQuestion.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-primary font-bold' : 'text-card-foreground'}`}>
                                       {option.label}
                                     </Label>
                                   </div>
@@ -480,7 +482,7 @@ export default function QuizForm({
                         const FieldIcon = getIconComponent(f.icon);
                         return (
                         <div key={f.name} className="space-y-1">
-                           <Label htmlFor={f.name} className="font-medium flex items-center">
+                           <Label htmlFor={f.name} className="font-medium flex items-center text-card-foreground">
                              {FieldIcon && <FieldIcon className="h-4 w-4 mr-2 text-primary" />} 
                              {f.label}
                           </Label>
@@ -495,7 +497,7 @@ export default function QuizForm({
                                 type={f.type} 
                                 placeholder={f.placeholder} 
                                 onChange={(e) => handleValueChange(f.name, e.target.value)} 
-                                className="bg-muted/30 border-input focus:border-primary focus:ring-primary"
+                                className="bg-muted/30 border-input focus:border-primary focus:ring-primary text-card-foreground placeholder:text-muted-foreground"
                               />
                             )}
                           />
@@ -533,10 +535,9 @@ export default function QuizForm({
           )}
         </Card>
         <p className="text-xs text-center mt-4 text-foreground/60">
-            &copy; {new Date().getFullYear()}. Todos os direitos reservados.
+            {footerCopyrightText}
         </p>
       </div>
     </FormProvider>
   );
 }
-

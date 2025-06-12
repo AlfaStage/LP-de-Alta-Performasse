@@ -10,13 +10,14 @@ const defaultConfig: WhitelabelConfig = {
   logoUrl: "https://placehold.co/150x50.png?text=Logo",
   primaryColorHex: "#E09677", 
   secondaryColorHex: "#F5D4C6", 
-  buttonPrimaryBgColorHex: "", // Se vazio, usa primaryColorHex para botões
-  pageBackgroundColorHex: "#F5B9A9", 
+  buttonPrimaryBgColorHex: "", 
+  pageBackgroundColorHex: "#FCEFEA", 
   quizBackgroundColorHex: "#FFFFFF", 
   quizSubmissionWebhookUrl: "",
   facebookPixelId: "",
   facebookPixelIdSecondary: "",
-  googleAnalyticsId: ""
+  googleAnalyticsId: "",
+  footerCopyrightText: `© ${new Date().getFullYear()} Ice Lazer Quizzes. Todos os direitos reservados.`
 };
 
 async function ensureConfigFileExists() {
@@ -37,16 +38,18 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
   try {
     const fileContents = await fs.readFile(configFilePath, 'utf8');
     const config = JSON.parse(fileContents) as WhitelabelConfig;
-    // Mescla com o default para garantir que todos os campos existam
     const mergedConfig = { ...defaultConfig, ...config };
-    // Garante que buttonPrimaryBgColorHex exista, mesmo que como string vazia
+    
     if (typeof mergedConfig.buttonPrimaryBgColorHex === 'undefined') {
         mergedConfig.buttonPrimaryBgColorHex = "";
+    }
+    if (typeof mergedConfig.footerCopyrightText === 'undefined' || mergedConfig.footerCopyrightText.trim() === "") {
+        mergedConfig.footerCopyrightText = defaultConfig.footerCopyrightText;
     }
     return mergedConfig;
   } catch (error) {
     console.warn('Failed to read or parse whitelabel-config.json, returning default config:', error);
-    return { ...defaultConfig, buttonPrimaryBgColorHex: defaultConfig.buttonPrimaryBgColorHex || "" }; 
+    return { ...defaultConfig, buttonPrimaryBgColorHex: defaultConfig.buttonPrimaryBgColorHex || "", footerCopyrightText: defaultConfig.footerCopyrightText }; 
   }
 }
 
@@ -55,6 +58,9 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
     const configToSave = { ...defaultConfig, ...newConfig };
      if (typeof configToSave.buttonPrimaryBgColorHex === 'undefined') {
         configToSave.buttonPrimaryBgColorHex = "";
+    }
+    if (typeof configToSave.footerCopyrightText === 'undefined' || configToSave.footerCopyrightText.trim() === "") {
+        configToSave.footerCopyrightText = defaultConfig.footerCopyrightText;
     }
     await fs.writeFile(configFilePath, JSON.stringify(configToSave, null, 2), 'utf8');
     return { success: true, message: 'Configurações Whitelabel salvas com sucesso!' };

@@ -8,7 +8,7 @@ import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { defaultContactStep } from '@/config/quizConfig';
 import { getWhitelabelConfig } from '@/lib/whitelabel';
-import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; // Fallback
+import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
 
 interface QuizPageProps {
   params: {
@@ -63,8 +63,8 @@ export default async function QuizPage({ params }: QuizPageProps) {
 
   if (!quizConfigFromFile || !quizConfigFromFile.questions || quizConfigFromFile.questions.length === 0 ) {
     return (
-      <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center">
-        <Alert variant="destructive" className="w-full max-w-lg">
+      <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
+        <Alert variant="destructive" className="w-full max-w-lg bg-card text-card-foreground">
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle>Quiz não encontrado ou mal configurado</AlertTitle>
           <AlertDescription>
@@ -82,18 +82,20 @@ export default async function QuizPage({ params }: QuizPageProps) {
 
   const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Logo+Empresa";
   const clientAbandonmentWebhook = ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
+  const footerText = whitelabelConfig.footerCopyrightText || `© ${new Date().getFullYear()} ${whitelabelConfig.projectName || 'Quiz System'}. Todos os direitos reservados.`;
 
 
   return (
-    <main>
+    <main className="bg-background text-foreground">
       <QuizForm 
         quizQuestions={quizConfigFromFile.questions} 
         quizSlug={quizConfigFromFile.slug} 
-        quizTitle={quizConfigFromFile.title} 
+        quizTitle={quizConfigFromFile.title || whitelabelConfig.projectName || "Quiz Interativo"} 
         logoUrl={logoUrlToUse}
         facebookPixelId={whitelabelConfig.facebookPixelId}
         googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
         clientAbandonmentWebhookUrl={clientAbandonmentWebhook}
+        footerCopyrightText={footerText}
       />
     </main>
   );

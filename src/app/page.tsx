@@ -36,8 +36,8 @@ export default async function HomePage() {
   const whitelabelConfig = await getWhitelabelConfig();
 
   return (
-    <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center">
-      <Card className="w-full max-w-2xl shadow-xl">
+    <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
+      <Card className="w-full max-w-2xl shadow-xl bg-card text-card-foreground">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-primary">{whitelabelConfig.projectName || 'Bem-vindo ao Sistema de Quizzes'}</CardTitle>
           <CardDescription className="text-lg text-muted-foreground">
@@ -47,7 +47,7 @@ export default async function HomePage() {
         <CardContent>
           {quizzes.length > 0 ? (
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-center mb-3 text-foreground">Quizzes Disponíveis:</h2>
+              <h2 className="text-xl font-semibold text-center mb-3 text-card-foreground">Quizzes Disponíveis:</h2>
               <ul className="space-y-3">
                 {quizzes.map((quiz) => (
                   <li key={quiz.slug}>
@@ -64,7 +64,7 @@ export default async function HomePage() {
           ) : (
             <div className="text-center py-8">
               <p className="text-lg text-muted-foreground mb-4">Nenhum quiz disponível no momento.</p>
-              <p className="text-sm text-foreground">
+              <p className="text-sm text-card-foreground">
                 Administradores podem criar novos quizzes no{" "}
                 <Link href="/config/dashboard" className="text-primary hover:underline font-semibold">
                   Painel de Configuração
@@ -80,7 +80,7 @@ export default async function HomePage() {
         </CardContent>
       </Card>
        <p className="text-xs text-center mt-8 text-foreground/60">
-            {whitelabelConfig.projectName || 'Ice Lazer'} &copy; {new Date().getFullYear()}. Todos os direitos reservados.
+            {whitelabelConfig.footerCopyrightText || `${whitelabelConfig.projectName || 'Ice Lazer'} © ${new Date().getFullYear()}. Todos os direitos reservados.`}
         </p>
     </main>
   );
