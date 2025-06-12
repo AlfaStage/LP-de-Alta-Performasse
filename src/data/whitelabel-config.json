@@ -1,0 +1,10 @@
+
+{
+  "logoUrl": "https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png",
+  "primaryColorHsl": "19 60% 70%",
+  "secondaryColorHsl": "15 60% 90%",
+  "quizSubmissionWebhookUrl": "https://webhook.workflow.alfastage.com.br/webhook/icelazerquiz-mensagem",
+  "facebookPixelId": "YOUR_PRIMARY_FACEBOOK_PIXEL_ID",
+  "facebookPixelIdSecondary": "YOUR_SECONDARY_FACEBOOK_PIXEL_ID",
+  "googleAnalyticsId": "YOUR_GA_ID"
+}

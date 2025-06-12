@@ -4,18 +4,33 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import FacebookPixelScript from '@/components/FacebookPixelScript';
 import Script from 'next/script';
-import { GA_TRACKING_ID } from '@/config/appConfig';
+import { getWhitelabelConfig } from '@/lib/whitelabel'; // Import whitelabel config
+import { APP_BASE_URL } from '@/config/appConfig'; // Keep for non-whitelabel env vars
 
 export const metadata: Metadata = {
-  title: 'Ice Lazer Lead Filter',
-  description: 'Quiz interativo para qualificação de leads para Ice Lazer.',
+  title: 'Ice Lazer Lead Filter', // This could also become dynamic later
+  description: 'Quiz interativo para qualificação de leads para Ice Lazer.', // Also dynamic
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const whitelabelConfig = await getWhitelabelConfig();
+
+  // Prepare dynamic styles for theme colors
+  const dynamicStyles = `
+    :root {
+      ${whitelabelConfig.primaryColorHsl ? `--primary: ${whitelabelConfig.primaryColorHsl};` : ''}
+      ${whitelabelConfig.secondaryColorHsl ? `--secondary: ${whitelabelConfig.secondaryColorHsl};` : ''}
+      /* If other colors like accent, background, foreground were configurable: */
+      /* ${whitelabelConfig.accentColorHsl ? `--accent: ${whitelabelConfig.accentColorHsl};` : ''} */
+      /* ${whitelabelConfig.backgroundColorHsl ? `--background: ${whitelabelConfig.backgroundColorHsl};` : ''} */
+      /* ${whitelabelConfig.foregroundColorHsl ? `--foreground: ${whitelabelConfig.foregroundColorHsl};` : ''} */
+    }
+  `;
+
   return (
     <html lang="pt-BR">
       <head>
@@ -24,11 +39,14 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
         <meta name="facebook-domain-verification" content="7dowgwz24hni45q2fjdp19cp0ztgzn" />
         
-        {GA_TRACKING_ID && (
+        {/* Inject dynamic theme colors */}
+        <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
+
+        {whitelabelConfig.googleAnalyticsId && (
           <>
             <Script
               strategy="afterInteractive"
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${whitelabelConfig.googleAnalyticsId}`}
             />
             <Script
               id="gtag-init"
@@ -38,7 +56,7 @@ export default function RootLayout({
                   window.dataLayer = window.dataLayer || [];
                   function gtag(){dataLayer.push(arguments);}
                   gtag('js', new Date());
-                  gtag('config', '${GA_TRACKING_ID}', {
+                  gtag('config', '${whitelabelConfig.googleAnalyticsId}', {
                     page_path: window.location.pathname,
                   });
                 `,
@@ -46,7 +64,11 @@ export default function RootLayout({
             />
           </>
         )}
-        <FacebookPixelScript />
+        <FacebookPixelScript 
+          facebookPixelId={whitelabelConfig.facebookPixelId}
+          facebookPixelIdSecondary={whitelabelConfig.facebookPixelIdSecondary}
+          googleAnalyticsId={whitelabelConfig.googleAnalyticsId} // Pass GA ID for consistency if FacebookPixelScript handles GA pageview logic
+        />
       </head>
       <body className="font-body antialiased">
         {children}

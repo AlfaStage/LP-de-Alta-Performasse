@@ -35,12 +35,21 @@ export interface QuizConfig {
   slug: string;
   questions: QuizQuestion[];
   successIcon?: keyof typeof import('lucide-react');
-  // Potentially add other quiz-specific metadata here
 }
 
+export interface WhitelabelConfig {
+  logoUrl: string;
+  primaryColorHsl: string; // e.g., "210 40% 96.1%"
+  secondaryColorHsl: string; // e.g., "210 40% 96.1%"
+  quizSubmissionWebhookUrl: string;
+  facebookPixelId?: string;
+  facebookPixelIdSecondary?: string;
+  googleAnalyticsId?: string;
+  // Future: Add accentColorHsl, backgroundColorHsl, foregroundColorHsl if needed
+}
+
+
 // Helper to get Lucide icon components dynamically
-// This is a simplified example. For a robust solution, you might need a map or more complex dynamic import.
-// Ensure all used icons are actually available in lucide-react.
 export const getLucideIcon = (iconName?: keyof typeof import('lucide-react')): LucideIcon | undefined => {
   if (!iconName) return undefined;
   const icons = require('lucide-react');

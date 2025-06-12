@@ -4,38 +4,42 @@
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { trackPageView as fbTrackPageView } from '@/lib/fpixel'; // Renomeado para evitar conflito
-import { pageview as gaTrackPageView } from '@/lib/gtag'; // Import GA pageview tracker
-import { 
-  FACEBOOK_PIXEL_ID, 
-  FACEBOOK_PIXEL_ID_SECONDARY,
-  isPrimaryPixelConfigured,
-  isSecondaryPixelConfigured,
-  areAnyPixelsConfigured
-} from '@/config/pixelConfig';
-import { GA_TRACKING_ID } from '@/lib/gtag';
+import { trackPageView as fbTrackPageView } from '@/lib/fpixel';
+import { pageview as gaTrackPageView } from '@/lib/gtag';
 
+interface FacebookPixelScriptProps {
+  facebookPixelId?: string;
+  facebookPixelIdSecondary?: string;
+  googleAnalyticsId?: string;
+}
 
-export default function FacebookPixelScript() {
+export default function FacebookPixelScript({ 
+  facebookPixelId, 
+  facebookPixelIdSecondary,
+  googleAnalyticsId 
+}: FacebookPixelScriptProps) {
   const pathname = usePathname();
 
+  const isPrimaryPixelConfigured = !!facebookPixelId && facebookPixelId !== "YOUR_PRIMARY_FACEBOOK_PIXEL_ID";
+  const isSecondaryPixelConfigured = !!facebookPixelIdSecondary && facebookPixelIdSecondary !== "YOUR_SECONDARY_FACEBOOK_PIXEL_ID";
+  const areAnyFbPixelsConfigured = isPrimaryPixelConfigured || isSecondaryPixelConfigured;
+  const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId !== "YOUR_GA_ID";
+
+
   useEffect(() => {
-    // Track PageView for Facebook Pixel on route change
-    if (areAnyPixelsConfigured()) {
+    if (areAnyFbPixelsConfigured) {
       console.log("FB Pixel: PageView event triggered by route change.", pathname);
       fbTrackPageView();
     }
 
-    // Track PageView for Google Analytics on route change
-    if (GA_TRACKING_ID && typeof window.gtag === 'function') {
+    if (isGaConfigured && typeof window.gtag === 'function') {
       console.log("GA: pageview event triggered by route change.", pathname);
       gaTrackPageView(new URL(pathname, window.location.origin));
     }
+  }, [pathname, areAnyFbPixelsConfigured, isGaConfigured]);
 
-  }, [pathname]);
-
-  if (!areAnyPixelsConfigured() && !GA_TRACKING_ID) {
-    console.warn("Neither Facebook Pixel nor Google Analytics is configured. No tracking scripts rendered.");
+  if (!areAnyFbPixelsConfigured && !isGaConfigured) {
+    console.warn("Neither Facebook Pixel nor Google Analytics is configured via Whitelabel settings. No tracking scripts rendered.");
     return null;
   }
   
@@ -48,19 +52,19 @@ export default function FacebookPixelScript() {
     t.src=v;s=b.getElementsByTagName(e)[0];
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
-    ${isPrimaryPixelConfigured ? `fbq('init', '${FACEBOOK_PIXEL_ID}');` : ''}
-    ${isSecondaryPixelConfigured ? `fbq('init', '${FACEBOOK_PIXEL_ID_SECONDARY}');` : ''}
-    ${areAnyPixelsConfigured() ? `fbq('track', 'PageView'); console.log("FB Pixel: Initial PageView event sent via script.");` : `console.warn("FB Pixel: No pixels configured, initial PageView not sent.");`}
+    ${isPrimaryPixelConfigured ? `fbq('init', '${facebookPixelId}');` : ''}
+    ${isSecondaryPixelConfigured ? `fbq('init', '${facebookPixelIdSecondary}');` : ''}
+    ${areAnyFbPixelsConfigured ? `fbq('track', 'PageView'); console.log("FB Pixel: Initial PageView event sent via script.");` : `console.warn("FB Pixel: No pixels configured, initial PageView not sent.");`}
   `;
 
   return (
     <>
-      {areAnyPixelsConfigured() && (
+      {areAnyFbPixelsConfigured && (
         <Script id="fb-pixel-base" strategy="afterInteractive">
           {pixelScriptContent}
         </Script>
       )}
-      {!areAnyPixelsConfigured() && GA_TRACKING_ID && console.warn("Facebook Pixel not configured, but Google Analytics is.")}
+      {!areAnyFbPixelsConfigured && isGaConfigured && console.warn("Facebook Pixel not configured (Whitelabel), but Google Analytics is.")}
     </>
   );
 }

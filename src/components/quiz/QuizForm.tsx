@@ -11,18 +11,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getSuccessIcon } from '@/config/quizConfig'; // Keep for success icon
+import { getSuccessIcon } from '@/config/quizConfig'; 
 import QuizProgressBar from './QuizProgressBar';
 import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent } from '@/lib/fpixel';
-import { event as gaEvent, GA_TRACKING_ID } from '@/lib/gtag';
+import { event as gaEvent } from '@/lib/gtag';
 import { logQuizAbandonment, submitQuizData } from '@/app/actions';
-import * as LucideIcons from 'lucide-react'; // Import all for dynamic icons
+import * as LucideIcons from 'lucide-react'; 
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
-import { areAnyPixelsConfigured } from '@/config/pixelConfig';
-import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
-import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig';
+import type { QuizQuestion } from '@/types/quiz';
 
 type FormData = Record<string, any>;
 
@@ -35,9 +33,21 @@ interface QuizFormProps {
   quizQuestions: QuizQuestion[];
   quizSlug: string;
   quizTitle?: string;
+  logoUrl: string;
+  facebookPixelId?: string; // Now passed as prop
+  googleAnalyticsId?: string; // Now passed as prop
+  clientAbandonmentWebhookUrl?: string; // For client-side beacon
 }
 
-export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }: QuizFormProps) {
+export default function QuizForm({ 
+  quizQuestions, 
+  quizSlug, 
+  quizTitle = "Quiz", 
+  logoUrl,
+  facebookPixelId,
+  googleAnalyticsId,
+  clientAbandonmentWebhookUrl
+}: QuizFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
   const [animationClass, setAnimationClass] = useState('animate-slide-in');
@@ -56,40 +66,40 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
 
   const activeQuestions = useMemo(() => {
     if (!quizQuestions) return [];
-    // Simplified condition handling for now. Complex conditions from JSON are hard.
     return quizQuestions.filter(q => !q.condition || q.condition(formData));
   }, [formData, quizQuestions]);
   
   const currentQuestion = activeQuestions[currentStep];
 
+  const isFbPixelConfigured = !!facebookPixelId && facebookPixelId !== "YOUR_PRIMARY_FACEBOOK_PIXEL_ID";
+  const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId !== "YOUR_GA_ID";
+
   useEffect(() => {
     if (!quizQuestions || quizQuestions.length === 0) return;
     const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
-    if (areAnyPixelsConfigured()) {
+    if (isFbPixelConfigured) {
       console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking);
       fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking });
     }
-    if(GA_TRACKING_ID) {
+    if(isGaConfigured) {
         console.log("GA: quiz_start event triggered for", quizNameForTracking);
         gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
     }
-  }, [quizSlug, quizQuestions]);
+  }, [quizSlug, quizQuestions, isFbPixelConfigured, isGaConfigured]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
-        const webhookUrl = CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
+        const webhookUrl = clientAbandonmentWebhookUrl; 
         if (webhookUrl && webhookUrl !== "YOUR_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL") {
           const dataToLog = { ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}`, quizSlug };
           if (navigator.sendBeacon) {
             const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
             navigator.sendBeacon(webhookUrl, blob);
           } else {
-            // Fallback for browsers that don't support sendBeacon - less reliable
             fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
           }
         } else {
-          // If client-side URL isn't set, try server-side action (might not always execute on page close)
            logQuizAbandonment({ ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}` }, quizSlug);
         }
       }
@@ -99,7 +109,7 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [formData, currentStep, isQuizCompleted, currentQuestion, getValues, submissionStatus, quizSlug, quizQuestions]);
+  }, [formData, currentStep, isQuizCompleted, currentQuestion, getValues, submissionStatus, quizSlug, quizQuestions, clientAbandonmentWebhookUrl]);
 
   const handleNext = async () => {
     if (submissionStatus === 'pending' || !currentQuestion) return;
@@ -139,16 +149,16 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
         setCurrentStep(prev => prev + 1);
         setAnimationClass('animate-slide-in');
       }, 300);
-      if (areAnyPixelsConfigured()) {
+      if (isFbPixelConfigured) {
         console.log("FB Pixel: QuestionAnswered event triggered.", answerData);
         fbTrackEvent('QuestionAnswered', answerData);
       }
-      if(GA_TRACKING_ID) {
+      if(isGaConfigured) {
         console.log("GA: question_answered event triggered.", gaAnswerData);
         gaEvent({ action: 'question_answered', ...gaAnswerData });
       }
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
-      if (areAnyPixelsConfigured()) {
+      if (isFbPixelConfigured) {
         console.log("FB Pixel: QuestionAnswered event triggered (last question).", answerData);
         fbTrackEvent('QuestionAnswered', {
           question_id: currentQuestion.id,
@@ -165,7 +175,7 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
         step_number: currentStep + 1,
         quiz_name: quizNameForTracking
       };
-      if(GA_TRACKING_ID){
+      if(isGaConfigured){
         console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
         gaEvent({ action: 'question_answered', ...lastGaAnswerData });
       }
@@ -225,13 +235,13 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
                  ...finalData 
             };
 
-            if (areAnyPixelsConfigured()) {
+            if (isFbPixelConfigured) {
                 console.log("FB Pixel: QuizComplete event triggered.", quizCompleteDataFb);
                 fbTrackCustomEvent('QuizComplete', quizCompleteDataFb);
                 console.log("FB Pixel: Lead event triggered.", leadDataFb);
                 fbTrackEvent('Lead', leadDataFb);
             }
-            if(GA_TRACKING_ID){
+            if(isGaConfigured){
                 console.log("GA: quiz_complete event triggered.", quizCompleteDataGa);
                 gaEvent({action: 'quiz_complete', ...quizCompleteDataGa});
                 console.log("GA: generate_lead event triggered.", leadDataGa);
@@ -291,8 +301,6 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
   }
   
   if (!currentQuestion && !isQuizCompleted && quizQuestions && quizQuestions.length > 0) {
-      // This might happen if activeQuestions becomes empty after filtering,
-      // or if quizQuestions is initially set but then becomes empty.
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4">
           <Alert variant="destructive">
@@ -306,7 +314,6 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
       );
   }
 
-
   if (isQuizCompleted && submissionStatus === 'success') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -314,8 +321,8 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
           <CardHeader className="bg-card p-6">
             <div className="flex items-center justify-center space-x-3">
                 <Image 
-                  src="https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png" 
-                  alt="Ice Lazer Logo" 
+                  src={logoUrl}
+                  alt="Logo da Empresa" 
                   data-ai-hint="company logo" 
                   width={150} 
                   height={50} 
@@ -342,7 +349,7 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
           </CardContent>
            <CardFooter className="p-6 bg-muted/30 flex justify-center">
              <p className="text-xs text-foreground/60">
-                Ice Lazer &copy; {new Date().getFullYear()}. Todos os direitos reservados.
+                &copy; {new Date().getFullYear()}. Todos os direitos reservados.
             </p>
            </CardFooter>
         </Card>
@@ -357,8 +364,8 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
           <CardHeader className="bg-card p-6">
              <div className="flex items-center space-x-3">
                 <Image 
-                  src="https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png" 
-                  alt="Ice Lazer Logo" 
+                  src={logoUrl}
+                  alt="Logo da Empresa"
                   data-ai-hint="company logo" 
                   width={150} 
                   height={50}
@@ -526,10 +533,9 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
           )}
         </Card>
         <p className="text-xs text-center mt-4 text-foreground/60">
-            Ice Lazer &copy; {new Date().getFullYear()}. Todos os direitos reservados.
+            &copy; {new Date().getFullYear()}. Todos os direitos reservados.
         </p>
       </div>
     </FormProvider>
   );
 }
-

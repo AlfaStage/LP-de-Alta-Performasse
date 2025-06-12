@@ -3,9 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Home, ListPlus, Settings, LogOut, ShieldCheck } from "lucide-react";
+import { Menu, Home, ListPlus, Settings, LogOut, ShieldCheck, Settings2 } from "lucide-react";
 import { logoutAction } from "../actions";
-// Removido APP_BASE_URL pois os links serão relativos
 
 export const metadata: Metadata = {
   title: "Dashboard de Configuração",
@@ -39,7 +38,7 @@ export default function DashboardLayout({
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Home className="h-4 w-4" />
-                Início
+                Início (Quizzes)
               </Link>
               <Link
                 href="/config/dashboard/quiz/create"
@@ -48,15 +47,13 @@ export default function DashboardLayout({
                 <ListPlus className="h-4 w-4" />
                 Criar Novo Quiz
               </Link>
-              {/* Futuras opções do menu
               <Link
-                href="#"
+                href="/config/dashboard/settings"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
-                <Settings className="h-4 w-4" />
-                Configurações Gerais
+                <Settings2 className="h-4 w-4" />
+                Configurações Whitelabel
               </Link>
-              */}
             </nav>
           </div>
           <div className="mt-auto p-4">
@@ -95,7 +92,7 @@ export default function DashboardLayout({
                   className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
                   <Home className="h-5 w-5" />
-                  Início
+                  Início (Quizzes)
                 </Link>
                 <Link
                   href="/config/dashboard/quiz/create"
@@ -103,6 +100,13 @@ export default function DashboardLayout({
                 >
                   <ListPlus className="h-5 w-5" />
                   Criar Novo Quiz
+                </Link>
+                <Link
+                  href="/config/dashboard/settings"
+                  className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                >
+                  <Settings2 className="h-5 w-5" />
+                  Configurações Whitelabel
                 </Link>
               </nav>
               <div className="mt-auto">

@@ -6,7 +6,9 @@ import type { QuizConfig } from '@/types/quiz';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
-import { defaultContactStep } from '@/config/quizConfig'; // Importar a etapa de contato padrão
+import { defaultContactStep } from '@/config/quizConfig';
+import { getWhitelabelConfig } from '@/lib/whitelabel';
+import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; // Fallback
 
 interface QuizPageProps {
   params: {
@@ -14,7 +16,7 @@ interface QuizPageProps {
   };
 }
 
-async function getQuizConfig(slug: string): Promise<QuizConfig | null> {
+async function getQuizConfigFromFile(slug: string): Promise<QuizConfig | null> {
   const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
   const filePath = path.join(quizzesDirectory, `${slug}.json`);
   try {
@@ -24,27 +26,13 @@ async function getQuizConfig(slug: string): Promise<QuizConfig | null> {
     quizData.title = quizData.title || "Quiz Interativo";
     quizData.slug = quizData.slug || slug;
 
-    // Garantir que a etapa de contato seja sempre a última
     if (quizData.questions && Array.isArray(quizData.questions)) {
-      // Remove qualquer instância existente da etapa de contato padrão para evitar duplicatas
       quizData.questions = quizData.questions.filter(q => q.id !== defaultContactStep.id);
-      // Adiciona a etapa de contato padrão ao final
       quizData.questions.push(defaultContactStep);
     } else {
-      // Se não houver perguntas ou não for um array, inicializa com a etapa de contato
-      // Isso garante que mesmo um quiz "vazio" tenha a etapa de contato.
-      // A validação na página ainda tratará casos de quiz sem questões de conteúdo se necessário.
       quizData.questions = [defaultContactStep];
     }
     
-    // Se, após adicionar a etapa de contato, ela for a ÚNICA pergunta e o quiz
-    // deveria ter outras perguntas antes, a lógica de validação abaixo (no componente da página)
-    // pode precisar ser ajustada se um quiz SÓ com contato não for desejável.
-    // Por ora, a lógica abaixo que checa `quizConfig.questions.length === 0`
-    // (ou < 2 se contato é sempre adicionado) precisaria de ajuste.
-    // A regra atual é: se o JSON original está vazio, ele mostrará erro. Se o JSON tem perguntas,
-    // o contato é adicionado. Se o JSON tem só o contato, ele é padronizado.
-
     return quizData;
   } catch (error) {
     console.error(`Failed to read quiz config for slug ${slug}:`, error);
@@ -70,16 +58,10 @@ export async function generateStaticParams() {
 
 export default async function QuizPage({ params }: QuizPageProps) {
   const { quizSlug } = params;
-  const quizConfig = await getQuizConfig(quizSlug);
+  const quizConfigFromFile = await getQuizConfigFromFile(quizSlug);
+  const whitelabelConfig = await getWhitelabelConfig();
 
-  // Atualizando a validação: um quiz deve ter pelo menos a pergunta de contato.
-  // Se defaultContactStep é sempre adicionado, length nunca será 0 se o arquivo existir.
-  // Consideramos um quiz inválido se não tiver NENHUMA pergunta de conteúdo ANTES da de contato.
-  // Ou seja, se só tiver a pergunta de contato e o JSON original era vazio ou só tinha ela.
-  if (!quizConfig || !quizConfig.questions || quizConfig.questions.length === 0 ) {
-    // Se quizConfig.questions.length === 1, significa que só tem a de contato, o que é válido se for intencional.
-    // A lógica em getQuizConfig já garante que defaultContactStep é adicionada.
-    // O problema seria se o quizConfig em si não pudesse ser carregado.
+  if (!quizConfigFromFile || !quizConfigFromFile.questions || quizConfigFromFile.questions.length === 0 ) {
     return (
       <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center">
         <Alert variant="destructive" className="w-full max-w-lg">
@@ -94,20 +76,26 @@ export default async function QuizPage({ params }: QuizPageProps) {
     );
   }
   
-   // Se um quiz é válido APENAS se tiver mais do que a etapa de contato:
-   if (quizConfig.questions.length === 1 && quizConfig.questions[0].id === defaultContactStep.id) {
-     // Aqui você poderia decidir que um quiz só com a etapa de contato não é suficiente.
-     // No entanto, a criação via dashboard permite isso se o usuário não fornecer perguntas.
-     // Vamos permitir por enquanto, já que o usuário pode querer um formulário de contato simples.
+   if (quizConfigFromFile.questions.length === 1 && quizConfigFromFile.questions[0].id === defaultContactStep.id) {
+     // Allows quiz with only contact step.
    }
+
+  // Use whitelabel logoUrl, fallback to a default if not set
+  const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Logo+Empresa";
+  // Use client abandonment webhook from env as fallback, whitelabel not implemented for this yet
+  const clientAbandonmentWebhook = ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
 
 
   return (
     <main>
       <QuizForm 
-        quizQuestions={quizConfig.questions} 
-        quizSlug={quizConfig.slug} 
-        quizTitle={quizConfig.title} 
+        quizQuestions={quizConfigFromFile.questions} 
+        quizSlug={quizConfigFromFile.slug} 
+        quizTitle={quizConfigFromFile.title} 
+        logoUrl={logoUrlToUse}
+        facebookPixelId={whitelabelConfig.facebookPixelId}
+        googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
+        clientAbandonmentWebhookUrl={clientAbandonmentWebhook}
       />
     </main>
   );

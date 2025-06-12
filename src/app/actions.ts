@@ -1,6 +1,7 @@
 
 "use server";
-import { SERVER_SIDE_ABANDONMENT_WEBHOOK_URL, QUIZ_SUBMISSION_WEBHOOK_URL } from '@/config/appConfig';
+import { SERVER_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig';
+import { getWhitelabelConfig } from '@/lib/whitelabel';
 
 interface AbandonedQuizData {
   [key: string]: any;
@@ -10,7 +11,9 @@ interface AbandonedQuizData {
 }
 
 export async function logQuizAbandonment(data: Record<string, any>, quizSlug?: string) {
-  const webhookUrl = SERVER_SIDE_ABANDONMENT_WEBHOOK_URL;
+  // For now, abandonment webhooks still use environment variables.
+  // Can be changed to whitelabel config if needed later.
+  const webhookUrl = ENV_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL;
 
   if (!webhookUrl || webhookUrl === "YOUR_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL") {
     console.warn("Server-side Quiz abandonment webhook URL not configured. Data not sent.", webhookUrl);
@@ -20,7 +23,7 @@ export async function logQuizAbandonment(data: Record<string, any>, quizSlug?: s
   const payload: AbandonedQuizData = {
     ...data,
     timestamp: new Date().toISOString(),
-    quizType: "IceLazerLeadFilter_Abandonment_V2", // Consider making this dynamic or part of `data`
+    quizType: "IceLazerLeadFilter_Abandonment_V2",
     quizSlug: quizSlug || "default",
   };
 
@@ -52,16 +55,14 @@ interface SubmitQuizResponse {
 }
 
 export async function submitQuizData(data: Record<string, any>): Promise<SubmitQuizResponse> {
-  const webhookUrl = QUIZ_SUBMISSION_WEBHOOK_URL;
-  const payload = data; // data should now include quizSlug if applicable
+  const whitelabelConfig = await getWhitelabelConfig();
+  const webhookUrl = whitelabelConfig.quizSubmissionWebhookUrl;
+  const payload = data;
 
-  if (!webhookUrl || webhookUrl === "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL" || webhookUrl === "https://webhook.workflow.alfastage.com.br/webhook/icelazerquiz-mensagem" && !payload.quizSlug ) {
-     // The last condition is a bit of a placeholder to ensure the default isn't used without thought.
-     // A more robust check would be if webhookUrl is a known placeholder.
-    console.warn("Quiz submission webhook URL not properly configured. Data not sent.", { webhookUrl, quizSlug: payload.quizSlug});
-    return { status: 'webhook_error', message: "Webhook de submissão não configurado." };
+  if (!webhookUrl || webhookUrl === "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER" || webhookUrl.trim() === "") {
+    console.warn("Quiz submission webhook URL not properly configured in Whitelabel settings. Data not sent.", { webhookUrl, quizSlug: payload.quizSlug });
+    return { status: 'webhook_error', message: "Webhook de submissão não configurado nas configurações Whitelabel." };
   }
-
 
   console.log("Attempting to submit quiz data to webhook. URL:", webhookUrl);
   console.log("Payload being sent:", JSON.stringify(payload, null, 2));
