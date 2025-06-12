@@ -4,7 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import FacebookPixelScript from '@/components/FacebookPixelScript';
 import Script from 'next/script';
-import { getWhitelabelConfig } from '@/lib/whitelabel'; // Import whitelabel config
+import { getWhitelabelConfig, hexToHslString } from '@/lib/whitelabel'; // Import whitelabel config and hexToHslString
 import { APP_BASE_URL } from '@/config/appConfig'; // Keep for non-whitelabel env vars
 
 export const metadata: Metadata = {
@@ -19,15 +19,18 @@ export default async function RootLayout({
 }>) {
   const whitelabelConfig = await getWhitelabelConfig();
 
+  const primaryColorHslString = whitelabelConfig.primaryColorHex ? hexToHslString(whitelabelConfig.primaryColorHex) : null;
+  const secondaryColorHslString = whitelabelConfig.secondaryColorHex ? hexToHslString(whitelabelConfig.secondaryColorHex) : null;
+
   // Prepare dynamic styles for theme colors
   const dynamicStyles = `
     :root {
-      ${whitelabelConfig.primaryColorHsl ? `--primary: ${whitelabelConfig.primaryColorHsl};` : ''}
-      ${whitelabelConfig.secondaryColorHsl ? `--secondary: ${whitelabelConfig.secondaryColorHsl};` : ''}
+      ${primaryColorHslString ? `--primary: ${primaryColorHslString};` : ''}
+      ${secondaryColorHslString ? `--secondary: ${secondaryColorHslString};` : ''}
       /* If other colors like accent, background, foreground were configurable: */
-      /* ${whitelabelConfig.accentColorHsl ? `--accent: ${whitelabelConfig.accentColorHsl};` : ''} */
-      /* ${whitelabelConfig.backgroundColorHsl ? `--background: ${whitelabelConfig.backgroundColorHsl};` : ''} */
-      /* ${whitelabelConfig.foregroundColorHsl ? `--foreground: ${whitelabelConfig.foregroundColorHsl};` : ''} */
+      /* ${whitelabelConfig.accentColorHex ? `--accent: ${hexToHslString(whitelabelConfig.accentColorHex)};` : ''} */
+      /* ${whitelabelConfig.backgroundColorHex ? `--background: ${hexToHslString(whitelabelConfig.backgroundColorHex)};` : ''} */
+      /* ${whitelabelConfig.foregroundColorHex ? `--foreground: ${hexToHslString(whitelabelConfig.foregroundColorHex)};` : ''} */
     }
   `;
 

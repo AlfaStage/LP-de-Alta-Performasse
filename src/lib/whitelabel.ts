@@ -7,8 +7,8 @@ const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-confi
 
 const defaultConfig: WhitelabelConfig = {
   logoUrl: "https://placehold.co/150x50.png?text=Logo",
-  primaryColorHsl: "210 40% 96.1%", // Default light blue
-  secondaryColorHsl: "220 30% 90%", // Default lighter blue/gray
+  primaryColorHex: "#E09677", 
+  secondaryColorHex: "#F5D4C6", 
   quizSubmissionWebhookUrl: "",
   facebookPixelId: "",
   facebookPixelIdSecondary: "",
@@ -19,27 +19,24 @@ async function ensureConfigFileExists() {
   try {
     await fs.access(configFilePath);
   } catch (error) {
-    // File doesn't exist, create it with default content
     try {
       await fs.writeFile(configFilePath, JSON.stringify(defaultConfig, null, 2), 'utf8');
       console.log('Created default whitelabel-config.json');
     } catch (writeError) {
       console.error('Failed to write default whitelabel-config.json:', writeError);
-      // If we can't write the default, we'll just return the in-memory default later
     }
   }
 }
 
 export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
-  await ensureConfigFileExists(); // Ensure file exists before trying to read
+  await ensureConfigFileExists(); 
   try {
     const fileContents = await fs.readFile(configFilePath, 'utf8');
     const config = JSON.parse(fileContents) as WhitelabelConfig;
-    // Merge with defaults to ensure all keys are present if file is partial
     return { ...defaultConfig, ...config };
   } catch (error) {
     console.warn('Failed to read or parse whitelabel-config.json, returning default config:', error);
-    return { ...defaultConfig }; // Return a copy of default
+    return { ...defaultConfig }; 
   }
 }
 
@@ -52,4 +49,49 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return { success: false, message: `Erro ao salvar configurações: ${errorMessage}` };
   }
+}
+
+export function hexToHslString(hex: string): string | null {
+  if (!hex) return null;
+  const hexString = String(hex); // Ensure it's a string
+
+  let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexString);
+  if (!result) {
+    const shortResult = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(hexString);
+    if (!shortResult) return null;
+    result = [
+      shortResult[0],
+      shortResult[1] + shortResult[1],
+      shortResult[2] + shortResult[2],
+      shortResult[3] + shortResult[3],
+    ] as RegExpExecArray; 
+  }
+
+  let r = parseInt(result[1], 16);
+  let g = parseInt(result[2], 16);
+  let b = parseInt(result[3], 16);
+
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h: number, s: number, l: number = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0; 
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+      default: h = 0; // Should not be reached if logic is sound
+    }
+    h /= 6;
+  }
+
+  h = Math.round(h * 360);
+  s = Math.round(s * 100);
+  l = Math.round(l * 100);
+
+  return `${h} ${s}% ${l}%`;
 }

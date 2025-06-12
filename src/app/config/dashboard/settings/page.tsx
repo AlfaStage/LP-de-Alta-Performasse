@@ -15,12 +15,12 @@ import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from './actions';
 import type { WhitelabelConfig } from '@/types/quiz';
 
-const hslColorRegex = /^\d{1,3}\s\d{1,3}%\s\d{1,3}%$/;
+const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 
 const whitelabelSettingsSchema = z.object({
   logoUrl: z.string().url({ message: "URL do logo inválida." }).min(1, "URL do logo é obrigatória."),
-  primaryColorHsl: z.string().regex(hslColorRegex, { message: "Formato HSL inválido. Use 'H S% L%' (ex: 210 40% 96%)." }),
-  secondaryColorHsl: z.string().regex(hslColorRegex, { message: "Formato HSL inválido. Use 'H S% L%'." }),
+  primaryColorHex: z.string().regex(hexColorRegex, { message: "Formato HEX inválido. Use #RRGGBB ou #RGB." }),
+  secondaryColorHex: z.string().regex(hexColorRegex, { message: "Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   quizSubmissionWebhookUrl: z.string().url({ message: "URL do webhook inválida." }).min(1, "Webhook é obrigatório."),
   facebookPixelId: z.string().optional(),
   facebookPixelIdSecondary: z.string().optional(),
@@ -90,7 +90,7 @@ export default function WhitelabelSettingsPage() {
           </CardTitle>
           <CardDescription>
             Personalize a aparência e as integrações do sistema de quizzes.
-            Para cores, use o formato HSL (Ex: Matiz Saturação% Luminosidade% -> 25 80% 50%).
+            Para cores, use o formato HEX (Ex: #FF5733).
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -106,26 +106,26 @@ export default function WhitelabelSettingsPage() {
               {errors.logoUrl && <p className="text-sm text-destructive">{errors.logoUrl.message}</p>}
             </div>
 
-            {/* Primary Color HSL */}
+            {/* Primary Color HEX */}
             <div className="space-y-2">
-              <Label htmlFor="primaryColorHsl" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Primária (HSL)</Label>
+              <Label htmlFor="primaryColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Primária (HEX)</Label>
               <Controller
-                name="primaryColorHsl"
+                name="primaryColorHex"
                 control={control}
-                render={({ field }) => <Input id="primaryColorHsl" {...field} placeholder="e.g., 19 60% 70%" />}
+                render={({ field }) => <Input id="primaryColorHex" {...field} placeholder="e.g., #E09677" />}
               />
-              {errors.primaryColorHsl && <p className="text-sm text-destructive">{errors.primaryColorHsl.message}</p>}
+              {errors.primaryColorHex && <p className="text-sm text-destructive">{errors.primaryColorHex.message}</p>}
             </div>
 
-            {/* Secondary Color HSL */}
+            {/* Secondary Color HEX */}
             <div className="space-y-2">
-              <Label htmlFor="secondaryColorHsl" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Secundária (HSL)</Label>
+              <Label htmlFor="secondaryColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Secundária (HEX)</Label>
               <Controller
-                name="secondaryColorHsl"
+                name="secondaryColorHex"
                 control={control}
-                render={({ field }) => <Input id="secondaryColorHsl" {...field} placeholder="e.g., 15 60% 90%" />}
+                render={({ field }) => <Input id="secondaryColorHex" {...field} placeholder="e.g., #F5D4C6" />}
               />
-              {errors.secondaryColorHsl && <p className="text-sm text-destructive">{errors.secondaryColorHsl.message}</p>}
+              {errors.secondaryColorHex && <p className="text-sm text-destructive">{errors.secondaryColorHex.message}</p>}
             </div>
             
             {/* Quiz Submission Webhook URL */}

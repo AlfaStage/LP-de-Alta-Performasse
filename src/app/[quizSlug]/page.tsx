@@ -80,9 +80,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
      // Allows quiz with only contact step.
    }
 
-  // Use whitelabel logoUrl, fallback to a default if not set
   const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Logo+Empresa";
-  // Use client abandonment webhook from env as fallback, whitelabel not implemented for this yet
   const clientAbandonmentWebhook = ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
 
 
