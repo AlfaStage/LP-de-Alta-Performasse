@@ -17,7 +17,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
+  // AlertDialogTrigger, // No longer needed here for the button in the loop
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 
@@ -51,6 +51,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchQuizzes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDeleteQuiz = async () => {
@@ -129,16 +130,15 @@ export default function DashboardPage() {
                          <Edit className="h-3 w-3" /> Editar
                        </Button>
                     </Link>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        className="flex items-center gap-1"
-                        onClick={() => setQuizToDelete(quiz)}
-                      >
-                        <Trash2 className="h-3 w-3" /> Apagar
-                      </Button>
-                    </AlertDialogTrigger>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="flex items-center gap-1"
+                      onClick={() => setQuizToDelete(quiz)}
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-3 w-3" /> Apagar
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -187,3 +187,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
