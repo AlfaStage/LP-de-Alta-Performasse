@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, FormProvider, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getSuccessIcon } from '@/config/quizConfig'; // Keep for success icon
 import QuizProgressBar from './QuizProgressBar';
 import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent } from '@/lib/fpixel';
-import { event as gaEvent } from '@/lib/gtag';
+import { event as gaEvent, GA_TRACKING_ID } from '@/lib/gtag';
 import { logQuizAbandonment, submitQuizData } from '@/app/actions';
 import * as LucideIcons from 'lucide-react'; // Import all for dynamic icons
 import Image from 'next/image';
@@ -69,8 +69,10 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
       console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking);
       fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking });
     }
-    console.log("GA: quiz_start event triggered for", quizNameForTracking);
-    gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
+    if(GA_TRACKING_ID) {
+        console.log("GA: quiz_start event triggered for", quizNameForTracking);
+        gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
+    }
   }, [quizSlug, quizQuestions]);
 
   useEffect(() => {
@@ -141,8 +143,10 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
         console.log("FB Pixel: QuestionAnswered event triggered.", answerData);
         fbTrackEvent('QuestionAnswered', answerData);
       }
-      console.log("GA: question_answered event triggered.", gaAnswerData);
-      gaEvent({ action: 'question_answered', ...gaAnswerData });
+      if(GA_TRACKING_ID) {
+        console.log("GA: question_answered event triggered.", gaAnswerData);
+        gaEvent({ action: 'question_answered', ...gaAnswerData });
+      }
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
       if (areAnyPixelsConfigured()) {
         console.log("FB Pixel: QuestionAnswered event triggered (last question).", answerData);
@@ -161,8 +165,10 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
         step_number: currentStep + 1,
         quiz_name: quizNameForTracking
       };
-      console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
-      gaEvent({ action: 'question_answered', ...lastGaAnswerData });
+      if(GA_TRACKING_ID){
+        console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
+        gaEvent({ action: 'question_answered', ...lastGaAnswerData });
+      }
       await handleSubmit(onSubmit)();
     }
   };
@@ -225,10 +231,12 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
                 console.log("FB Pixel: Lead event triggered.", leadDataFb);
                 fbTrackEvent('Lead', leadDataFb);
             }
-            console.log("GA: quiz_complete event triggered.", quizCompleteDataGa);
-            gaEvent({action: 'quiz_complete', ...quizCompleteDataGa});
-            console.log("GA: generate_lead event triggered.", leadDataGa);
-            gaEvent({action: 'generate_lead', ...leadDataGa});
+            if(GA_TRACKING_ID){
+                console.log("GA: quiz_complete event triggered.", quizCompleteDataGa);
+                gaEvent({action: 'quiz_complete', ...quizCompleteDataGa});
+                console.log("GA: generate_lead event triggered.", leadDataGa);
+                gaEvent({action: 'generate_lead', ...leadDataGa});
+            }
 
         } else if (result.status === 'invalid_number') {
             setSubmissionStatus('idle'); 
@@ -524,3 +532,4 @@ export default function QuizForm({ quizQuestions, quizSlug, quizTitle = "Quiz" }
     </FormProvider>
   );
 }
+
