@@ -18,7 +18,7 @@ import { defaultContactStep } from '@/config/quizConfig';
 import { APP_BASE_URL } from '@/config/appConfig';
 import Link from 'next/link';
 import QuizForm from '@/components/quiz/QuizForm';
-import { getWhitelabelConfig } from '@/lib/whitelabel';
+import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions'; // ALTERADO AQUI
 import type { WhitelabelConfig } from '@/types/quiz';
 
 const exampleQuestion: QuizQuestion = {
@@ -60,7 +60,7 @@ export default function EditQuizPage() {
 
   useEffect(() => {
     async function fetchPreviewConfig() {
-      const config = await getWhitelabelConfig();
+      const config = await fetchWhitelabelSettings(); // ALTERADO AQUI
       setWhitelabelSettings(config);
     }
     fetchPreviewConfig();
@@ -109,7 +109,6 @@ export default function EditQuizPage() {
     fetchQuizData();
   }, [fetchQuizData]);
 
-  // Interactive Builder Functions (similar to create page)
     const addQuestion = () => {
     setInteractiveQuestions([
       ...interactiveQuestions,
@@ -203,7 +202,7 @@ export default function EditQuizPage() {
             alert("JSON inválido: deve ser um array de perguntas.");
           }
         } else {
-           setInteractiveQuestions([]); // If JSON is empty, clear interactive builder
+           setInteractiveQuestions([]); 
         }
       } catch (e) {
         alert("Erro ao parsear JSON. Verifique a sintaxe.");
@@ -253,7 +252,7 @@ export default function EditQuizPage() {
     let parsedQuestions: QuizQuestion[];
     if (currentTab === 'json') {
         if (!questionsJson.trim()) {
-            parsedQuestions = []; // Allow saving with no questions (contact step will be added)
+            parsedQuestions = []; 
         } else {
             try {
                 parsedQuestions = JSON.parse(questionsJson);
@@ -276,7 +275,7 @@ export default function EditQuizPage() {
       const result = await updateQuizAction({ title, slug, questions: parsedQuestions });
       if (result.success) {
         setSuccess(`Quiz "${title}" atualizado com sucesso!`);
-        await fetchQuizData(); // Re-fetch to ensure UI is in sync with saved data
+        await fetchQuizData(); 
       } else {
         setError(result.message || 'Falha ao atualizar o quiz.');
       }
@@ -381,7 +380,7 @@ export default function EditQuizPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {interactiveQuestions.map((q, qIndex) => (
-                        <Card key={q.id || `q-${qIndex}`} className="p-4 space-y-3 bg-muted/30 shadow-md">
+                        <Card key={q.id || `q_interactive_edit_${qIndex}`} className="p-4 space-y-3 bg-muted/30 shadow-md">
                             <div className="flex justify-between items-center mb-3">
                                 <Label className="text-lg font-semibold text-foreground">Pergunta {qIndex + 1}</Label>
                                 <Button variant="ghost" size="icon" onClick={() => removeQuestion(qIndex)} className="text-destructive hover:text-destructive/80">
@@ -420,7 +419,7 @@ export default function EditQuizPage() {
                                 <CardHeader className="p-2"><CardTitle className="text-md">Opções da Pergunta</CardTitle></CardHeader>
                                 <CardContent className="space-y-3 p-2">
                                     {(q.options || []).map((opt, oIndex) => (
-                                    <Card key={oIndex} className="p-3 space-y-2 bg-muted/40">
+                                    <Card key={`q-${qIndex}-opt_edit_${oIndex}`} className="p-3 space-y-2 bg-muted/40">
                                         <div className="flex justify-between items-center">
                                             <Label className="text-sm font-medium">Opção {oIndex + 1}</Label>
                                             <Button variant="ghost" size="sm" onClick={() => removeOption(qIndex, oIndex)} className="text-destructive hover:text-destructive/80 -mr-2">
@@ -449,7 +448,7 @@ export default function EditQuizPage() {
                                 <CardHeader className="p-2"><CardTitle className="text-md">Campos de Entrada</CardTitle></CardHeader>
                                 <CardContent className="space-y-3 p-2">
                                     {(q.fields || []).map((field, fIndex) => (
-                                    <Card key={fIndex} className="p-3 space-y-2 bg-muted/40">
+                                    <Card key={`q-${qIndex}-field_edit_${fIndex}`} className="p-3 space-y-2 bg-muted/40">
                                         <div className="flex justify-between items-center">
                                              <Label className="text-sm font-medium">Campo {fIndex + 1}</Label>
                                             <Button variant="ghost" size="sm" onClick={() => removeFormField(qIndex, fIndex)} className="text-destructive hover:text-destructive/80 -mr-2">
@@ -565,16 +564,16 @@ export default function EditQuizPage() {
           <DialogHeader className="p-4 border-b">
             <DialogTitle>Pré-visualização do Quiz: {title || originalQuizData?.title || "Quiz"}</DialogTitle>
           </DialogHeader>
-           <div className="flex-grow overflow-y-auto bg-background"> {/* Ensure preview bg matches quiz form */}
-            {previewQuizData && whitelabelSettings.logoUrl && (
+           <div className="flex-grow overflow-y-auto bg-background"> 
+            {previewQuizData && (
               <QuizForm
                 quizQuestions={previewQuizData}
-                quizSlug={slug} // Use current slug for preview context
+                quizSlug={slug} 
                 quizTitle={title || originalQuizData?.title || "Pré-visualização"}
-                logoUrl={whitelabelSettings.logoUrl}
-                footerCopyrightText={whitelabelSettings.footerCopyrightText}
-                facebookPixelId="" // Not needed for preview
-                googleAnalyticsId="" // Not needed for preview
+                logoUrl={whitelabelSettings.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
+                footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview. Todos os direitos reservados.`}
+                facebookPixelId="" 
+                googleAnalyticsId="" 
                 onSubmitOverride={mockSubmitOverride}
                 onAbandonmentOverride={async () => { console.log("Preview abandonment") }}
                 isPreview={true}

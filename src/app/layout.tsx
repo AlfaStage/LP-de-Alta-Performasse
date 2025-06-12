@@ -4,7 +4,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import FacebookPixelScript from '@/components/FacebookPixelScript';
 import Script from 'next/script';
-import { getWhitelabelConfig, hexToHslString } from '@/lib/whitelabel'; 
+import { getWhitelabelConfig } from '@/lib/whitelabel.server'; 
+import { hexToHslString } from '@/lib/whitelabel';
 
 export async function generateMetadata(): Promise<Metadata> {
   const whitelabelConfig = await getWhitelabelConfig();
@@ -37,11 +38,10 @@ export default async function RootLayout({
   if (whitelabelConfig.buttonPrimaryBgColorHex && whitelabelConfig.buttonPrimaryBgColorHex.trim() !== "") {
     buttonSpecificPrimaryHslString = hexToHslString(whitelabelConfig.buttonPrimaryBgColorHex);
   }
-  // --primary is for interactive elements like button backgrounds
+  
   const finalPrimaryInteractiveHsl = buttonSpecificPrimaryHslString || themePrimaryColorHslString;
 
-  // --accent will follow --secondary for consistent hover on outline/ghost buttons
-  const accentColorHslString = secondaryColorHslString;
+  const accentColorHslString = secondaryColorHslString; // --accent will follow --secondary
 
   const dynamicStyles = `
     :root {
@@ -51,7 +51,7 @@ export default async function RootLayout({
       ${secondaryColorHslString ? `--secondary: ${secondaryColorHslString};` : ''}
       ${accentColorHslString ? `--accent: ${accentColorHslString};` : ''}
       
-      /* --ring and --chart-1 will consistently use the theme's primary color */
+      /* --ring and --chart-1 will consistently use the theme's primary color (not button color) */
       ${themePrimaryColorHslString ? `--ring: ${themePrimaryColorHslString};` : ''}
       ${themePrimaryColorHslString ? `--chart-1: ${themePrimaryColorHslString};` : ''}
     }

@@ -1,7 +1,7 @@
 
 "use server";
 
-import { getWhitelabelConfig, saveWhitelabelConfig as saveConfig } from '@/lib/whitelabel';
+import { getWhitelabelConfig, saveWhitelabelConfig as saveConfig } from '@/lib/whitelabel.server';
 import type { WhitelabelConfig } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
 

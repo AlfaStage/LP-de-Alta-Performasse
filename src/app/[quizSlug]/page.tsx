@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { defaultContactStep } from '@/config/quizConfig';
-import { getWhitelabelConfig } from '@/lib/whitelabel';
+import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
 
 interface QuizPageProps {

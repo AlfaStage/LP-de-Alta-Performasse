@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { QuizConfig } from '@/types/quiz';
-import { getWhitelabelConfig } from '@/lib/whitelabel';
-import QuizForm from '@/components/quiz/QuizForm'; // Import QuizForm
+import { getWhitelabelConfig } from '@/lib/whitelabel.server';
+import QuizForm from '@/components/quiz/QuizForm'; 
 import { defaultContactStep } from '@/config/quizConfig';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
 

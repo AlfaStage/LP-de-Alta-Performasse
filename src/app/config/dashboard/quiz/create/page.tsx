@@ -17,7 +17,7 @@ import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
 import { APP_BASE_URL } from '@/config/appConfig';
 import QuizForm from '@/components/quiz/QuizForm';
-import { getWhitelabelConfig } from '@/lib/whitelabel'; // For preview logo/footer
+import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions'; // ALTERADO AQUI
 import type { WhitelabelConfig } from '@/types/quiz';
 
 
@@ -54,7 +54,7 @@ export default function CreateQuizPage() {
 
   useEffect(() => {
     async function fetchPreviewConfig() {
-      const config = await getWhitelabelConfig();
+      const config = await fetchWhitelabelSettings(); // ALTERADO AQUI
       setWhitelabelSettings(config);
     }
     fetchPreviewConfig();
@@ -237,23 +237,10 @@ export default function CreateQuizPage() {
       parsedQuestions = interactiveQuestions;
     }
     
-    // No longer checking for empty questions here, server-side will add contact step regardless
-    // if (parsedQuestions.length === 0) {
-    //      setError("Adicione ao menos uma pergunta no construtor interativo ou no JSON.");
-    //      setIsLoading(false);
-    //      return;
-    // }
-
-
     try {
       const result = await createQuizAction({ title, slug, questions: parsedQuestions });
       if (result.success) {
         setSuccess(`Quiz "${title}" criado com sucesso! Acessível em /${result.slug}`);
-        // Optionally reset fields or redirect
-        // setTitle('');
-        // setSlug('');
-        // setQuestionsJson('');
-        // setInteractiveQuestions([]);
         router.push(`/config/dashboard/quiz/edit/${result.slug}`);
       } else {
         setError(result.message || 'Falha ao criar o quiz.');
@@ -324,7 +311,7 @@ export default function CreateQuizPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {interactiveQuestions.map((q, qIndex) => (
-                        <Card key={q.id} className="p-4 space-y-3 bg-muted/30 shadow-md">
+                        <Card key={q.id || `q_interactive_${qIndex}`} className="p-4 space-y-3 bg-muted/30 shadow-md">
                             <div className="flex justify-between items-center mb-3">
                                 <Label className="text-lg font-semibold text-foreground">Pergunta {qIndex + 1}</Label>
                                 <Button variant="ghost" size="icon" onClick={() => removeQuestion(qIndex)} className="text-destructive hover:text-destructive/80">
@@ -358,13 +345,12 @@ export default function CreateQuizPage() {
                                 </div>
                             </div>
 
-                            {/* Opções para Radio/Checkbox */}
                             {(q.type === 'radio' || q.type === 'checkbox') && (
                             <Card className="p-3 mt-2 bg-background/70">
                                 <CardHeader className="p-2"><CardTitle className="text-md">Opções da Pergunta</CardTitle></CardHeader>
                                 <CardContent className="space-y-3 p-2">
                                     {(q.options || []).map((opt, oIndex) => (
-                                    <Card key={oIndex} className="p-3 space-y-2 bg-muted/40">
+                                    <Card key={`q-${qIndex}-opt-${oIndex}`} className="p-3 space-y-2 bg-muted/40">
                                         <div className="flex justify-between items-center">
                                             <Label className="text-sm font-medium">Opção {oIndex + 1}</Label>
                                             <Button variant="ghost" size="sm" onClick={() => removeOption(qIndex, oIndex)} className="text-destructive hover:text-destructive/80 -mr-2">
@@ -388,13 +374,12 @@ export default function CreateQuizPage() {
                             </Card>
                             )}
 
-                            {/* Campos para textFields */}
                             {q.type === 'textFields' && (
                             <Card className="p-3 mt-2 bg-background/70">
                                 <CardHeader className="p-2"><CardTitle className="text-md">Campos de Entrada</CardTitle></CardHeader>
                                 <CardContent className="space-y-3 p-2">
                                     {(q.fields || []).map((field, fIndex) => (
-                                    <Card key={fIndex} className="p-3 space-y-2 bg-muted/40">
+                                    <Card key={`q-${qIndex}-field-${fIndex}`} className="p-3 space-y-2 bg-muted/40">
                                         <div className="flex justify-between items-center">
                                              <Label className="text-sm font-medium">Campo {fIndex + 1}</Label>
                                             <Button variant="ghost" size="sm" onClick={() => removeFormField(qIndex, fIndex)} className="text-destructive hover:text-destructive/80 -mr-2">
@@ -509,16 +494,16 @@ export default function CreateQuizPage() {
           <DialogHeader className="p-4 border-b">
             <DialogTitle>Pré-visualização do Quiz: {title || "Novo Quiz"}</DialogTitle>
           </DialogHeader>
-          <div className="flex-grow overflow-y-auto">
-            {previewQuizData && whitelabelSettings.logoUrl && (
+          <div className="flex-grow overflow-y-auto bg-background">
+            {previewQuizData && (
               <QuizForm
                 quizQuestions={previewQuizData}
                 quizSlug={slug || "preview-slug"}
                 quizTitle={title || "Pré-visualização do Quiz"}
-                logoUrl={whitelabelSettings.logoUrl}
-                footerCopyrightText={whitelabelSettings.footerCopyrightText}
-                facebookPixelId="" // Not needed for preview
-                googleAnalyticsId="" // Not needed for preview
+                logoUrl={whitelabelSettings.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
+                footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview. Todos os direitos reservados.`}
+                facebookPixelId="" 
+                googleAnalyticsId="" 
                 onSubmitOverride={mockSubmitOverride}
                 onAbandonmentOverride={async () => { console.log("Preview abandonment") }}
                 isPreview={true}
@@ -536,5 +521,6 @@ export default function CreateQuizPage() {
     </div>
   );
 }
+    
 
     

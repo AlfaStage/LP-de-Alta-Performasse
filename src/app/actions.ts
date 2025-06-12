@@ -1,7 +1,7 @@
 
 "use server";
 import { SERVER_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig';
-import { getWhitelabelConfig } from '@/lib/whitelabel';
+import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 
 interface AbandonedQuizData {
   [key: string]: any;
