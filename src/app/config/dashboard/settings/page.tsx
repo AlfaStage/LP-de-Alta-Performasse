@@ -101,7 +101,7 @@ export default function WhitelabelSettingsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
-            <Settings2 className="h-6 w-6 text-primary" />
+            <Settings2 className="h-6 w-6 text-foreground" /> {/* Changed from text-primary */}
             Configurações Whitelabel
           </CardTitle>
           <CardDescription>
@@ -113,7 +113,7 @@ export default function WhitelabelSettingsPage() {
           <CardContent className="space-y-6">
             {/* Project Name */}
             <div className="space-y-2">
-              <Label htmlFor="projectName" className="flex items-center gap-1"><TextQuote className="h-4 w-4" />Nome do Projeto</Label>
+              <Label htmlFor="projectName" className="flex items-center gap-1"><TextQuote className="h-4 w-4 text-muted-foreground" />Nome do Projeto</Label> {/* Added text-muted-foreground to icon */}
               <Controller
                 name="projectName"
                 control={control}
@@ -124,7 +124,7 @@ export default function WhitelabelSettingsPage() {
 
             {/* Logo URL */}
             <div className="space-y-2">
-              <Label htmlFor="logoUrl" className="flex items-center gap-1"><ImageIcon className="h-4 w-4" />URL do Logo</Label>
+              <Label htmlFor="logoUrl" className="flex items-center gap-1"><ImageIcon className="h-4 w-4 text-muted-foreground" />URL do Logo</Label> {/* Added text-muted-foreground to icon */}
               <Controller
                 name="logoUrl"
                 control={control}
@@ -136,7 +136,7 @@ export default function WhitelabelSettingsPage() {
             {/* Primary Theme Color HEX */}
             <div className="space-y-2">
               <Label htmlFor="primaryColorHex" className="flex items-center gap-1">
-                <Palette className="h-4 w-4" />Cor Primária do Tema (HEX)
+                <Palette className="h-4 w-4 text-muted-foreground" />Cor Primária do Tema (HEX) {/* Added text-muted-foreground to icon */}
                 <Tooltip>
                     <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
                     <TooltipContent className="max-w-xs">
@@ -178,7 +178,7 @@ export default function WhitelabelSettingsPage() {
             {/* Secondary Color HEX */}
             <div className="space-y-2">
               <Label htmlFor="secondaryColorHex" className="flex items-center gap-1">
-                <Palette className="h-4 w-4" />Cor Secundária do Tema (HEX)
+                <Palette className="h-4 w-4 text-muted-foreground" />Cor Secundária do Tema (HEX) {/* Added text-muted-foreground to icon */}
                  <Tooltip>
                     <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
                     <TooltipContent className="max-w-xs">
@@ -220,7 +220,7 @@ export default function WhitelabelSettingsPage() {
             {/* Button Primary Background Color HEX */}
             <div className="space-y-2">
               <Label htmlFor="buttonPrimaryBgColorHex" className="flex items-center gap-1">
-                <Palette className="h-4 w-4" />Cor de Fundo do Botão Principal (HEX)
+                <Palette className="h-4 w-4 text-muted-foreground" />Cor de Fundo do Botão Principal (HEX) {/* Added text-muted-foreground to icon */}
                 <Tooltip>
                     <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
                     <TooltipContent className="max-w-xs">
@@ -263,7 +263,7 @@ export default function WhitelabelSettingsPage() {
 
             {/* Page Background Color HEX */}
             <div className="space-y-2">
-              <Label htmlFor="pageBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Fundo da Página (HEX)</Label>
+              <Label htmlFor="pageBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4 text-muted-foreground" />Cor Fundo da Página (HEX)</Label> {/* Added text-muted-foreground to icon */}
               <div className="flex items-center gap-2">
                 <Controller
                   name="pageBackgroundColorHex"
@@ -297,7 +297,7 @@ export default function WhitelabelSettingsPage() {
 
             {/* Quiz Background Color HEX */}
             <div className="space-y-2">
-              <Label htmlFor="quizBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Fundo do Quiz (Card) (HEX)</Label>
+              <Label htmlFor="quizBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4 text-muted-foreground" />Cor Fundo do Quiz (Card) (HEX)</Label> {/* Added text-muted-foreground to icon */}
               <div className="flex items-center gap-2">
                 <Controller
                   name="quizBackgroundColorHex"
@@ -331,7 +331,7 @@ export default function WhitelabelSettingsPage() {
             
             {/* Quiz Submission Webhook URL */}
             <div className="space-y-2">
-              <Label htmlFor="quizSubmissionWebhookUrl" className="flex items-center gap-1"><Link2 className="h-4 w-4" />Webhook de Submissão do Quiz</Label>
+              <Label htmlFor="quizSubmissionWebhookUrl" className="flex items-center gap-1"><Link2 className="h-4 w-4 text-muted-foreground" />Webhook de Submissão do Quiz</Label> {/* Added text-muted-foreground to icon */}
               <Controller
                 name="quizSubmissionWebhookUrl"
                 control={control}
@@ -342,7 +342,7 @@ export default function WhitelabelSettingsPage() {
 
             {/* Facebook Pixel ID */}
             <div className="space-y-2">
-              <Label htmlFor="facebookPixelId" className="flex items-center gap-1"><Facebook className="h-4 w-4" />Facebook Pixel ID (Primário)</Label>
+              <Label htmlFor="facebookPixelId" className="flex items-center gap-1"><Facebook className="h-4 w-4 text-muted-foreground" />Facebook Pixel ID (Primário)</Label> {/* Added text-muted-foreground to icon */}
               <Controller
                 name="facebookPixelId"
                 control={control}
@@ -353,7 +353,7 @@ export default function WhitelabelSettingsPage() {
 
             {/* Facebook Pixel ID Secondary */}
             <div className="space-y-2">
-              <Label htmlFor="facebookPixelIdSecondary" className="flex items-center gap-1"><Facebook className="h-4 w-4" />Facebook Pixel ID (Secundário)</Label>
+              <Label htmlFor="facebookPixelIdSecondary" className="flex items-center gap-1"><Facebook className="h-4 w-4 text-muted-foreground" />Facebook Pixel ID (Secundário)</Label> {/* Added text-muted-foreground to icon */}
               <Controller
                 name="facebookPixelIdSecondary"
                 control={control}
@@ -364,7 +364,10 @@ export default function WhitelabelSettingsPage() {
 
             {/* Google Analytics ID */}
             <div className="space-y-2">
-              <Label htmlFor="googleAnalyticsId">Google Analytics ID (Tag do Google)</Label>
+              <Label htmlFor="googleAnalyticsId" className="flex items-center gap-1">
+                 {/* Intencionalmente sem ícone para variar ou pode adicionar <Settings className="h-4 w-4 text-muted-foreground" /> se desejar */}
+                Google Analytics ID (Tag do Google)
+              </Label>
               <Controller
                 name="googleAnalyticsId"
                 control={control}

@@ -27,7 +27,7 @@ export default function DashboardLayout({
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/config/dashboard" className="flex items-center gap-2 font-semibold">
-              <ShieldCheck className="h-6 w-6 text-primary" />
+              <ShieldCheck className="h-6 w-6 text-foreground" /> {/* Changed from text-primary */}
               <span className="">Painel Ice Lazer</span>
             </Link>
           </div>
@@ -84,7 +84,7 @@ export default function DashboardLayout({
                   href="/config/dashboard"
                   className="flex items-center gap-2 text-lg font-semibold mb-4"
                 >
-                  <ShieldCheck className="h-6 w-6 text-primary" />
+                  <ShieldCheck className="h-6 w-6 text-foreground" /> {/* Changed from text-primary */}
                   <span>Painel Ice Lazer</span>
                 </Link>
                 <Link
