@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Save, Loader2, AlertTriangle, Palette, Link2, Facebook, Settings2 } from 'lucide-react';
+import { Save, Loader2, AlertTriangle, Palette, Link2, Facebook, Settings2, TextQuote, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from './actions';
 import type { WhitelabelConfig } from '@/types/quiz';
@@ -18,10 +18,13 @@ import type { WhitelabelConfig } from '@/types/quiz';
 const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 
 const whitelabelSettingsSchema = z.object({
+  projectName: z.string().min(1, "Nome do projeto é obrigatório."),
   logoUrl: z.string().url({ message: "URL do logo inválida." }).min(1, "URL do logo é obrigatória."),
-  primaryColorHex: z.string().regex(hexColorRegex, { message: "Formato HEX inválido. Use #RRGGBB ou #RGB." }),
-  secondaryColorHex: z.string().regex(hexColorRegex, { message: "Formato HEX inválido. Use #RRGGBB ou #RGB." }),
-  quizSubmissionWebhookUrl: z.string().url({ message: "URL do webhook inválida." }).min(1, "Webhook é obrigatório."),
+  primaryColorHex: z.string().regex(hexColorRegex, { message: "Cor primária: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
+  secondaryColorHex: z.string().regex(hexColorRegex, { message: "Cor secundária: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
+  pageBackgroundColorHex: z.string().regex(hexColorRegex, { message: "Cor fundo página: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
+  quizBackgroundColorHex: z.string().regex(hexColorRegex, { message: "Cor fundo quiz: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
+  quizSubmissionWebhookUrl: z.string().url({ message: "URL do webhook de submissão inválida." }).min(1, "Webhook de submissão é obrigatório."),
   facebookPixelId: z.string().optional(),
   facebookPixelIdSecondary: z.string().optional(),
   googleAnalyticsId: z.string().optional(),
@@ -61,6 +64,10 @@ export default function WhitelabelSettingsPage() {
         description: result.message || "Configurações Whitelabel salvas.",
         variant: "default",
       });
+      // Forçar um recarregamento da página para que o RootLayout pegue as novas cores.
+      // Idealmente, o Next.js revalidaria o layout, mas para garantir a aplicação imediata dos estilos CSS
+      // injetados, um reload é mais direto aqui.
+      window.location.reload();
     } else {
       toast({
         title: "Erro ao Salvar",
@@ -89,15 +96,26 @@ export default function WhitelabelSettingsPage() {
             Configurações Whitelabel
           </CardTitle>
           <CardDescription>
-            Personalize a aparência e as integrações do sistema de quizzes.
+            Personalize a aparência, nome, integrações e webhooks do sistema de quizzes.
             Para cores, use o formato HEX (Ex: #FF5733).
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">
+            {/* Project Name */}
+            <div className="space-y-2">
+              <Label htmlFor="projectName" className="flex items-center gap-1"><TextQuote className="h-4 w-4" />Nome do Projeto</Label>
+              <Controller
+                name="projectName"
+                control={control}
+                render={({ field }) => <Input id="projectName" {...field} placeholder="Ex: Ice Lazer Lead Quiz" />}
+              />
+              {errors.projectName && <p className="text-sm text-destructive">{errors.projectName.message}</p>}
+            </div>
+
             {/* Logo URL */}
             <div className="space-y-2">
-              <Label htmlFor="logoUrl" className="flex items-center gap-1"><Link2 className="h-4 w-4" />URL do Logo</Label>
+              <Label htmlFor="logoUrl" className="flex items-center gap-1"><ImageIcon className="h-4 w-4" />URL do Logo</Label>
               <Controller
                 name="logoUrl"
                 control={control}
@@ -112,7 +130,7 @@ export default function WhitelabelSettingsPage() {
               <Controller
                 name="primaryColorHex"
                 control={control}
-                render={({ field }) => <Input id="primaryColorHex" {...field} placeholder="e.g., #E09677" />}
+                render={({ field }) => <Input id="primaryColorHex" {...field} placeholder="#E09677" />}
               />
               {errors.primaryColorHex && <p className="text-sm text-destructive">{errors.primaryColorHex.message}</p>}
             </div>
@@ -123,9 +141,31 @@ export default function WhitelabelSettingsPage() {
               <Controller
                 name="secondaryColorHex"
                 control={control}
-                render={({ field }) => <Input id="secondaryColorHex" {...field} placeholder="e.g., #F5D4C6" />}
+                render={({ field }) => <Input id="secondaryColorHex" {...field} placeholder="#F5D4C6" />}
               />
               {errors.secondaryColorHex && <p className="text-sm text-destructive">{errors.secondaryColorHex.message}</p>}
+            </div>
+
+            {/* Page Background Color HEX */}
+            <div className="space-y-2">
+              <Label htmlFor="pageBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Fundo da Página (HEX)</Label>
+              <Controller
+                name="pageBackgroundColorHex"
+                control={control}
+                render={({ field }) => <Input id="pageBackgroundColorHex" {...field} placeholder="#FCEFEA" />}
+              />
+              {errors.pageBackgroundColorHex && <p className="text-sm text-destructive">{errors.pageBackgroundColorHex.message}</p>}
+            </div>
+
+            {/* Quiz Background Color HEX */}
+            <div className="space-y-2">
+              <Label htmlFor="quizBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Fundo do Quiz (Card) (HEX)</Label>
+              <Controller
+                name="quizBackgroundColorHex"
+                control={control}
+                render={({ field }) => <Input id="quizBackgroundColorHex" {...field} placeholder="#FFFFFF" />}
+              />
+              {errors.quizBackgroundColorHex && <p className="text-sm text-destructive">{errors.quizBackgroundColorHex.message}</p>}
             </div>
             
             {/* Quiz Submission Webhook URL */}
@@ -174,7 +214,7 @@ export default function WhitelabelSettingsPage() {
 
           </CardContent>
           <CardFooter>
-            <Button type="submit" disabled={isLoading} className="text-base py-3">
+            <Button type="submit" disabled={isLoading || isFetching} className="text-base py-3">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />

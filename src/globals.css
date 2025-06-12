@@ -1,0 +1,103 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default Fallback Colors - These will be overridden by RootLayout if Whitelabel config is set */
+    --background: 15 76% 95%;   /* Light peachy - default page background */
+    --foreground: 20 20% 25%; /* Dark grayish brown for text, good contrast on light peach */
+
+    --card: 0 0% 100%;          /* White - default for quiz card and other cards */
+    --card-foreground: 20 20% 25%; /* Dark grayish brown for text on cards */
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 20% 25%;
+
+    --primary: 19 70% 65%;     /* Peachy orange - default primary */
+    --primary-foreground: 0 0% 100%; /* White text on primary buttons */
+
+    --secondary: 15 60% 90%;   /* Lighter peachy - default secondary */
+    --secondary-foreground: 19 50% 40%; /* Darker peach for text on secondary */
+
+    --muted: 0 0% 96%;         /* Very light gray for muted elements */
+    --muted-foreground: 0 0% 45%; /* Medium gray for text on muted */
+
+    --accent: 15 76% 90%;      /* Light peachy accent, similar to default page background */
+    --accent-foreground: 19 60% 35%; /* Darker peach for text on accent */
+
+    --destructive: 0 70% 60%;   /* Red for destructive actions */
+    --destructive-foreground: 0 0% 100%; /* White text on destructive */
+
+    --border: 0 0% 88%;        /* Light gray for borders */
+    --input: 0 0% 93%;         /* Slightly darker gray for input backgrounds */
+    --ring: 19 70% 60%;        /* A slightly darker/more saturated shade of primary for focus rings */
+
+    --chart-1: 19 70% 60%;
+    --chart-2: 15 70% 75%;
+    --chart-3: 197 37% 44%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+
+    /* Sidebar specific colors - these can remain somewhat independent or be whitelabeled later if needed */
+    --sidebar-background: 0 0% 98%; 
+    --sidebar-foreground: 210 20% 30%;
+    --sidebar-primary: 19 60% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 15 76% 81%;
+    --sidebar-accent-foreground: 15 60% 30%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 19 60% 65%;
+  }
+
+  .dark {
+    /* Keeping original dark theme, can be adjusted later if whitelabel needs dark mode specifics */
+    --background: 215 25% 15%;
+    --foreground: 210 25% 95.5%;
+
+    --card: 215 25% 15%;
+    --card-foreground: 210 25% 95.5%;
+
+    --popover: 215 25% 15%;
+    --popover-foreground: 210 25% 95.5%;
+
+    --primary: 19 55% 60%; 
+    --primary-foreground: 0 0% 95%; 
+
+    --secondary: 15 50% 30%; 
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 210 15% 30%;
+    --muted-foreground: 210 20% 70%;
+
+    --accent: 15 70% 55%; 
+    --accent-foreground: 0 0% 95%;
+
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 15% 35%;
+    --input: 210 15% 35%;
+    --ring: 19 55% 55%;
+    
+    --sidebar-background: 215 25% 18%;
+    --sidebar-foreground: 210 25% 92%;
+    --sidebar-primary: 19 55% 60%;
+    --sidebar-primary-foreground: 0 0% 95%;
+    --sidebar-accent: 15 70% 55%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 210 15% 35%;
+    --sidebar-ring: 19 55% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

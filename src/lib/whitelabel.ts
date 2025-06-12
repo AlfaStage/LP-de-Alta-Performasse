@@ -6,9 +6,12 @@ import type { WhitelabelConfig } from '@/types/quiz';
 const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-config.json');
 
 const defaultConfig: WhitelabelConfig = {
+  projectName: "Ice Lazer Quiz System",
   logoUrl: "https://placehold.co/150x50.png?text=Logo",
   primaryColorHex: "#E09677", 
   secondaryColorHex: "#F5D4C6", 
+  pageBackgroundColorHex: "#F5B9A9", // Default page background from original globals.css accent
+  quizBackgroundColorHex: "#FFFFFF", // Default card background (white)
   quizSubmissionWebhookUrl: "",
   facebookPixelId: "",
   facebookPixelIdSecondary: "",
@@ -51,13 +54,13 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
   }
 }
 
-export function hexToHslString(hex: string): string | null {
-  if (!hex) return null;
-  const hexString = String(hex); // Ensure it's a string
+export function hexToHslString(hexInput: string): string | null {
+  if (!hexInput) return null;
+  const hex = String(hexInput); // Ensure it's a string
 
-  let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexString);
+  let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) {
-    const shortResult = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(hexString);
+    const shortResult = /^#?([a-f\d])([a-f\d])([a-f\d])$/i.exec(hex);
     if (!shortResult) return null;
     result = [
       shortResult[0],
@@ -73,7 +76,7 @@ export function hexToHslString(hex: string): string | null {
 
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h: number, s: number, l: number = (max + min) / 2;
+  let h: number = 0, s: number = 0, l: number = (max + min) / 2;
 
   if (max === min) {
     h = s = 0; 
@@ -84,7 +87,6 @@ export function hexToHslString(hex: string): string | null {
       case r: h = (g - b) / d + (g < b ? 6 : 0); break;
       case g: h = (b - r) / d + 2; break;
       case b: h = (r - g) / d + 4; break;
-      default: h = 0; // Should not be reached if logic is sound
     }
     h /= 6;
   }

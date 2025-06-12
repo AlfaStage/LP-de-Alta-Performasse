@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { List } from 'lucide-react';
 import type { QuizConfig } from '@/types/quiz';
+import { getWhitelabelConfig } from '@/lib/whitelabel';
 
 async function getAvailableQuizzes(): Promise<QuizConfig[]> {
   const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
@@ -17,7 +18,6 @@ async function getAvailableQuizzes(): Promise<QuizConfig[]> {
       const filePath = path.join(quizzesDirectory, filename);
       const fileContents = await fs.readFile(filePath, 'utf8');
       const quizData = JSON.parse(fileContents) as QuizConfig;
-      // Ensure basic structure for listing
       return {
         title: quizData.title || "Quiz sem título",
         slug: quizData.slug || filename.replace('.json', ''),
@@ -33,12 +33,13 @@ async function getAvailableQuizzes(): Promise<QuizConfig[]> {
 
 export default async function HomePage() {
   const quizzes = await getAvailableQuizzes();
+  const whitelabelConfig = await getWhitelabelConfig();
 
   return (
     <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center">
       <Card className="w-full max-w-2xl shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-primary">Bem-vindo ao Ice Lazer Quizzes</CardTitle>
+          <CardTitle className="text-3xl font-bold text-primary">{whitelabelConfig.projectName || 'Bem-vindo ao Sistema de Quizzes'}</CardTitle>
           <CardDescription className="text-lg text-muted-foreground">
             Selecione um quiz abaixo para começar ou crie um novo no nosso painel de configuração.
           </CardDescription>
@@ -79,7 +80,7 @@ export default async function HomePage() {
         </CardContent>
       </Card>
        <p className="text-xs text-center mt-8 text-foreground/60">
-            Ice Lazer &copy; {new Date().getFullYear()}. Todos os direitos reservados.
+            {whitelabelConfig.projectName || 'Ice Lazer'} &copy; {new Date().getFullYear()}. Todos os direitos reservados.
         </p>
     </main>
   );

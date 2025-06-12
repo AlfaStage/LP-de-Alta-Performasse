@@ -38,9 +38,12 @@ export interface QuizConfig {
 }
 
 export interface WhitelabelConfig {
+  projectName: string;
   logoUrl: string;
-  primaryColorHex: string; // e.g., "#E09677"
-  secondaryColorHex: string; // e.g., "#F5D4C6"
+  primaryColorHex: string; 
+  secondaryColorHex: string; 
+  pageBackgroundColorHex: string;
+  quizBackgroundColorHex: string; // This will primarily affect the <Card> component of the quiz
   quizSubmissionWebhookUrl: string;
   facebookPixelId?: string;
   facebookPixelIdSecondary?: string;
@@ -54,4 +57,3 @@ export const getLucideIcon = (iconName?: keyof typeof import('lucide-react')): L
   const icons = require('lucide-react');
   return icons[iconName] as LucideIcon;
 };
-
