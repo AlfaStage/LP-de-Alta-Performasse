@@ -2,86 +2,99 @@
 import Link from 'next/link';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { List } from 'lucide-react';
+import { AlertTriangle, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { QuizConfig } from '@/types/quiz';
 import { getWhitelabelConfig } from '@/lib/whitelabel';
+import QuizForm from '@/components/quiz/QuizForm'; // Import QuizForm
+import { defaultContactStep } from '@/config/quizConfig';
+import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
 
-async function getAvailableQuizzes(): Promise<QuizConfig[]> {
+const DEFAULT_QUIZ_SLUG = "default";
+
+async function getDefaultQuizConfig(): Promise<QuizConfig | null> {
   const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
+  const filePath = path.join(quizzesDirectory, `${DEFAULT_QUIZ_SLUG}.json`);
   try {
-    const filenames = await fs.readdir(quizzesDirectory);
-    const quizFiles = filenames.filter(filename => filename.endsWith('.json'));
+    const fileContents = await fs.readFile(filePath, 'utf8');
+    const quizData = JSON.parse(fileContents) as QuizConfig;
     
-    const quizzes = await Promise.all(quizFiles.map(async (filename) => {
-      const filePath = path.join(quizzesDirectory, filename);
-      const fileContents = await fs.readFile(filePath, 'utf8');
-      const quizData = JSON.parse(fileContents) as QuizConfig;
-      return {
-        title: quizData.title || "Quiz sem título",
-        slug: quizData.slug || filename.replace('.json', ''),
-        questions: quizData.questions || [], 
-      };
-    }));
-    return quizzes;
+    quizData.title = quizData.title || "Quiz Interativo";
+    quizData.slug = quizData.slug || DEFAULT_QUIZ_SLUG;
+
+    if (quizData.questions && Array.isArray(quizData.questions)) {
+      quizData.questions = quizData.questions.filter(q => q.id !== defaultContactStep.id);
+      quizData.questions.push(defaultContactStep);
+    } else {
+      quizData.questions = [defaultContactStep];
+    }
+    return quizData;
   } catch (error) {
-    console.error("Failed to read quizzes directory:", error);
-    return []; 
+    console.error(`Failed to read default quiz config (slug: ${DEFAULT_QUIZ_SLUG}):`, error);
+    return null;
   }
 }
 
 export default async function HomePage() {
-  const quizzes = await getAvailableQuizzes();
+  const defaultQuizConfig = await getDefaultQuizConfig();
   const whitelabelConfig = await getWhitelabelConfig();
+  const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Logo+Empresa";
+  const clientAbandonmentWebhook = ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
+  const footerText = whitelabelConfig.footerCopyrightText || `© ${new Date().getFullYear()} ${whitelabelConfig.projectName || 'Quiz System'}. Todos os direitos reservados.`;
+
+
+  if (!defaultQuizConfig || !defaultQuizConfig.questions || defaultQuizConfig.questions.length === 0 ) {
+    return (
+      <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
+        <Card className="w-full max-w-lg shadow-xl bg-card text-card-foreground">
+          <CardHeader className="text-center">
+            <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
+            <CardTitle className="text-2xl font-bold text-destructive">Erro ao Carregar Quiz Padrão</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              O arquivo do quiz padrão (default.json) não foi encontrado ou está mal configurado.
+              Por favor, crie o arquivo <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">src/data/quizzes/default.json</code>
+              ou verifique seu conteúdo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+             <Link href="/config/login">
+                <Button variant="outline">
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    Acessar Painel de Configuração
+                </Button>
+            </Link>
+          </CardContent>
+          <CardFooter>
+             <p className="text-xs text-muted-foreground text-center w-full">
+                {footerText}
+            </p>
+          </CardFooter>
+        </Card>
+      </main>
+    );
+  }
 
   return (
-    <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
-      <Card className="w-full max-w-2xl shadow-xl bg-card text-card-foreground">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-primary">{whitelabelConfig.projectName || 'Bem-vindo ao Sistema de Quizzes'}</CardTitle>
-          <CardDescription className="text-lg text-muted-foreground">
-            Selecione um quiz abaixo para começar ou crie um novo no nosso painel de configuração.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {quizzes.length > 0 ? (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-center mb-3 text-card-foreground">Quizzes Disponíveis:</h2>
-              <ul className="space-y-3">
-                {quizzes.map((quiz) => (
-                  <li key={quiz.slug}>
-                    <Link href={`/${quiz.slug}`} className="block">
-                      <Button variant="outline" className="w-full justify-start text-lg py-6 hover:bg-accent/80 hover:text-accent-foreground">
-                        <List className="mr-3 h-5 w-5 text-primary" />
-                        {quiz.title}
-                      </Button>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-lg text-muted-foreground mb-4">Nenhum quiz disponível no momento.</p>
-              <p className="text-sm text-card-foreground">
-                Administradores podem criar novos quizzes no{" "}
-                <Link href="/config/dashboard" className="text-primary hover:underline font-semibold">
-                  Painel de Configuração
-                </Link>.
-              </p>
-            </div>
-          )}
-          <div className="mt-8 text-center">
-             <Link href="/config/login" className="text-sm text-primary hover:underline">
-                Acessar Painel de Configuração
-              </Link>
-          </div>
-        </CardContent>
-      </Card>
-       <p className="text-xs text-center mt-8 text-foreground/60">
-            {whitelabelConfig.footerCopyrightText || `${whitelabelConfig.projectName || 'Ice Lazer'} © ${new Date().getFullYear()}. Todos os direitos reservados.`}
-        </p>
+    <main className="bg-background text-foreground">
+      <QuizForm 
+        quizQuestions={defaultQuizConfig.questions} 
+        quizSlug={defaultQuizConfig.slug} 
+        quizTitle={defaultQuizConfig.title || whitelabelConfig.projectName || "Quiz Interativo"} 
+        logoUrl={logoUrlToUse}
+        facebookPixelId={whitelabelConfig.facebookPixelId}
+        googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
+        clientAbandonmentWebhookUrl={clientAbandonmentWebhook}
+        footerCopyrightText={footerText}
+      />
+      <div className="py-8 text-center bg-background">
+        <Link href="/config/login">
+          <Button variant="ghost" className="text-primary hover:text-primary/80 text-sm group">
+            Acessar Painel de Configuração
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </Link>
+      </div>
     </main>
   );
 }

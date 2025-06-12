@@ -7,6 +7,7 @@ import { defaultContactStep } from '@/config/quizConfig';
 import { revalidatePath } from 'next/cache';
 
 const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
+const DEFAULT_QUIZ_SLUG = "default";
 
 async function ensureQuizzesDirectoryExists() {
   try {
@@ -154,6 +155,10 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
     return { success: false, message: "Slug do quiz é obrigatório para apagar." };
   }
 
+  if (slug === DEFAULT_QUIZ_SLUG) {
+    return { success: false, message: "O quiz padrão não pode ser apagado." };
+  }
+
   const filePath = path.join(quizzesDirectory, `${slug}.json`);
 
   try {
@@ -164,10 +169,9 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
 
   try {
     await fs.unlink(filePath); // Apaga o arquivo
-    revalidatePath('/'); // Revalida a página inicial que lista os quizzes (se aplicável)
-    revalidatePath('/config/dashboard'); // Revalida a página do dashboard
-    revalidatePath(`/${slug}`); // Revalida o caminho do quiz apagado (resultará em 404)
-    // Revalida também a página de edição para o caso de alguém estar nela
+    revalidatePath('/'); 
+    revalidatePath('/config/dashboard'); 
+    revalidatePath(`/${slug}`); 
     revalidatePath(`/config/dashboard/quiz/edit/${slug}`); 
     
     return { success: true, message: `Quiz "${slug}" apagado com sucesso.` };
@@ -197,16 +201,14 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
         };
       } catch (parseError) {
         console.error(`Failed to parse quiz file ${filename}:`, parseError);
-        // Retorna um objeto parcial para não quebrar a lista inteira
         return {
           title: `Erro ao carregar: ${filename}`,
           slug: filename.replace('.json', ''),
-          successIcon: undefined, // ou um ícone de erro padrão
+          successIcon: undefined, 
         };
       }
     });
     const quizzes = await Promise.all(quizzesPromises);
-    // Filtrar quaisquer quizzes que falharam completamente em carregar e retornaram null (se ajustado para isso)
     return quizzes.filter(q => q !== null) as QuizListItem[];
   } catch (error) {
     console.error("Failed to read quizzes directory for list:", error);

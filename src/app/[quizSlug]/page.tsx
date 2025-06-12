@@ -64,12 +64,12 @@ export default async function QuizPage({ params }: QuizPageProps) {
   if (!quizConfigFromFile || !quizConfigFromFile.questions || quizConfigFromFile.questions.length === 0 ) {
     return (
       <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
-        <Alert variant="destructive" className="w-full max-w-lg bg-card text-card-foreground">
-          <AlertTriangle className="h-5 w-5" />
-          <AlertTitle>Quiz não encontrado ou mal configurado</AlertTitle>
+        <Alert variant="destructive" className="w-full max-w-lg bg-card text-card-foreground shadow-lg">
+          <AlertTriangle className="h-6 w-6" />
+          <AlertTitle className="text-xl">Quiz não encontrado ou mal configurado</AlertTitle>
           <AlertDescription>
             O quiz com o identificador "{quizSlug}" não pôde ser carregado ou está vazio.
-            Por favor, verifique o URL ou <Link href="/" className="underline hover:text-primary">volte para a página inicial</Link>.
+            Por favor, verifique o URL ou <Link href="/" className="underline hover:text-primary font-semibold">volte para a página inicial</Link>.
           </AlertDescription>
         </Alert>
       </main>
