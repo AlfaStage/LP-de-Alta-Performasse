@@ -3,29 +3,46 @@
 import { SERVER_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 
-interface AbandonedQuizData {
-  [key: string]: any;
-  timestamp: string;
-  quizType: string;
-  quizSlug?: string;
+interface ClientInfo {
+  userAgent?: string;
+  language?: string;
+  screenWidth?: number;
+  screenHeight?: number;
+  windowWidth?: number;
+  windowHeight?: number;
 }
 
-export async function logQuizAbandonment(data: Record<string, any>, quizSlug?: string) {
-  // For now, abandonment webhooks still use environment variables.
-  // Can be changed to whitelabel config if needed later.
+interface AbandonedQuizData {
+  [key: string]: any; // existing quiz answers
+  quizSlug?: string;
+  quizType?: string;
+  abandonedAtStep?: string | number;
+  clientInfo?: ClientInfo;
+  abandonedAt?: string; // ISO timestamp
+}
+
+export async function logQuizAbandonment(data: Record<string, any>, quizSlugInput?: string) {
   const webhookUrl = ENV_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL;
 
   if (!webhookUrl || webhookUrl === "YOUR_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL") {
-    console.warn("Server-side Quiz abandonment webhook URL not configured. Data not sent.", webhookUrl);
+    console.warn("Server-side Quiz abandonment webhook URL not configured. Data not sent.", { webhookUrl });
     return { success: false, message: "Webhook URL not configured." };
   }
 
+  // Ensure quizSlug is part of the main payload object if provided via data or as a separate arg
   const payload: AbandonedQuizData = {
-    ...data,
-    timestamp: new Date().toISOString(),
-    quizType: "IceLazerLeadFilter_Abandonment_V2",
-    quizSlug: quizSlug || "default",
+    ...data, // This should contain quizSlug, clientInfo, abandonedAt, etc. from QuizForm
   };
+
+  // If data.quizSlug is not present but quizSlugInput is, use quizSlugInput
+  if (!payload.quizSlug && quizSlugInput) {
+    payload.quizSlug = quizSlugInput;
+  }
+  
+  // Ensure quizType and timestamp (abandonedAt) are consistently named
+  payload.quizType = payload.quizType || `IceLazerLeadFilter_Abandonment_V2_Server`; // Default if not set by client
+  payload.abandonedAt = payload.abandonedAt || new Date().toISOString();
+
 
   try {
     const response = await fetch(webhookUrl, {
@@ -40,7 +57,7 @@ export async function logQuizAbandonment(data: Record<string, any>, quizSlug?: s
       console.error(`Webhook for abandoned quiz (server) failed with status: ${response.status}`, await response.text());
       return { success: false, message: `Webhook request failed with status ${response.status}` };
     }
-    console.log("Quiz abandonment data sent to server-side webhook:", payload);
+    console.log("Quiz abandonment data sent to server-side webhook:", JSON.stringify(payload, null, 2));
     return { success: true, message: "Data sent to webhook." };
   } catch (error) {
     console.error("Error sending quiz abandonment data to server-side webhook:", error);
@@ -54,10 +71,19 @@ interface SubmitQuizResponse {
   message: string;
 }
 
+// The `data` parameter from QuizForm will now include `quizSlug`, `quizTitle`, `clientInfo`, and `submittedAt`
 export async function submitQuizData(data: Record<string, any>): Promise<SubmitQuizResponse> {
   const whitelabelConfig = await getWhitelabelConfig();
   const webhookUrl = whitelabelConfig.quizSubmissionWebhookUrl;
-  const payload = data;
+  
+  // The 'data' object already contains quizSlug, quizTitle, clientInfo, submittedAt from QuizForm.
+  // It also contains all the quiz answers.
+  const payload = { ...data }; 
+
+  if (!payload.quizSlug) {
+    console.warn("Quiz slug is missing in the submission data. This is unexpected.");
+    // Potentially add a default or handle as an error, but QuizForm should always send it.
+  }
 
   if (!webhookUrl || webhookUrl === "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER" || webhookUrl.trim() === "") {
     console.warn("Quiz submission webhook URL not properly configured in Whitelabel settings. Data not sent.", { webhookUrl, quizSlug: payload.quizSlug });
@@ -65,7 +91,7 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
   }
 
   console.log("Attempting to submit quiz data to webhook. URL:", webhookUrl);
-  console.log("Payload being sent:", JSON.stringify(payload, null, 2));
+  console.log("Payload being sent to webhook:", JSON.stringify(payload, null, 2));
 
   try {
     const response = await fetch(webhookUrl, {

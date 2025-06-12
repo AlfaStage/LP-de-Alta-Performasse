@@ -38,7 +38,6 @@ interface QuizFormProps {
   googleAnalyticsId?: string; 
   clientAbandonmentWebhookUrl?: string; 
   footerCopyrightText?: string;
-  // Props for preview mode
   onSubmitOverride?: (data: FormData) => Promise<void>;
   onAbandonmentOverride?: (data: FormData, quizSlug?: string) => Promise<void>;
   isPreview?: boolean;
@@ -99,7 +98,22 @@ export default function QuizForm({
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (isPreview || !isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
-        const dataToLog = { ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}`, quizSlug };
+        const clientInfo = {
+          userAgent: navigator.userAgent,
+          language: navigator.language,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          windowWidth: window.innerWidth,
+          windowHeight: window.innerHeight,
+        };
+        const dataToLog = { 
+          ...getValues(), 
+          abandonedAtStep: currentQuestion?.id || currentStep, 
+          quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}`, 
+          quizSlug,
+          clientInfo,
+          abandonedAt: new Date().toISOString()
+        };
         
         if (onAbandonmentOverride) {
           onAbandonmentOverride(dataToLog, quizSlug);
@@ -113,7 +127,7 @@ export default function QuizForm({
                 fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
               }
             } else {
-               serverLogQuizAbandonment({ ...getValues(), abandonedAtStep: currentQuestion?.id || currentStep, quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}` }, quizSlug);
+               serverLogQuizAbandonment(dataToLog, quizSlug);
             }
         }
       }
@@ -224,12 +238,29 @@ export default function QuizForm({
     const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
 
     setSubmissionStatus('pending');
-    const finalData = { ...formData, ...data, quizSlug, quizTitle }; 
+
+    const clientInfo = {
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      windowWidth: window.innerWidth,
+      windowHeight: window.innerHeight,
+    };
+    
+    const finalData = { 
+      ...formData, 
+      ...data, 
+      quizSlug, 
+      quizTitle, 
+      clientInfo, 
+      submittedAt: new Date().toISOString() 
+    }; 
 
     if (isPreview && onSubmitOverride) {
         await onSubmitOverride(finalData);
-        setSubmissionStatus('success'); // Simulate success for preview
-        setIsQuizCompleted(true); // Show success screen in preview
+        setSubmissionStatus('success'); 
+        setIsQuizCompleted(true); 
         return;
     }
     
@@ -559,7 +590,7 @@ export default function QuizForm({
                     disabled={
                         submissionStatus === 'pending' ||
                         (currentQuestion.type !== 'textFields' && (!getValues(currentQuestion.name) || (Array.isArray(getValues(currentQuestion.name)) && getValues(currentQuestion.name).length === 0))) ||
-                        (currentQuestion.type === 'textFields' && !formIsValid && Object.keys(errors).length > 0) // Check formIsValid only for textFields and if there are errors
+                        (currentQuestion.type === 'textFields' && !formIsValid && Object.keys(errors).length > 0) 
                     }
                 >
                     {submissionStatus === 'pending' ? (
@@ -580,6 +611,3 @@ export default function QuizForm({
     </FormProvider>
   );
 }
-
-
-    
