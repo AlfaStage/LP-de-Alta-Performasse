@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Save, AlertTriangle, Info, Loader2, ArrowLeft } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2 } from 'lucide-react';
 import { getQuizForEdit, updateQuizAction, type QuizEditData } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
@@ -91,7 +91,7 @@ export default function EditQuizPage() {
     let parsedQuestions;
     try {
       parsedQuestions = JSON.parse(questionsJson);
-      if (!Array.isArray(parsedQuestions)) { // Allow empty array, contact step will be added
+      if (!Array.isArray(parsedQuestions)) { 
         setError("O JSON das perguntas deve ser um array.");
         setIsLoading(false);
         return;
@@ -106,7 +106,6 @@ export default function EditQuizPage() {
       const result = await updateQuizAction({ title, slug, questions: parsedQuestions });
       if (result.success) {
         setSuccess(`Quiz "${title}" atualizado com sucesso!`);
-        // Optionally refetch data or update state if needed
         await fetchQuizData(); 
       } else {
         setError(result.message || 'Falha ao atualizar o quiz.');
@@ -136,8 +135,10 @@ export default function EditQuizPage() {
                 <AlertTitle>Erro ao Carregar Quiz</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
-            <Button variant="outline" onClick={() => router.push('/config/dashboard')} className="mt-4">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para o Dashboard
+            <Button variant="outline" asChild className="mt-4">
+                <Link href="/config/dashboard">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para o Dashboard
+                </Link>
             </Button>
         </div>
      )
@@ -148,8 +149,10 @@ export default function EditQuizPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold md:text-3xl">Editar Quiz: {originalQuizData?.title || slug}</h1>
-        <Button variant="outline" onClick={() => router.push('/config/dashboard')}>
-             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para o Dashboard
+        <Button variant="outline" asChild>
+            <Link href="/config/dashboard">
+                 <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para o Dashboard
+            </Link>
         </Button>
       </div>
       <Card className="shadow-lg">
@@ -162,6 +165,13 @@ export default function EditQuizPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
+            <Alert variant="default" className="mt-2 bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-400">
+              <Wand2 className="h-4 w-4" />
+              <AlertTitle>Construtor Interativo (Em Breve)</AlertTitle>
+              <AlertDescription>
+                Atualmente, a edição de perguntas é feita através do formato JSON abaixo. Um construtor de perguntas interativo para edição será adicionado em uma futura atualização.
+              </AlertDescription>
+            </Alert>
             <div className="space-y-2">
               <Label htmlFor="title">Título do Quiz</Label>
               <Input
@@ -210,7 +220,7 @@ export default function EditQuizPage() {
                 </AlertDescription>
               </Alert>
             </div>
-             {error && !success && ( // Show error only if there's no success message
+             {error && !success && ( 
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Erro</AlertTitle>
@@ -245,7 +255,3 @@ export default function EditQuizPage() {
     </div>
   );
 }
-
-    
-
-    

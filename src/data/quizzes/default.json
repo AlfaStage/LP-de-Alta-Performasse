@@ -1,0 +1,86 @@
+{
+  "title": "Quiz Padrão - Vitrine Ice Lazer",
+  "slug": "default",
+  "questions": [
+    {
+      "id": "q1_default_main",
+      "name": "experienciaPrevia",
+      "icon": "UserCheck",
+      "text": "Você já realizou algum tratamento de depilação a laser anteriormente?",
+      "explanation": "Saber sobre suas experiências anteriores nos ajuda a personalizar nossa abordagem.",
+      "type": "radio",
+      "options": [
+        {
+          "value": "sim",
+          "label": "Sim, já fiz",
+          "icon": "Smile"
+        },
+        {
+          "value": "nao",
+          "label": "Não, esta é minha primeira vez",
+          "icon": "Sparkles"
+        }
+      ]
+    },
+    {
+      "id": "q2_default_main",
+      "name": "areasInteresse",
+      "icon": "Target",
+      "text": "Quais áreas do corpo você tem mais interesse em tratar?",
+      "explanation": "Você pode selecionar mais de uma opção. Escolha as áreas para uma depilação a laser confortável e eficaz.",
+      "type": "checkbox",
+      "options": [
+        {
+          "value": "axilas",
+          "label": "Axilas",
+          "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/axila-1.png",
+          "dataAiHint": "armpit body"
+        },
+        {
+          "value": "virilha",
+          "label": "Virilha Completa",
+          "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/meia-virilha.png",
+          "dataAiHint": "bikini line"
+        },
+        {
+          "value": "pernas",
+          "label": "Pernas Inteiras",
+          "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/pernas-inteiras.png",
+          "dataAiHint": "legs"
+        },
+        {
+          "value": "buco",
+          "label": "Buço",
+          "imageUrl": "https://espacoicelaser.com/wp-content/uploads/2021/09/bucco.png",
+          "dataAiHint": "upper lip"
+        }
+      ]
+    },
+    {
+      "id": "q3_default_main",
+      "name": "objetivoPrincipal",
+      "icon": "Goal",
+      "text": "Qual o seu principal objetivo ao buscar a depilação a laser?",
+      "explanation": "Compreender seu objetivo principal nos permite focar no que é mais importante para você.",
+      "type": "radio",
+      "options": [
+        {
+          "value": "reducao_permanente",
+          "label": "Redução permanente dos pelos",
+          "explanation": "Para uma pele lisa por muito mais tempo."
+        },
+        {
+          "value": "evitar_foliculite",
+          "label": "Evitar pelos encravados e foliculite",
+          "explanation": "Diga adeus à irritação e inflamação."
+        },
+        {
+          "value": "praticidade",
+          "label": "Praticidade e economia de tempo",
+          "explanation": "Liberte-se da rotina de depilação frequente."
+        }
+      ]
+    }
+  ],
+  "successIcon": "PartyPopper"
+}
