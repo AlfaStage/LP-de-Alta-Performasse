@@ -34,9 +34,9 @@ interface QuizFormProps {
   quizSlug: string;
   quizTitle?: string;
   logoUrl: string;
-  facebookPixelId?: string; // Now passed as prop
-  googleAnalyticsId?: string; // Now passed as prop
-  clientAbandonmentWebhookUrl?: string; // For client-side beacon
+  facebookPixelId?: string; 
+  googleAnalyticsId?: string; 
+  clientAbandonmentWebhookUrl?: string; 
 }
 
 export default function QuizForm({ 
@@ -285,7 +285,7 @@ export default function QuizForm({
   };
   
   const loadingJsx = (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
       <Alert>
         <LucideIcons.Info className="h-4 w-4" />
         <AlertTitle>Carregando Quiz...</AlertTitle>
@@ -302,7 +302,7 @@ export default function QuizForm({
   
   if (!currentQuestion && !isQuizCompleted && quizQuestions && quizQuestions.length > 0) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
           <Alert variant="destructive">
             <LucideIcons.AlertTriangle className="h-4 w-4" />
             <AlertTitle>Erro no Quiz</AlertTitle>
@@ -316,9 +316,9 @@ export default function QuizForm({
 
   if (isQuizCompleted && submissionStatus === 'success') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center">
-          <CardHeader className="bg-card p-6">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
+        <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center bg-card">
+          <CardHeader className="p-6">
             <div className="flex items-center justify-center space-x-3">
                 <Image 
                   src={logoUrl}
@@ -359,9 +359,9 @@ export default function QuizForm({
 
   return (
     <FormProvider {...methods}>
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8`}>
-          <CardHeader className="bg-card p-6">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
+        <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8 bg-card`}>
+          <CardHeader className="p-6">
              <div className="flex items-center space-x-3">
                 <Image 
                   src={logoUrl}
@@ -410,13 +410,13 @@ export default function QuizForm({
                             return (
                             <div 
                               key={option.value} 
-                              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer has-[:checked]:bg-accent has-[:checked]:border-accent-foreground/50 has-[:checked]:text-accent-foreground has-[:checked]:[&_svg]:text-accent-foreground has-[:checked]:[&>label]:text-accent-foreground has-[:checked]:[&>label>p]:text-accent-foreground/80"
+                              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80"
                             >
-                              {OptionIcon && <OptionIcon className="h-5 w-5 text-primary group-has-[:checked]:text-accent-foreground" />}
+                              {OptionIcon && <OptionIcon className="h-5 w-5 text-primary group-has-[:checked]:text-primary" />}
                               <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="text-primary focus:ring-primary"/>
-                              <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer group-has-[:checked]:text-accent-foreground">
+                              <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer group-has-[:checked]:text-primary">
                                 {option.label}
-                                {option.explanation && <p className="text-xs text-muted-foreground mt-1 group-has-[:checked]:text-accent-foreground/80">{option.explanation}</p>}
+                                {option.explanation && <p className="text-xs text-muted-foreground mt-1 group-has-[:checked]:text-primary/80">{option.explanation}</p>}
                               </Label>
                             </div>
                           );
@@ -495,7 +495,7 @@ export default function QuizForm({
                                 type={f.type} 
                                 placeholder={f.placeholder} 
                                 onChange={(e) => handleValueChange(f.name, e.target.value)} 
-                                className="bg-background border-input focus:border-primary focus:ring-primary"
+                                className="bg-muted/30 border-input focus:border-primary focus:ring-primary"
                               />
                             )}
                           />
@@ -512,12 +512,12 @@ export default function QuizForm({
           </CardContent>
           {currentQuestion && (
              <CardFooter className="flex justify-between p-6 bg-muted/30">
-                <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0 || submissionStatus === 'pending'} className="hover:bg-accent/30 px-6 py-3 text-base">
+                <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0 || submissionStatus === 'pending'} className="px-6 py-3 text-base">
                     <LucideIcons.ChevronLeft className="mr-2 h-5 w-5" /> Voltar
                 </Button>
                 <Button 
                     onClick={handleNext} 
-                    className="bg-accent text-accent-foreground hover:bg-accent/80 px-6 py-3 text-base"
+                    className="px-6 py-3 text-base" 
                     disabled={
                     submissionStatus === 'pending' ||
                     (currentQuestion.type !== 'textFields' && (!getValues(currentQuestion.name) || (Array.isArray(getValues(currentQuestion.name)) && getValues(currentQuestion.name).length === 0)))
@@ -539,3 +539,4 @@ export default function QuizForm({
     </FormProvider>
   );
 }
+

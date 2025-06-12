@@ -16,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = {
   themeColor: [ 
-    { media: '(prefers-color-scheme: light)', color: 'white' }, // Fallback, will be influenced by --background
-    { media: '(prefers-color-scheme: dark)', color: 'black' },  // Fallback for dark mode
+    { media: '(prefers-color-scheme: light)', color: 'white' }, 
+    { media: '(prefers-color-scheme: dark)', color: 'black' },  
   ],
 }
 
@@ -28,18 +28,19 @@ export default async function RootLayout({
 }>) {
   const whitelabelConfig = await getWhitelabelConfig();
 
-  const primaryColorForThemeHslString = whitelabelConfig.primaryColorHex ? hexToHslString(whitelabelConfig.primaryColorHex) : null;
+  const themePrimaryColorHslString = whitelabelConfig.primaryColorHex ? hexToHslString(whitelabelConfig.primaryColorHex) : null;
   const secondaryColorHslString = whitelabelConfig.secondaryColorHex ? hexToHslString(whitelabelConfig.secondaryColorHex) : null;
   const pageBackgroundColorHslString = whitelabelConfig.pageBackgroundColorHex ? hexToHslString(whitelabelConfig.pageBackgroundColorHex) : null;
   const quizBackgroundColorHslString = whitelabelConfig.quizBackgroundColorHex ? hexToHslString(whitelabelConfig.quizBackgroundColorHex) : null;
   
-  // Determine the HSL string for --primary (used for button backgrounds and main interactive elements)
   let buttonPrimaryBgHslString: string | null = null;
   if (whitelabelConfig.buttonPrimaryBgColorHex && whitelabelConfig.buttonPrimaryBgColorHex.trim() !== "") {
     buttonPrimaryBgHslString = hexToHslString(whitelabelConfig.buttonPrimaryBgColorHex);
   }
-  // If buttonPrimaryBgColorHex is not set or invalid, fallback to primaryColorForThemeHslString for --primary
-  const finalPrimaryForButtonsHsl = buttonPrimaryBgHslString || primaryColorForThemeHslString;
+  const finalPrimaryForButtonsHsl = buttonPrimaryBgHslString || themePrimaryColorHslString;
+
+  // Make --accent follow --secondary for consistent hover on outline buttons
+  const accentColorHslString = secondaryColorHslString;
 
   const dynamicStyles = `
     :root {
@@ -47,10 +48,11 @@ export default async function RootLayout({
       ${quizBackgroundColorHslString ? `--card: ${quizBackgroundColorHslString};` : ''}
       ${finalPrimaryForButtonsHsl ? `--primary: ${finalPrimaryForButtonsHsl};` : ''}
       ${secondaryColorHslString ? `--secondary: ${secondaryColorHslString};` : ''}
+      ${accentColorHslString ? `--accent: ${accentColorHslString};` : ''}
       
-      /* --ring and --chart-1 will use the theme's primary color, not necessarily the button color */
-      ${primaryColorForThemeHslString ? `--ring: ${primaryColorForThemeHslString};` : ''}
-      ${primaryColorForThemeHslString ? `--chart-1: ${primaryColorForThemeHslString};` : ''}
+      /* --ring and --chart-1 will use the theme's primary color (not necessarily the button color) */
+      ${themePrimaryColorHslString ? `--ring: ${themePrimaryColorHslString};` : ''}
+      ${themePrimaryColorHslString ? `--chart-1: ${themePrimaryColorHslString};` : ''}
     }
   `;
 
