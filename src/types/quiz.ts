@@ -42,8 +42,9 @@ export interface WhitelabelConfig {
   logoUrl: string;
   primaryColorHex: string; 
   secondaryColorHex: string; 
+  buttonPrimaryBgColorHex?: string; // Cor de fundo específica para botões primários
   pageBackgroundColorHex: string;
-  quizBackgroundColorHex: string; // This will primarily affect the <Card> component of the quiz
+  quizBackgroundColorHex: string; 
   quizSubmissionWebhookUrl: string;
   facebookPixelId?: string;
   facebookPixelIdSecondary?: string;
@@ -57,3 +58,4 @@ export const getLucideIcon = (iconName?: keyof typeof import('lucide-react')): L
   const icons = require('lucide-react');
   return icons[iconName] as LucideIcon;
 };
+

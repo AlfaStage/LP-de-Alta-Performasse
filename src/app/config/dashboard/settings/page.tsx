@@ -10,18 +10,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Save, Loader2, AlertTriangle, Palette, Link2, Facebook, Settings2, TextQuote, Image as ImageIcon } from 'lucide-react';
+import { Save, Loader2, AlertTriangle, Palette, Link2, Facebook, Settings2, TextQuote, Image as ImageIcon, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from './actions';
 import type { WhitelabelConfig } from '@/types/quiz';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+const optionalHexColorRegex = /^$|^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/; // Permite string vazia ou HEX válido
 
 const whitelabelSettingsSchema = z.object({
   projectName: z.string().min(1, "Nome do projeto é obrigatório."),
   logoUrl: z.string().url({ message: "URL do logo inválida." }).min(1, "URL do logo é obrigatória."),
-  primaryColorHex: z.string().regex(hexColorRegex, { message: "Cor primária: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
+  primaryColorHex: z.string().regex(hexColorRegex, { message: "Cor primária do tema: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   secondaryColorHex: z.string().regex(hexColorRegex, { message: "Cor secundária: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
+  buttonPrimaryBgColorHex: z.string().regex(optionalHexColorRegex, { message: "Cor de fundo do botão: Formato HEX inválido ou deixe vazio." }).optional(),
   pageBackgroundColorHex: z.string().regex(hexColorRegex, { message: "Cor fundo página: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   quizBackgroundColorHex: z.string().regex(hexColorRegex, { message: "Cor fundo quiz: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   quizSubmissionWebhookUrl: z.string().url({ message: "URL do webhook de submissão inválida." }).min(1, "Webhook de submissão é obrigatório."),
@@ -45,9 +49,9 @@ export default function WhitelabelSettingsPage() {
     }
   });
 
-  // Watch color fields to update the color input type
   const primaryColorHex = watch("primaryColorHex");
   const secondaryColorHex = watch("secondaryColorHex");
+  const buttonPrimaryBgColorHex = watch("buttonPrimaryBgColorHex");
   const pageBackgroundColorHex = watch("pageBackgroundColorHex");
   const quizBackgroundColorHex = watch("quizBackgroundColorHex");
 
@@ -55,7 +59,7 @@ export default function WhitelabelSettingsPage() {
     async function loadSettings() {
       setIsFetching(true);
       const settings = await fetchWhitelabelSettings();
-      reset(settings); // reset the form with fetched settings
+      reset(settings);
       setIsFetching(false);
     }
     loadSettings();
@@ -70,7 +74,7 @@ export default function WhitelabelSettingsPage() {
         description: result.message || "Configurações Whitelabel salvas.",
         variant: "default",
       });
-      reset(data, { keepDirty: false }); // Reset form with new data and clear dirty state
+      reset(data, { keepDirty: false }); 
       window.location.reload(); 
     } else {
       toast({
@@ -92,6 +96,7 @@ export default function WhitelabelSettingsPage() {
   }
 
   return (
+    <TooltipProvider>
     <div className="flex flex-col gap-6">
       <Card className="shadow-lg">
         <CardHeader>
@@ -128,9 +133,17 @@ export default function WhitelabelSettingsPage() {
               {errors.logoUrl && <p className="text-sm text-destructive">{errors.logoUrl.message}</p>}
             </div>
 
-            {/* Primary Color HEX */}
+            {/* Primary Theme Color HEX */}
             <div className="space-y-2">
-              <Label htmlFor="primaryColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Primária (HEX)</Label>
+              <Label htmlFor="primaryColorHex" className="flex items-center gap-1">
+                <Palette className="h-4 w-4" />Cor Primária do Tema (HEX)
+                <Tooltip>
+                    <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                        <p>Define a cor principal para elementos do tema como anéis de foco, ícones e textos destacados.</p>
+                    </TooltipContent>
+                </Tooltip>
+              </Label>
               <div className="flex items-center gap-2">
                 <Controller
                   name="primaryColorHex"
@@ -141,9 +154,7 @@ export default function WhitelabelSettingsPage() {
                       {...field} 
                       placeholder="#E09677" 
                       className="flex-grow"
-                      onChange={(e) => {
-                        field.onChange(e.target.value.toUpperCase());
-                      }}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     />
                   )}
                 />
@@ -166,7 +177,15 @@ export default function WhitelabelSettingsPage() {
             
             {/* Secondary Color HEX */}
             <div className="space-y-2">
-              <Label htmlFor="secondaryColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Secundária (HEX)</Label>
+              <Label htmlFor="secondaryColorHex" className="flex items-center gap-1">
+                <Palette className="h-4 w-4" />Cor Secundária do Tema (HEX)
+                 <Tooltip>
+                    <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                        <p>Usada para elementos secundários, como fundos de destaque sutil ou botões secundários.</p>
+                    </TooltipContent>
+                </Tooltip>
+              </Label>
                <div className="flex items-center gap-2">
                 <Controller
                   name="secondaryColorHex"
@@ -177,9 +196,7 @@ export default function WhitelabelSettingsPage() {
                       {...field} 
                       placeholder="#F5D4C6" 
                       className="flex-grow"
-                      onChange={(e) => {
-                        field.onChange(e.target.value.toUpperCase());
-                      }}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     />
                   )}
                 />
@@ -200,6 +217,50 @@ export default function WhitelabelSettingsPage() {
               {errors.secondaryColorHex && <p className="text-sm text-destructive">{errors.secondaryColorHex.message}</p>}
             </div>
 
+            {/* Button Primary Background Color HEX */}
+            <div className="space-y-2">
+              <Label htmlFor="buttonPrimaryBgColorHex" className="flex items-center gap-1">
+                <Palette className="h-4 w-4" />Cor de Fundo do Botão Principal (HEX)
+                <Tooltip>
+                    <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                        <p>Define a cor de fundo dos botões de ação primária (ex: 'Próximo', 'Salvar'). Se vazio, usará a 'Cor Primária do Tema'.</p>
+                    </TooltipContent>
+                </Tooltip>
+              </Label>
+              <div className="flex items-center gap-2">
+                <Controller
+                  name="buttonPrimaryBgColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="buttonPrimaryBgColorHexText"
+                      {...field}
+                      value={field.value || ""}
+                      placeholder="#FF5733 (Opcional)"
+                      className="flex-grow"
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                    />
+                  )}
+                />
+                <Controller
+                  name="buttonPrimaryBgColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="buttonPrimaryBgColorHexPicker"
+                      type="color"
+                      value={field.value || watch("primaryColorHex") || "#E09677"} // Fallback to primary theme if button color is empty
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
+                    />
+                  )}
+                />
+              </div>
+              {errors.buttonPrimaryBgColorHex && <p className="text-sm text-destructive">{errors.buttonPrimaryBgColorHex.message}</p>}
+            </div>
+
+
             {/* Page Background Color HEX */}
             <div className="space-y-2">
               <Label htmlFor="pageBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Fundo da Página (HEX)</Label>
@@ -213,9 +274,7 @@ export default function WhitelabelSettingsPage() {
                       {...field} 
                       placeholder="#FCEFEA" 
                       className="flex-grow"
-                      onChange={(e) => {
-                        field.onChange(e.target.value.toUpperCase());
-                      }}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     />
                   )}
                 />
@@ -249,9 +308,7 @@ export default function WhitelabelSettingsPage() {
                       {...field} 
                       placeholder="#FFFFFF" 
                       className="flex-grow"
-                      onChange={(e) => {
-                        field.onChange(e.target.value.toUpperCase());
-                      }}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     />
                   )}
                 />
@@ -289,7 +346,7 @@ export default function WhitelabelSettingsPage() {
               <Controller
                 name="facebookPixelId"
                 control={control}
-                render={({ field }) => <Input id="facebookPixelId" {...field} placeholder="Seu ID do Pixel do Facebook" />}
+                render={({ field }) => <Input id="facebookPixelId" {...field} value={field.value || ""} placeholder="Seu ID do Pixel do Facebook" />}
               />
               {errors.facebookPixelId && <p className="text-sm text-destructive">{errors.facebookPixelId.message}</p>}
             </div>
@@ -300,7 +357,7 @@ export default function WhitelabelSettingsPage() {
               <Controller
                 name="facebookPixelIdSecondary"
                 control={control}
-                render={({ field }) => <Input id="facebookPixelIdSecondary" {...field} placeholder="Seu ID do Pixel secundário (opcional)" />}
+                render={({ field }) => <Input id="facebookPixelIdSecondary" {...field} value={field.value || ""} placeholder="Seu ID do Pixel secundário (opcional)" />}
               />
               {errors.facebookPixelIdSecondary && <p className="text-sm text-destructive">{errors.facebookPixelIdSecondary.message}</p>}
             </div>
@@ -311,7 +368,7 @@ export default function WhitelabelSettingsPage() {
               <Controller
                 name="googleAnalyticsId"
                 control={control}
-                render={({ field }) => <Input id="googleAnalyticsId" {...field} placeholder="Ex: G-XXXXXXXXXX" />}
+                render={({ field }) => <Input id="googleAnalyticsId" {...field} value={field.value || ""} placeholder="Ex: G-XXXXXXXXXX" />}
               />
               {errors.googleAnalyticsId && <p className="text-sm text-destructive">{errors.googleAnalyticsId.message}</p>}
             </div>
@@ -335,6 +392,6 @@ export default function WhitelabelSettingsPage() {
         </form>
       </Card>
     </div>
+    </TooltipProvider>
   );
 }
-

@@ -5,9 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import FacebookPixelScript from '@/components/FacebookPixelScript';
 import Script from 'next/script';
 import { getWhitelabelConfig, hexToHslString } from '@/lib/whitelabel'; 
-// APP_BASE_URL can still be used for other purposes if needed, but whitelabel config drives UI/tracking.
 
-// Function to generate metadata dynamically
 export async function generateMetadata(): Promise<Metadata> {
   const whitelabelConfig = await getWhitelabelConfig();
   return {
@@ -17,11 +15,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: [ // You might want to make this dynamic based on whitelabelConfig.primaryColorHex too
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
+  themeColor: [ 
+    { media: '(prefers-color-scheme: light)', color: 'white' }, // Fallback, will be influenced by --background
+    { media: '(prefers-color-scheme: dark)', color: 'black' },  // Fallback for dark mode
   ],
-  // other viewport settings
 }
 
 export default async function RootLayout({
@@ -31,21 +28,29 @@ export default async function RootLayout({
 }>) {
   const whitelabelConfig = await getWhitelabelConfig();
 
-  const primaryColorHslString = whitelabelConfig.primaryColorHex ? hexToHslString(whitelabelConfig.primaryColorHex) : null;
+  const primaryColorForThemeHslString = whitelabelConfig.primaryColorHex ? hexToHslString(whitelabelConfig.primaryColorHex) : null;
   const secondaryColorHslString = whitelabelConfig.secondaryColorHex ? hexToHslString(whitelabelConfig.secondaryColorHex) : null;
   const pageBackgroundColorHslString = whitelabelConfig.pageBackgroundColorHex ? hexToHslString(whitelabelConfig.pageBackgroundColorHex) : null;
   const quizBackgroundColorHslString = whitelabelConfig.quizBackgroundColorHex ? hexToHslString(whitelabelConfig.quizBackgroundColorHex) : null;
+  
+  // Determine the HSL string for --primary (used for button backgrounds and main interactive elements)
+  let buttonPrimaryBgHslString: string | null = null;
+  if (whitelabelConfig.buttonPrimaryBgColorHex && whitelabelConfig.buttonPrimaryBgColorHex.trim() !== "") {
+    buttonPrimaryBgHslString = hexToHslString(whitelabelConfig.buttonPrimaryBgColorHex);
+  }
+  // If buttonPrimaryBgColorHex is not set or invalid, fallback to primaryColorForThemeHslString for --primary
+  const finalPrimaryForButtonsHsl = buttonPrimaryBgHslString || primaryColorForThemeHslString;
 
-  // Prepare dynamic styles for theme colors
-  // These will override the defaults in globals.css
   const dynamicStyles = `
     :root {
       ${pageBackgroundColorHslString ? `--background: ${pageBackgroundColorHslString};` : ''}
       ${quizBackgroundColorHslString ? `--card: ${quizBackgroundColorHslString};` : ''}
-      ${primaryColorHslString ? `--primary: ${primaryColorHslString};` : ''}
+      ${finalPrimaryForButtonsHsl ? `--primary: ${finalPrimaryForButtonsHsl};` : ''}
       ${secondaryColorHslString ? `--secondary: ${secondaryColorHslString};` : ''}
-      /* Foreground, card-foreground, etc., are defined in globals.css and will use these new backgrounds. */
-      /* Ensure they provide enough contrast with the user-chosen background/card colors. */
+      
+      /* --ring and --chart-1 will use the theme's primary color, not necessarily the button color */
+      ${primaryColorForThemeHslString ? `--ring: ${primaryColorForThemeHslString};` : ''}
+      ${primaryColorForThemeHslString ? `--chart-1: ${primaryColorForThemeHslString};` : ''}
     }
   `;
 
@@ -57,14 +62,13 @@ export default async function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
         <meta name="facebook-domain-verification" content="7dowgwz24hni45q2fjdp19cp0ztgzn" />
         
-        {/* Inject dynamic theme colors */}
         <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
 
-        {whitelabelConfig.googleAnalyticsId && (
+        {whitelabelConfig.googleAnalyticsId && whitelabelConfig.googleAnalyticsId.trim() !== "" && (
           <>
             <Script
               strategy="afterInteractive"
-              src={`https://www.googletagmanager.com/gtag/js?id=${whitelabelConfig.googleAnalyticsId}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${whitelabelConfig.googleAnalyticsId.trim()}`}
             />
             <Script
               id="gtag-init"
@@ -74,7 +78,7 @@ export default async function RootLayout({
                   window.dataLayer = window.dataLayer || [];
                   function gtag(){dataLayer.push(arguments);}
                   gtag('js', new Date());
-                  gtag('config', '${whitelabelConfig.googleAnalyticsId}', {
+                  gtag('config', '${whitelabelConfig.googleAnalyticsId.trim()}', {
                     page_path: window.location.pathname,
                   });
                 `,

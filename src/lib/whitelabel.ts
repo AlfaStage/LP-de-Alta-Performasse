@@ -10,8 +10,9 @@ const defaultConfig: WhitelabelConfig = {
   logoUrl: "https://placehold.co/150x50.png?text=Logo",
   primaryColorHex: "#E09677", 
   secondaryColorHex: "#F5D4C6", 
-  pageBackgroundColorHex: "#F5B9A9", // Default page background from original globals.css accent
-  quizBackgroundColorHex: "#FFFFFF", // Default card background (white)
+  buttonPrimaryBgColorHex: "", // Se vazio, usa primaryColorHex para botões
+  pageBackgroundColorHex: "#F5B9A9", 
+  quizBackgroundColorHex: "#FFFFFF", 
   quizSubmissionWebhookUrl: "",
   facebookPixelId: "",
   facebookPixelIdSecondary: "",
@@ -36,16 +37,26 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
   try {
     const fileContents = await fs.readFile(configFilePath, 'utf8');
     const config = JSON.parse(fileContents) as WhitelabelConfig;
-    return { ...defaultConfig, ...config };
+    // Mescla com o default para garantir que todos os campos existam
+    const mergedConfig = { ...defaultConfig, ...config };
+    // Garante que buttonPrimaryBgColorHex exista, mesmo que como string vazia
+    if (typeof mergedConfig.buttonPrimaryBgColorHex === 'undefined') {
+        mergedConfig.buttonPrimaryBgColorHex = "";
+    }
+    return mergedConfig;
   } catch (error) {
     console.warn('Failed to read or parse whitelabel-config.json, returning default config:', error);
-    return { ...defaultConfig }; 
+    return { ...defaultConfig, buttonPrimaryBgColorHex: defaultConfig.buttonPrimaryBgColorHex || "" }; 
   }
 }
 
 export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise<{ success: boolean; message?: string }> {
   try {
-    await fs.writeFile(configFilePath, JSON.stringify(newConfig, null, 2), 'utf8');
+    const configToSave = { ...defaultConfig, ...newConfig };
+     if (typeof configToSave.buttonPrimaryBgColorHex === 'undefined') {
+        configToSave.buttonPrimaryBgColorHex = "";
+    }
+    await fs.writeFile(configFilePath, JSON.stringify(configToSave, null, 2), 'utf8');
     return { success: true, message: 'Configurações Whitelabel salvas com sucesso!' };
   } catch (error) {
     console.error('Failed to save whitelabel-config.json:', error);
@@ -55,8 +66,8 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
 }
 
 export function hexToHslString(hexInput: string): string | null {
-  if (!hexInput) return null;
-  const hex = String(hexInput); // Ensure it's a string
+  if (!hexInput || typeof hexInput !== 'string') return null;
+  const hex = hexInput;
 
   let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) {

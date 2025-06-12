@@ -1,12 +1,14 @@
+
 {
   "projectName": "Ice Lazer Quizzes - Lead Master",
   "logoUrl": "https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png",
   "primaryColorHex": "#E09677",
   "secondaryColorHex": "#F5D4C6",
+  "buttonPrimaryBgColorHex": "#DF7140",
   "pageBackgroundColorHex": "#FCEFEA",
   "quizBackgroundColorHex": "#FFFFFF",
   "quizSubmissionWebhookUrl": "https://webhook.workflow.alfastage.com.br/webhook/icelazerquiz-mensagem",
   "facebookPixelId": "724967076682767",
   "facebookPixelIdSecondary": "3949746165337932",
-  "googleAnalyticsId": " G-YV9GYV3385"
+  "googleAnalyticsId": "G-YV9GYV3385"
 }
