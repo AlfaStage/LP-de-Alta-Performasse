@@ -28,9 +28,13 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
 
   const { title, slug, questions } = payload;
 
-  if (!title || !slug || !questions || questions.length === 0) {
-    return { success: false, message: "Título, slug e perguntas são obrigatórios." };
+  if (!title || !slug ) { // Permitir array de 'questions' vazio, pois o contato será adicionado
+    return { success: false, message: "Título e slug são obrigatórios." };
   }
+   if (!Array.isArray(questions)) {
+     return { success: false, message: "O campo de perguntas deve ser um array JSON válido (pode ser vazio)." };
+   }
+
 
   // Validação simples do slug (apenas letras minúsculas, números e hífens)
   if (!/^[a-z0-9-]+$/.test(slug)) {
@@ -51,8 +55,10 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
     // File does not exist, proceed to create
   }
 
-  // Garante que a última pergunta seja a de contato
-  const questionsWithContactStep = [...questions.filter(q => q.id !== defaultContactStep.id), defaultContactStep];
+  // Garante que a última pergunta seja a de contato.
+  // Remove qualquer etapa de contato que o usuário possa ter incluído com o mesmo ID, para padronizar.
+  const questionsWithoutExistingContact = questions.filter(q => q.id !== defaultContactStep.id);
+  const questionsWithContactStep = [...questionsWithoutExistingContact, defaultContactStep];
 
 
   const quizConfig: QuizConfig = {
