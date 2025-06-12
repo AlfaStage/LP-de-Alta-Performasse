@@ -35,7 +35,7 @@ export default function WhitelabelSettingsPage() {
   const [isFetching, setIsFetching] = useState(true);
   const { toast } = useToast();
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<WhitelabelConfig>({
+  const { control, handleSubmit, reset, formState: { errors, dirtyFields }, watch } = useForm<WhitelabelConfig>({
     resolver: zodResolver(whitelabelSettingsSchema),
     defaultValues: async () => {
       setIsFetching(true);
@@ -45,11 +45,17 @@ export default function WhitelabelSettingsPage() {
     }
   });
 
+  // Watch color fields to update the color input type
+  const primaryColorHex = watch("primaryColorHex");
+  const secondaryColorHex = watch("secondaryColorHex");
+  const pageBackgroundColorHex = watch("pageBackgroundColorHex");
+  const quizBackgroundColorHex = watch("quizBackgroundColorHex");
+
   useEffect(() => {
     async function loadSettings() {
       setIsFetching(true);
       const settings = await fetchWhitelabelSettings();
-      reset(settings);
+      reset(settings); // reset the form with fetched settings
       setIsFetching(false);
     }
     loadSettings();
@@ -64,10 +70,8 @@ export default function WhitelabelSettingsPage() {
         description: result.message || "Configurações Whitelabel salvas.",
         variant: "default",
       });
-      // Forçar um recarregamento da página para que o RootLayout pegue as novas cores.
-      // Idealmente, o Next.js revalidaria o layout, mas para garantir a aplicação imediata dos estilos CSS
-      // injetados, um reload é mais direto aqui.
-      window.location.reload();
+      reset(data, { keepDirty: false }); // Reset form with new data and clear dirty state
+      window.location.reload(); 
     } else {
       toast({
         title: "Erro ao Salvar",
@@ -97,7 +101,7 @@ export default function WhitelabelSettingsPage() {
           </CardTitle>
           <CardDescription>
             Personalize a aparência, nome, integrações e webhooks do sistema de quizzes.
-            Para cores, use o formato HEX (Ex: #FF5733).
+            Para cores, use o formato HEX (Ex: #FF5733) ou o seletor de cores.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -127,44 +131,144 @@ export default function WhitelabelSettingsPage() {
             {/* Primary Color HEX */}
             <div className="space-y-2">
               <Label htmlFor="primaryColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Primária (HEX)</Label>
-              <Controller
-                name="primaryColorHex"
-                control={control}
-                render={({ field }) => <Input id="primaryColorHex" {...field} placeholder="#E09677" />}
-              />
+              <div className="flex items-center gap-2">
+                <Controller
+                  name="primaryColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="primaryColorHexText" 
+                      {...field} 
+                      placeholder="#E09677" 
+                      className="flex-grow"
+                      onChange={(e) => {
+                        field.onChange(e.target.value.toUpperCase());
+                      }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="primaryColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="primaryColorHexPicker"
+                      type="color"
+                      value={field.value || "#E09677"}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
+                    />
+                  )}
+                />
+              </div>
               {errors.primaryColorHex && <p className="text-sm text-destructive">{errors.primaryColorHex.message}</p>}
             </div>
-
+            
             {/* Secondary Color HEX */}
             <div className="space-y-2">
               <Label htmlFor="secondaryColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Secundária (HEX)</Label>
-              <Controller
-                name="secondaryColorHex"
-                control={control}
-                render={({ field }) => <Input id="secondaryColorHex" {...field} placeholder="#F5D4C6" />}
-              />
+               <div className="flex items-center gap-2">
+                <Controller
+                  name="secondaryColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="secondaryColorHexText" 
+                      {...field} 
+                      placeholder="#F5D4C6" 
+                      className="flex-grow"
+                      onChange={(e) => {
+                        field.onChange(e.target.value.toUpperCase());
+                      }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="secondaryColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="secondaryColorHexPicker"
+                      type="color"
+                      value={field.value || "#F5D4C6"}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
+                    />
+                  )}
+                />
+              </div>
               {errors.secondaryColorHex && <p className="text-sm text-destructive">{errors.secondaryColorHex.message}</p>}
             </div>
 
             {/* Page Background Color HEX */}
             <div className="space-y-2">
               <Label htmlFor="pageBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Fundo da Página (HEX)</Label>
-              <Controller
-                name="pageBackgroundColorHex"
-                control={control}
-                render={({ field }) => <Input id="pageBackgroundColorHex" {...field} placeholder="#FCEFEA" />}
-              />
+              <div className="flex items-center gap-2">
+                <Controller
+                  name="pageBackgroundColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="pageBackgroundColorHexText" 
+                      {...field} 
+                      placeholder="#FCEFEA" 
+                      className="flex-grow"
+                      onChange={(e) => {
+                        field.onChange(e.target.value.toUpperCase());
+                      }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="pageBackgroundColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="pageBackgroundColorHexPicker"
+                      type="color"
+                      value={field.value || "#FCEFEA"}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
+                    />
+                  )}
+                />
+              </div>
               {errors.pageBackgroundColorHex && <p className="text-sm text-destructive">{errors.pageBackgroundColorHex.message}</p>}
             </div>
 
             {/* Quiz Background Color HEX */}
             <div className="space-y-2">
               <Label htmlFor="quizBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4" />Cor Fundo do Quiz (Card) (HEX)</Label>
-              <Controller
-                name="quizBackgroundColorHex"
-                control={control}
-                render={({ field }) => <Input id="quizBackgroundColorHex" {...field} placeholder="#FFFFFF" />}
-              />
+              <div className="flex items-center gap-2">
+                <Controller
+                  name="quizBackgroundColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="quizBackgroundColorHexText" 
+                      {...field} 
+                      placeholder="#FFFFFF" 
+                      className="flex-grow"
+                      onChange={(e) => {
+                        field.onChange(e.target.value.toUpperCase());
+                      }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="quizBackgroundColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="quizBackgroundColorHexPicker"
+                      type="color"
+                      value={field.value || "#FFFFFF"}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
+                    />
+                  )}
+                />
+              </div>
               {errors.quizBackgroundColorHex && <p className="text-sm text-destructive">{errors.quizBackgroundColorHex.message}</p>}
             </div>
             
@@ -214,7 +318,7 @@ export default function WhitelabelSettingsPage() {
 
           </CardContent>
           <CardFooter>
-            <Button type="submit" disabled={isLoading || isFetching} className="text-base py-3">
+            <Button type="submit" disabled={isLoading || isFetching || !Object.keys(dirtyFields).length} className="text-base py-3">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -233,3 +337,4 @@ export default function WhitelabelSettingsPage() {
     </div>
   );
 }
+
