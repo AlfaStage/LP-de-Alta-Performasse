@@ -46,13 +46,17 @@ interface QuizFormProps {
 // Otimização de ícones: Importar todos de uma vez
 const IconComponents = LucideIcons;
 
+// Placeholders para verificar se um ID real foi fornecido
+const PLACEHOLDER_FB_PIXEL_ID = "YOUR_PRIMARY_FACEBOOK_PIXEL_ID";
+const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
+
 export default function QuizForm({ 
   quizQuestions, 
   quizSlug, 
   quizTitle = "Quiz", 
   logoUrl,
-  facebookPixelId,
-  googleAnalyticsId,
+  facebookPixelId, // Este ID já vem das configs Whitelabel via props
+  googleAnalyticsId, // Este ID já vem das configs Whitelabel via props
   clientAbandonmentWebhookUrl,
   footerCopyrightText = `© ${new Date().getFullYear()} Quiz. Todos os direitos reservados.`,
   onSubmitOverride,
@@ -82,8 +86,8 @@ export default function QuizForm({
   
   const currentQuestion = activeQuestions[currentStep];
 
-  const isFbPixelConfigured = !!facebookPixelId && facebookPixelId !== "YOUR_PRIMARY_FACEBOOK_PIXEL_ID";
-  const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId !== "YOUR_GA_ID";
+  const isFbPixelConfigured = !!facebookPixelId && facebookPixelId.trim() !== "" && facebookPixelId !== PLACEHOLDER_FB_PIXEL_ID;
+  const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== PLACEHOLDER_GA_ID;
 
   useEffect(() => {
     if (isPreview || !quizQuestions || quizQuestions.length === 0) return;
@@ -97,7 +101,7 @@ export default function QuizForm({
         gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview]); // Removido quizQuestions da dependência para evitar re-trigger excessivo se o objeto for recriado
+  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -128,14 +132,17 @@ export default function QuizForm({
                 try {
                   const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
                   navigator.sendBeacon(webhookUrl, blob);
+                  console.log("Quiz abandonment data sent to client-side webhook via sendBeacon:", dataToLog);
                 } catch (e) {
-                  // Fallback se sendBeacon falhar (raro, mas pode acontecer com dados muito grandes ou outras restrições)
                    fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
+                   console.log("Quiz abandonment data sent to client-side webhook via fetch (fallback):", dataToLog);
                 }
               } else {
                 fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
+                console.log("Quiz abandonment data sent to client-side webhook via fetch:", dataToLog);
               }
             } else {
+               console.log("Quiz abandonment: No client-side webhook, attempting server-side log.", dataToLog);
                serverLogQuizAbandonment(dataToLog, quizSlug);
             }
         }
@@ -147,7 +154,7 @@ export default function QuizForm({
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, currentStep, isQuizCompleted, submissionStatus, quizSlug, clientAbandonmentWebhookUrl, onAbandonmentOverride, isPreview, getValues, currentQuestion]); // Adicionado getValues e currentQuestion
+  }, [formData, currentStep, isQuizCompleted, submissionStatus, quizSlug, clientAbandonmentWebhookUrl, onAbandonmentOverride, isPreview, getValues, currentQuestion]);
 
   const handleNext = async () => {
     if (submissionStatus === 'pending' || !currentQuestion) return;
@@ -167,10 +174,10 @@ export default function QuizForm({
         }
     }
 
-
-    const answerData = {
+    const answerValue = getValues(currentQuestion.name);
+    const answerDataFb = {
       question_id: currentQuestion.id,
-      answer: getValues(currentQuestion.name),
+      answer: Array.isArray(answerValue) ? answerValue.join(', ') : answerValue,
       step: currentStep + 1,
       quiz_name: quizNameForTracking
     };
@@ -178,7 +185,7 @@ export default function QuizForm({
       category: 'Quiz',
       label: `Question: ${currentQuestion.id}`,
       question_id: currentQuestion.id,
-      answer: getValues(currentQuestion.name)?.toString(),
+      answer: Array.isArray(answerValue) ? answerValue.join(', ') : answerValue?.toString(),
       step_number: currentStep + 1,
       quiz_name: quizNameForTracking
     };
@@ -191,8 +198,8 @@ export default function QuizForm({
       }, 300);
       if (!isPreview) {
         if (isFbPixelConfigured) {
-          console.log("FB Pixel: QuestionAnswered event triggered.", answerData);
-          fbTrackEvent('QuestionAnswered', answerData);
+          console.log("FB Pixel: QuestionAnswered event triggered.", answerDataFb);
+          fbTrackEvent('QuestionAnswered', answerDataFb);
         }
         if(isGaConfigured) {
           console.log("GA: question_answered event triggered.", gaAnswerData);
@@ -201,23 +208,26 @@ export default function QuizForm({
       }
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
        if (!isPreview) {
-            if (isFbPixelConfigured) {
-                console.log("FB Pixel: QuestionAnswered event triggered (last question).", answerData);
-                fbTrackEvent('QuestionAnswered', {
+           const lastQuestionAnswerValue = currentQuestion.fields ? getValues(currentQuestion.fields.map(f => f.name)) : getValues(currentQuestion.name);
+            const lastAnswerDataFb = {
                 question_id: currentQuestion.id,
-                answer: getValues(currentQuestion.fields?.map(f => f.name) || []),
+                answer: Array.isArray(lastQuestionAnswerValue) ? lastQuestionAnswerValue.join(', ') : lastQuestionAnswerValue,
                 step: currentStep + 1,
                 quiz_name: quizNameForTracking
-                });
-            }
+            };
             const lastGaAnswerData = {
                 category: 'Quiz',
                 label: `Question: ${currentQuestion.id}`,
                 question_id: currentQuestion.id,
-                answer: getValues(currentQuestion.fields?.map(f => f.name) || [])?.toString(),
+                answer: Array.isArray(lastQuestionAnswerValue) ? lastQuestionAnswerValue.join(', ') : lastQuestionAnswerValue?.toString(),
                 step_number: currentStep + 1,
                 quiz_name: quizNameForTracking
             };
+
+            if (isFbPixelConfigured) {
+                console.log("FB Pixel: QuestionAnswered event triggered (last question).", lastAnswerDataFb);
+                fbTrackEvent('QuestionAnswered', lastAnswerDataFb);
+            }
             if(isGaConfigured){
                 console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
                 gaEvent({ action: 'question_answered', ...lastGaAnswerData });
@@ -302,7 +312,7 @@ export default function QuizForm({
             const leadDataGa = {
                 category: 'Quiz',
                 label: `${quizNameForTracking}_Lead`,
-                value: 50,
+                value: 50, // GA value é geralmente um inteiro
                 lead_name: finalData.nomeCompleto,
             };
             const quizCompleteDataGa = {
@@ -361,7 +371,7 @@ export default function QuizForm({
     return IconComponents[iconName];
   };
   
-  const loadingJsx = ( // Este loading só é usado se QuizForm for renderizado antes de quizQuestions estar pronto (raro com dynamic import)
+  const loadingJsx = ( 
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
       <Alert className="bg-card text-card-foreground">
         <IconComponents.Info className="h-4 w-4" />
@@ -374,8 +384,6 @@ export default function QuizForm({
   );
 
   if ((!quizQuestions || quizQuestions.length === 0) && !isQuizCompleted) {
-    // O componente QuizFormLoading será exibido pelo next/dynamic
-    // Se chegar aqui, é um estado inesperado ou o dynamic import falhou em mostrar seu loading.
     return loadingJsx;
   }
   
@@ -406,7 +414,7 @@ export default function QuizForm({
                   width={150} 
                   height={50} 
                   className="h-auto w-28 md:w-36" 
-                  priority={true} // Priorizar carregamento do logo
+                  priority={true} 
                 />
             </div>
             <CardTitle className="text-3xl mt-4 text-primary">{quizTitle}</CardTitle>
@@ -452,7 +460,7 @@ export default function QuizForm({
                   width={150} 
                   height={50}
                   className="h-auto w-28 md:w-36"
-                  priority={true} // Priorizar carregamento do logo
+                  priority={true} 
                 />
                 <div>
                     <CardTitle className="text-3xl font-headline text-primary">{quizTitle}</CardTitle>
