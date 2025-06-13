@@ -1,7 +1,6 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-// import QuizForm from '@/components/quiz/QuizForm'; // Importação original
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import type { QuizConfig } from '@/types/quiz';
@@ -13,7 +12,6 @@ import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
-  // ssr: false, // Removido: Não permitido em Server Components
   loading: () => <QuizFormLoading />,
 });
 
@@ -58,6 +56,9 @@ export async function generateStaticParams() {
         quizSlug: filename.replace('.json', ''),
       }));
   } catch (error) {
+    // Se o diretório não puder ser lido (ex: não existe durante o build inicial em alguns ambientes),
+    // é melhor retornar um array vazio para evitar que o build falhe,
+    // e logar um aviso. As páginas serão geradas dinamicamente no primeiro acesso.
     console.warn("Could not read quizzes directory for generateStaticParams. No quizzes will be pre-rendered.", error);
     return [];
   }
@@ -73,7 +74,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
     return (
       <main className="container mx-auto p-4 min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
         <Alert variant="destructive" className="w-full max-w-lg bg-card text-card-foreground shadow-lg">
-          <AlertTriangle className="h-8 w-8" /> {/* Aumentado o ícone */}
+          <AlertTriangle className="h-8 w-8" />
           <AlertTitle className="text-xl">Quiz não encontrado ou mal configurado</AlertTitle>
           <AlertDescription>
             O quiz com o identificador "{quizSlug}" não pôde ser carregado ou está vazio.
@@ -85,7 +86,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
   }
   
    if (quizConfigFromFile.questions.length === 1 && quizConfigFromFile.questions[0].id === defaultContactStep.id) {
-     // Allows quiz with only contact step.
+     // Permite quiz com apenas a etapa de contato.
    }
 
   const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Logo+Empresa";
@@ -101,6 +102,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
         quizTitle={quizConfigFromFile.title || whitelabelConfig.projectName || "Quiz Interativo"} 
         logoUrl={logoUrlToUse}
         facebookPixelId={whitelabelConfig.facebookPixelId}
+        facebookPixelIdSecondary={whitelabelConfig.facebookPixelIdSecondary}
         googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
         clientAbandonmentWebhookUrl={clientAbandonmentWebhook}
         footerCopyrightText={footerText}

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm, FormProvider, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getSuccessIcon } from '@/config/quizConfig'; 
 import QuizProgressBar from './QuizProgressBar';
-import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent } from '@/lib/fpixel';
+import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent, getActivePixelIds } from '@/lib/fpixel';
 import { event as gaEvent } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
 import * as LucideIcons from 'lucide-react'; 
@@ -35,6 +35,7 @@ interface QuizFormProps {
   quizTitle?: string;
   logoUrl: string;
   facebookPixelId?: string; 
+  facebookPixelIdSecondary?: string;
   googleAnalyticsId?: string; 
   clientAbandonmentWebhookUrl?: string; 
   footerCopyrightText?: string;
@@ -43,11 +44,10 @@ interface QuizFormProps {
   isPreview?: boolean;
 }
 
-// Otimização de ícones: Importar todos de uma vez
 const IconComponents = LucideIcons;
 
-// Placeholders para verificar se um ID real foi fornecido
 const PLACEHOLDER_FB_PIXEL_ID = "YOUR_PRIMARY_FACEBOOK_PIXEL_ID";
+const PLACEHOLDER_SECONDARY_FB_PIXEL_ID = "YOUR_SECONDARY_FACEBOOK_PIXEL_ID";
 const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
 
 export default function QuizForm({ 
@@ -55,8 +55,9 @@ export default function QuizForm({
   quizSlug, 
   quizTitle = "Quiz", 
   logoUrl,
-  facebookPixelId, // Este ID já vem das configs Whitelabel via props
-  googleAnalyticsId, // Este ID já vem das configs Whitelabel via props
+  facebookPixelId,
+  facebookPixelIdSecondary,
+  googleAnalyticsId,
   clientAbandonmentWebhookUrl,
   footerCopyrightText = `© ${new Date().getFullYear()} Quiz. Todos os direitos reservados.`,
   onSubmitOverride,
@@ -77,7 +78,7 @@ export default function QuizForm({
     mode: 'onChange',
   });
 
-  const { control, handleSubmit, setValue, getValues, trigger, formState: { errors, isValid: formIsValid } } = methods;
+  const { control, handleSubmit, setValue, getValues, trigger, formState: { errors, isValid: formIsValid }, setError: setFormError, clearErrors } = methods;
 
   const activeQuestions = useMemo(() => {
     if (!quizQuestions) return [];
@@ -86,22 +87,24 @@ export default function QuizForm({
   
   const currentQuestion = activeQuestions[currentStep];
 
-  const isFbPixelConfigured = !!facebookPixelId && facebookPixelId.trim() !== "" && facebookPixelId !== PLACEHOLDER_FB_PIXEL_ID;
+  const configuredFbPixelIds = useMemo(() => getActivePixelIds(facebookPixelId, facebookPixelIdSecondary), [facebookPixelId, facebookPixelIdSecondary]);
+  const isFbPixelConfigured = configuredFbPixelIds.length > 0;
   const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== PLACEHOLDER_GA_ID;
+
 
   useEffect(() => {
     if (isPreview || !quizQuestions || quizQuestions.length === 0) return;
     const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
     if (isFbPixelConfigured) {
-      console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking);
-      fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking });
+      console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking, "Pixels:", configuredFbPixelIds);
+      fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking }, configuredFbPixelIds);
     }
     if(isGaConfigured) {
         console.log("GA: quiz_start event triggered for", quizNameForTracking);
         gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview]);
+  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview, configuredFbPixelIds]); 
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -168,16 +171,18 @@ export default function QuizForm({
         const value = getValues(currentQuestion.name);
         stepIsValid = !!value && (Array.isArray(value) ? value.length > 0 : true);
         if (!stepIsValid) {
-            methods.setError(currentQuestion.name, { type: "manual", message: "Por favor, selecione uma opção."});
+            setFormError(currentQuestion.name, { type: "manual", message: "Por favor, selecione uma opção."});
         } else {
-            methods.clearErrors(currentQuestion.name);
+            clearErrors(currentQuestion.name);
         }
     }
 
     const answerValue = getValues(currentQuestion.name);
+    const answerString = Array.isArray(answerValue) ? answerValue.join(', ') : String(answerValue);
+
     const answerDataFb = {
       question_id: currentQuestion.id,
-      answer: Array.isArray(answerValue) ? answerValue.join(', ') : answerValue,
+      answer: answerString,
       step: currentStep + 1,
       quiz_name: quizNameForTracking
     };
@@ -185,7 +190,7 @@ export default function QuizForm({
       category: 'Quiz',
       label: `Question: ${currentQuestion.id}`,
       question_id: currentQuestion.id,
-      answer: Array.isArray(answerValue) ? answerValue.join(', ') : answerValue?.toString(),
+      answer: answerString,
       step_number: currentStep + 1,
       quiz_name: quizNameForTracking
     };
@@ -198,8 +203,8 @@ export default function QuizForm({
       }, 300);
       if (!isPreview) {
         if (isFbPixelConfigured) {
-          console.log("FB Pixel: QuestionAnswered event triggered.", answerDataFb);
-          fbTrackEvent('QuestionAnswered', answerDataFb);
+          console.log("FB Pixel: QuestionAnswered event triggered.", answerDataFb, "Pixels:", configuredFbPixelIds);
+          fbTrackEvent('QuestionAnswered', answerDataFb, configuredFbPixelIds);
         }
         if(isGaConfigured) {
           console.log("GA: question_answered event triggered.", gaAnswerData);
@@ -209,9 +214,11 @@ export default function QuizForm({
     } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
        if (!isPreview) {
            const lastQuestionAnswerValue = currentQuestion.fields ? getValues(currentQuestion.fields.map(f => f.name)) : getValues(currentQuestion.name);
+           const lastAnswerString = Array.isArray(lastQuestionAnswerValue) ? lastQuestionAnswerValue.join(', ') : String(lastQuestionAnswerValue);
+
             const lastAnswerDataFb = {
                 question_id: currentQuestion.id,
-                answer: Array.isArray(lastQuestionAnswerValue) ? lastQuestionAnswerValue.join(', ') : lastQuestionAnswerValue,
+                answer: lastAnswerString,
                 step: currentStep + 1,
                 quiz_name: quizNameForTracking
             };
@@ -219,14 +226,14 @@ export default function QuizForm({
                 category: 'Quiz',
                 label: `Question: ${currentQuestion.id}`,
                 question_id: currentQuestion.id,
-                answer: Array.isArray(lastQuestionAnswerValue) ? lastQuestionAnswerValue.join(', ') : lastQuestionAnswerValue?.toString(),
+                answer: lastAnswerString,
                 step_number: currentStep + 1,
                 quiz_name: quizNameForTracking
             };
 
             if (isFbPixelConfigured) {
-                console.log("FB Pixel: QuestionAnswered event triggered (last question).", lastAnswerDataFb);
-                fbTrackEvent('QuestionAnswered', lastAnswerDataFb);
+                console.log("FB Pixel: QuestionAnswered event triggered (last question).", lastAnswerDataFb, "Pixels:", configuredFbPixelIds);
+                fbTrackEvent('QuestionAnswered', lastAnswerDataFb, configuredFbPixelIds);
             }
             if(isGaConfigured){
                 console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
@@ -250,7 +257,7 @@ export default function QuizForm({
   const handleValueChange = (name: string, value: any) => {
     setValue(name, value, { shouldValidate: true }); 
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) methods.clearErrors(name);
+    if (errors[name]) clearErrors(name);
   };
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
@@ -312,7 +319,7 @@ export default function QuizForm({
             const leadDataGa = {
                 category: 'Quiz',
                 label: `${quizNameForTracking}_Lead`,
-                value: 50, // GA value é geralmente um inteiro
+                value: 50, 
                 lead_name: finalData.nomeCompleto,
             };
             const quizCompleteDataGa = {
@@ -323,10 +330,10 @@ export default function QuizForm({
             };
 
             if (isFbPixelConfigured) {
-                console.log("FB Pixel: QuizComplete event triggered.", quizCompleteDataFb);
-                fbTrackCustomEvent('QuizComplete', quizCompleteDataFb);
-                console.log("FB Pixel: Lead event triggered.", leadDataFb);
-                fbTrackEvent('Lead', leadDataFb);
+                console.log("FB Pixel: QuizComplete event triggered.", quizCompleteDataFb, "Pixels:", configuredFbPixelIds);
+                fbTrackCustomEvent('QuizComplete', quizCompleteDataFb, configuredFbPixelIds);
+                console.log("FB Pixel: Lead event triggered.", leadDataFb, "Pixels:", configuredFbPixelIds);
+                fbTrackEvent('Lead', leadDataFb, configuredFbPixelIds);
             }
             if(isGaConfigured){
                 console.log("GA: quiz_complete event triggered.", quizCompleteDataGa);
@@ -337,7 +344,7 @@ export default function QuizForm({
 
         } else if (result.status === 'invalid_number') {
             setSubmissionStatus('idle'); 
-            methods.setError('whatsapp', {
+            setFormError('whatsapp', {
                 type: 'manual',
                 message: result.message || "O número de WhatsApp informado parece ser inválido. Por favor, corrija e tente novamente."
             });
@@ -366,15 +373,15 @@ export default function QuizForm({
     }
   };
   
-  const getIconComponent = (iconName?: keyof typeof IconComponents): React.ElementType | undefined => {
-    if (!iconName || !IconComponents[iconName]) return undefined;
+  const getIconComponent = useCallback((iconName?: keyof typeof IconComponents): React.ElementType | undefined => {
+    if (!iconName || typeof iconName !== 'string' || !IconComponents[iconName]) return undefined;
     return IconComponents[iconName];
-  };
+  }, []);
   
   const loadingJsx = ( 
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
       <Alert className="bg-card text-card-foreground">
-        <IconComponents.Info className="h-4 w-4" />
+        {IconComponents.Info && <IconComponents.Info className="h-4 w-4" />}
         <AlertTitle>Carregando Quiz...</AlertTitle>
         <AlertDescription>
           Por favor, aguarde enquanto preparamos as perguntas.
@@ -391,7 +398,7 @@ export default function QuizForm({
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
           <Alert variant="destructive" className="bg-card text-card-foreground">
-            <IconComponents.AlertTriangle className="h-4 w-4" />
+            {IconComponents.AlertTriangle && <IconComponents.AlertTriangle className="h-4 w-4" />}
             <AlertTitle>Erro no Quiz</AlertTitle>
             <AlertDescription>
               Não foi possível carregar as perguntas do quiz. Tente recarregar a página.
@@ -402,6 +409,9 @@ export default function QuizForm({
   }
 
   if (isQuizCompleted && submissionStatus === 'success') {
+    const FinalSuccessIcon = SuccessIcon || IconComponents.CheckCircle;
+    const GlobeIcon = IconComponents.Globe || 'span';
+    const InstagramIcon = IconComponents.Instagram || 'span';
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
         <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center bg-card text-card-foreground">
@@ -420,18 +430,18 @@ export default function QuizForm({
             <CardTitle className="text-3xl mt-4 text-primary">{quizTitle}</CardTitle>
           </CardHeader>
           <CardContent className="p-6 md:p-8 space-y-4 bg-card">
-            <SuccessIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <FinalSuccessIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <p className="text-lg font-semibold text-card-foreground">Suas respostas foram enviadas com sucesso!</p>
             <p className="text-muted-foreground">Nossa equipe entrará em contato com você em breve.</p>
             {!isPreview && (
               <div className="pt-4 space-y-3">
                 <p className="text-sm text-card-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
                 <Link href="https://espacoicelaser.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                  <IconComponents.Globe className="mr-2 h-5 w-5" />
+                  <GlobeIcon className="mr-2 h-5 w-5" />
                   Visite nosso site
                 </Link>
                 <Link href="https://www.instagram.com/icelaseroficial/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                  <IconComponents.Instagram className="mr-2 h-5 w-5" />
+                  <InstagramIcon className="mr-2 h-5 w-5" />
                   Siga-nos no Instagram
                 </Link>
               </div>
@@ -446,6 +456,8 @@ export default function QuizForm({
       </div>
     );
   }
+
+  const QuestionIcon = currentQuestion?.icon ? getIconComponent(currentQuestion.icon) : null;
 
   return (
     <FormProvider {...methods}>
@@ -474,7 +486,7 @@ export default function QuizForm({
               <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-4 mb-6">
                   <div className="flex items-start space-x-3">
-                    {currentQuestion.icon && React.createElement(getIconComponent(currentQuestion.icon)!, { className: "h-8 w-8 text-primary mt-1 flex-shrink-0" })}
+                    {QuestionIcon && React.createElement(QuestionIcon, { className: "h-8 w-8 text-primary mt-1 flex-shrink-0" })}
                     <div>
                       <Label htmlFor={currentQuestion.name} className="text-xl font-semibold text-card-foreground mb-1 block font-headline">
                         {currentQuestion.text}
@@ -497,13 +509,13 @@ export default function QuizForm({
                           className="space-y-2"
                         >
                           {currentQuestion.options!.map(option => {
-                            const OptionIcon = getIconComponent(option.icon);
+                            const OptionIconComponent = getIconComponent(option.icon);
                             return (
                             <div 
                               key={option.value} 
                               className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80"
                             >
-                              {OptionIcon && <OptionIcon className="h-5 w-5 text-muted-foreground group-has-[:checked]:text-primary" />}
+                              {OptionIconComponent && <OptionIconComponent className="h-5 w-5 text-muted-foreground group-has-[:checked]:text-primary" />}
                               <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="border-muted-foreground text-primary focus:ring-primary"/>
                               <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer text-card-foreground group-has-[:checked]:text-primary">
                                 {option.label}
@@ -527,7 +539,8 @@ export default function QuizForm({
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {currentQuestion.options!.map(option => {
                               const isSelected = field.value?.includes(option.value);
-                              const OptionIcon = getIconComponent(option.icon);
+                              const OptionIconComponent = getIconComponent(option.icon);
+                              const CheckCircleIcon = IconComponents.CheckCircle || 'span';
                               return (
                                 <div
                                   key={option.value}
@@ -553,10 +566,10 @@ export default function QuizForm({
                                   </div>
                                   {isSelected && (
                                     <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                                      <IconComponents.CheckCircle className="h-4 w-4" />
+                                      <CheckCircleIcon className="h-4 w-4" />
                                     </div>
                                   )}
-                                  {OptionIcon && !option.imageUrl && <OptionIcon className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
+                                  {OptionIconComponent && !option.imageUrl && <OptionIconComponent className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
                                 </div>
                               );
                             })}
@@ -568,11 +581,11 @@ export default function QuizForm({
                   {currentQuestion.type === 'textFields' && currentQuestion.fields && (
                     <div className="space-y-4">
                       {currentQuestion.fields.map(f => {
-                        const FieldIcon = getIconComponent(f.icon);
+                        const FieldIconComponent = getIconComponent(f.icon);
                         return (
                         <div key={f.name} className="space-y-1">
                            <Label htmlFor={f.name} className="font-medium flex items-center text-card-foreground">
-                             {FieldIcon && <FieldIcon className="h-4 w-4 mr-2 text-primary" />} 
+                             {FieldIconComponent && <FieldIconComponent className="h-4 w-4 mr-2 text-primary" />} 
                              {f.label}
                           </Label>
                           <Controller
@@ -604,7 +617,7 @@ export default function QuizForm({
           {currentQuestion && (
              <CardFooter className="flex justify-between p-6 bg-muted/30">
                 <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0 || submissionStatus === 'pending'} className="px-6 py-3 text-base">
-                    <IconComponents.ChevronLeft className="mr-2 h-5 w-5" /> Voltar
+                    {IconComponents.ChevronLeft && <IconComponents.ChevronLeft className="mr-2 h-5 w-5" />} Voltar
                 </Button>
                 <Button 
                     onClick={handleNext} 
@@ -615,11 +628,9 @@ export default function QuizForm({
                         (currentQuestion.type === 'textFields' && !formIsValid && Object.keys(errors).length > 0) 
                     }
                 >
-                    {submissionStatus === 'pending' ? (
-                    <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    ) : null}
+                    {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                     {submissionStatus === 'pending' ? 'Enviando...' : (currentStep === activeQuestions.length - 1 ? 'Finalizar e Contato' : 'Próximo')}
-                    {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? <IconComponents.Send className="ml-2 h-5 w-5" /> : <IconComponents.ChevronRight className="ml-2 h-5 w-5" />)}
+                    {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? (IconComponents.Send && <IconComponents.Send className="ml-2 h-5 w-5" />) : (IconComponents.ChevronRight && <IconComponents.ChevronRight className="ml-2 h-5 w-5" />))}
                 </Button>
             </CardFooter>
           )}
