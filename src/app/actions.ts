@@ -2,6 +2,7 @@
 "use server";
 import { SERVER_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
+import { updateQuizStat } from '@/app/config/dashboard/quiz/actions'; // Importar a função para atualizar estatísticas
 
 interface ClientInfo {
   userAgent?: string;
@@ -29,18 +30,15 @@ export async function logQuizAbandonment(data: Record<string, any>, quizSlugInpu
     return { success: false, message: "Webhook URL not configured." };
   }
 
-  // Ensure quizSlug is part of the main payload object if provided via data or as a separate arg
   const payload: AbandonedQuizData = {
-    ...data, // This should contain quizSlug, clientInfo, abandonedAt, etc. from QuizForm
+    ...data, 
   };
 
-  // If data.quizSlug is not present but quizSlugInput is, use quizSlugInput
   if (!payload.quizSlug && quizSlugInput) {
     payload.quizSlug = quizSlugInput;
   }
   
-  // Ensure quizType and timestamp (abandonedAt) are consistently named
-  payload.quizType = payload.quizType || `IceLazerLeadFilter_Abandonment_V2_Server`; // Default if not set by client
+  payload.quizType = payload.quizType || `IceLazerLeadFilter_Abandonment_V2_Server`; 
   payload.abandonedAt = payload.abandonedAt || new Date().toISOString();
 
 
@@ -71,18 +69,14 @@ interface SubmitQuizResponse {
   message: string;
 }
 
-// The `data` parameter from QuizForm will now include `quizSlug`, `quizTitle`, `clientInfo`, and `submittedAt`
 export async function submitQuizData(data: Record<string, any>): Promise<SubmitQuizResponse> {
   const whitelabelConfig = await getWhitelabelConfig();
   const webhookUrl = whitelabelConfig.quizSubmissionWebhookUrl;
   
-  // The 'data' object already contains quizSlug, quizTitle, clientInfo, submittedAt from QuizForm.
-  // It also contains all the quiz answers.
   const payload = { ...data }; 
 
   if (!payload.quizSlug) {
     console.warn("Quiz slug is missing in the submission data. This is unexpected.");
-    // Potentially add a default or handle as an error, but QuizForm should always send it.
   }
 
   if (!webhookUrl || webhookUrl === "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER" || webhookUrl.trim() === "") {
@@ -120,6 +114,10 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
 
     if (webhookStatusHeader === 'mensagem enviada') {
       console.log("Submitted quiz data sent to webhook successfully. Webhook 'status' header: mensagem enviada");
+      // Registrar que o quiz foi completado
+      if (payload.quizSlug) {
+        await updateQuizStat(payload.quizSlug, 'completedCount');
+      }
       return { status: 'success', message: "Dados enviados com sucesso!" };
     } else if (webhookStatusHeader === 'numero incorreto') {
       console.log("Webhook 'status' header: numero incorreto");

@@ -16,6 +16,7 @@ import QuizProgressBar from './QuizProgressBar';
 import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent, getActivePixelIds } from '@/lib/fpixel';
 import { event as gaEvent } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
+import { recordQuizStartedAction } from '@/app/config/dashboard/quiz/actions';
 import * as LucideIcons from 'lucide-react'; 
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
@@ -93,15 +94,18 @@ export default function QuizForm({
 
 
   useEffect(() => {
-    if (isPreview || !quizQuestions || quizQuestions.length === 0) return;
+    if (!quizQuestions || quizQuestions.length === 0) return;
     const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
-    if (isFbPixelConfigured) {
-      console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking, "Pixels:", configuredFbPixelIds);
-      fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking }, configuredFbPixelIds);
-    }
-    if(isGaConfigured) {
-        console.log("GA: quiz_start event triggered for", quizNameForTracking);
-        gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
+    if (!isPreview) {
+        recordQuizStartedAction(quizSlug).catch(err => console.error("Failed to record quiz started:", err));
+        if (isFbPixelConfigured) {
+          console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking, "Pixels:", configuredFbPixelIds);
+          fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking }, configuredFbPixelIds);
+        }
+        if(isGaConfigured) {
+            console.log("GA: quiz_start event triggered for", quizNameForTracking);
+            gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
+        }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview, configuredFbPixelIds]); 
