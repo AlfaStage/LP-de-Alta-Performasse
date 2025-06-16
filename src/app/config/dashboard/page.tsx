@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton'; // Added missing import
 
 const DEFAULT_QUIZ_SLUG = "default";
 
