@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock } from 'lucide-react';
-import { getQuizzesList, deleteQuizAction } from './quiz/actions';
-import type { QuizConfig } from '@/types/quiz';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, BarChart3, Target, Percent } from 'lucide-react';
+import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, getQuizAnalyticsBySlug } from './quiz/actions';
+import type { QuizListItem, OverallQuizStats, QuizAnalyticsData } from '@/types/quiz';
 import { useEffect, useState } from 'react';
 import {
   AlertDialog,
@@ -20,39 +20,66 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-
-interface QuizListItem extends Omit<QuizConfig, 'questions'> {
-  // No additional fields needed for now
-}
+import { Progress } from '@/components/ui/progress';
 
 const DEFAULT_QUIZ_SLUG = "default";
 
+function StatCard({ title, value, icon: Icon, description, trendValue, trendUnit = "%" }: { title: string, value: string | number, icon: React.ElementType, description?: string, trendValue?: string, trendUnit?: string }) {
+  return (
+    <Card className="shadow-md hover:shadow-lg transition-shadow bg-card">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <Icon className="h-5 w-5 text-primary" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-bold text-card-foreground">{value}</div>
+        {description && <p className="text-xs text-muted-foreground pt-1">{description}</p>}
+      </CardContent>
+       {trendValue && (
+        <CardFooter className="text-xs text-muted-foreground">
+          <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
+          {trendValue}{trendUnit} que o mês passado
+        </CardFooter>
+      )}
+    </Card>
+  );
+}
+
+
 export default function DashboardPage() {
   const [quizzes, setQuizzes] = useState<QuizListItem[]>([]);
+  const [overallStats, setOverallStats] = useState<OverallQuizStats | null>(null);
   const [isLoadingList, setIsLoadingList] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [quizToDelete, setQuizToDelete] = useState<QuizListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
-  async function fetchQuizzes() {
+  async function fetchData() {
     setIsLoadingList(true);
+    setIsLoadingStats(true);
     try {
-      const quizList = await getQuizzesList();
+      const [quizList, stats] = await Promise.all([
+        getQuizzesList(),
+        getOverallQuizAnalytics()
+      ]);
       setQuizzes(quizList);
+      setOverallStats(stats);
     } catch (error) {
-      console.error("Failed to fetch quizzes:", error);
+      console.error("Failed to fetch dashboard data:", error);
       toast({
-        title: "Erro ao carregar quizzes",
-        description: "Não foi possível buscar a lista de quizzes.",
+        title: "Erro ao carregar dados",
+        description: "Não foi possível buscar os quizzes ou as estatísticas.",
         variant: "destructive",
       });
     } finally {
       setIsLoadingList(false);
+      setIsLoadingStats(false);
     }
   }
 
   useEffect(() => {
-    fetchQuizzes();
+    fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -75,7 +102,7 @@ export default function DashboardPage() {
           description: `O quiz "${quizToDelete.title}" foi apagado com sucesso.`,
           variant: "default",
         });
-        fetchQuizzes(); 
+        fetchData(); 
       } else {
         toast({
           title: "Erro ao Apagar",
@@ -94,22 +121,88 @@ export default function DashboardPage() {
       setQuizToDelete(null);
     }
   };
+  
+  const overallConversionRate = overallStats && overallStats.totalStarted > 0 
+    ? ((overallStats.totalCompleted / overallStats.totalStarted) * 100).toFixed(1) 
+    : "0.0";
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
             <h1 className="text-3xl font-bold text-foreground tracking-tight">Visão Geral dos Quizzes</h1>
-            <p className="text-muted-foreground">Gerencie seus quizzes interativos existentes ou crie novos.</p>
+            <p className="text-muted-foreground">Gerencie seus quizzes e acompanhe o desempenho.</p>
         </div>
         <Link href="/config/dashboard/quiz/create">
-          <Button size="lg" className="flex items-center gap-2 shadow-sm">
+          <Button size="lg" className="flex items-center gap-2 shadow-sm whitespace-nowrap">
             <PlusCircle className="h-5 w-5" />
             Criar Novo Quiz
           </Button>
         </Link>
       </div>
 
+      {isLoadingStats ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1,2,3].map(i => (
+            <Card key={i} className="shadow-md bg-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-5 w-5" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mt-1 mb-2" />
+                <Skeleton className="h-4 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : overallStats && (
+        <>
+          <h2 className="text-2xl font-semibold text-foreground tracking-tight -mb-4">Resumo de Desempenho</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <StatCard title="Total de Quizzes Iniciados" value={overallStats.totalStarted} icon={Users} description="Pessoas que começaram qualquer quiz." />
+            <StatCard title="Total de Quizzes Finalizados" value={overallStats.totalCompleted} icon={CheckCircle2} description="Pessoas que completaram qualquer quiz." />
+            <StatCard 
+              title="Taxa de Conclusão Geral" 
+              value={`${overallConversionRate}%`} 
+              icon={Target} 
+              description="Percentual de quizzes iniciados que foram concluídos." 
+            />
+          </div>
+          {overallStats.mostEngagingQuiz && (
+            <Card className="shadow-lg bg-card overflow-hidden">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                   <TrendingUp className="h-6 w-6 text-primary" />
+                   <CardTitle className="text-xl">Quiz em Destaque: {overallStats.mostEngagingQuiz.title}</CardTitle>
+                </div>
+                <CardDescription>Com a maior taxa de conclusão ({overallStats.mostEngagingQuiz.conversionRate}%).</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Iniciados</p>
+                  <p className="text-2xl font-bold">{overallStats.mostEngagingQuiz.startedCount}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Finalizados</p>
+                  <p className="text-2xl font-bold">{overallStats.mostEngagingQuiz.completedCount}</p>
+                </div>
+                 <div>
+                  <p className="text-sm font-medium text-muted-foreground">Conversão</p>
+                  <p className="text-2xl font-bold">{overallStats.mostEngagingQuiz.conversionRate}%</p>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t pt-4">
+                <Link href={`/config/dashboard/quiz/edit/${overallStats.mostEngagingQuiz.slug}`}>
+                  <Button variant="outline" size="sm"><Edit className="h-4 w-4 mr-2" /> Editar Quiz</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          )}
+        </>
+      )}
+
+      <h2 className="text-2xl font-semibold text-foreground tracking-tight -mb-4">Seus Quizzes</h2>
       {isLoadingList ? (
         <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -117,8 +210,10 @@ export default function DashboardPage() {
         </div>
       ) : quizzes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {quizzes.map((quiz) => (
-            <Card key={quiz.slug} className="shadow-lg hover:shadow-xl transition-shadow bg-card">
+          {quizzes.map((quiz) => {
+            const conversionRate = quiz.startedCount && quiz.startedCount > 0 ? ((quiz.completedCount || 0) / quiz.startedCount) * 100 : 0;
+            return (
+            <Card key={quiz.slug} className="shadow-lg hover:shadow-xl transition-shadow bg-card flex flex-col">
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                     <FileText className="h-8 w-8 text-primary mt-1" />
@@ -133,6 +228,23 @@ export default function DashboardPage() {
                     <Badge variant="outline">/{quiz.slug}</Badge>
                 </CardDescription>
               </CardHeader>
+              <CardContent className="flex-grow space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center"><Users className="h-4 w-4 mr-1.5"/> Iniciados:</span>
+                  <span className="font-semibold">{quiz.startedCount || 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center"><CheckCircle2 className="h-4 w-4 mr-1.5"/> Finalizados:</span>
+                  <span className="font-semibold">{quiz.completedCount || 0}</span>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-muted-foreground flex items-center"><Target className="h-4 w-4 mr-1.5"/> Conversão:</span>
+                    <span className="font-semibold">{conversionRate.toFixed(1)}%</span>
+                  </div>
+                  <Progress value={conversionRate} className="h-2" />
+                </div>
+              </CardContent>
               <CardFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
                 <Link href={`/${quiz.slug}`} target="_blank" rel="noopener noreferrer" className="w-full">
                    <Button variant="outline" size="sm" className="w-full flex items-center gap-1">
@@ -155,7 +267,7 @@ export default function DashboardPage() {
                 </Button>
               </CardFooter>
             </Card>
-          ))}
+          )})}
         </div>
       ) : (
         <Card className="col-span-full shadow-lg">
@@ -206,3 +318,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

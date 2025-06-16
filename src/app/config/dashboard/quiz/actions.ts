@@ -2,7 +2,7 @@
 "use server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { QuizConfig, QuizQuestion } from '@/types/quiz';
+import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig'; 
 import { revalidatePath } from 'next/cache';
 
@@ -77,7 +77,7 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
 export interface QuizEditData {
   title: string;
   slug: string;
-  questionsJson: string; // Questions as a JSON string, without the contact step
+  questionsJson: string; 
 }
 
 export async function getQuizForEdit(slug: string): Promise<QuizEditData | null> {
@@ -102,8 +102,8 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
 
 interface UpdateQuizPayload {
   title: string;
-  slug: string; // Original slug, not editable for now
-  questions: QuizQuestion[]; // Parsed questions from user input
+  slug: string; 
+  questions: QuizQuestion[];
 }
 
 export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
@@ -162,13 +162,13 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
   const filePath = path.join(quizzesDirectory, `${slug}.json`);
 
   try {
-    await fs.access(filePath); // Verifica se o arquivo existe
+    await fs.access(filePath); 
   } catch {
     return { success: false, message: `Quiz com o slug "${slug}" não encontrado.` };
   }
 
   try {
-    await fs.unlink(filePath); // Apaga o arquivo
+    await fs.unlink(filePath); 
     revalidatePath('/'); 
     revalidatePath('/config/dashboard'); 
     revalidatePath(`/${slug}`); 
@@ -183,6 +183,21 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
 }
 
 
+// Função para simular dados de analytics para um quiz específico
+function getMockAnalyticsForQuiz(slug: string): { startedCount: number; completedCount: number } {
+  // Lógica de simulação simples: números baseados no hash do slug para consistência, mas variados
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) {
+    const char = slug.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0; // Convert to 32bit integer
+  }
+  const baseStarted = Math.abs(hash % 500) + 50; // entre 50 e 549
+  const completedRatio = (Math.abs(hash % 70) + 20) / 100; // entre 0.2 e 0.89
+  const completedCount = Math.floor(baseStarted * completedRatio);
+  return { startedCount: baseStarted, completedCount };
+}
+
 export async function getQuizzesList(): Promise<QuizListItem[]> {
   await ensureQuizzesDirectoryExists();
   try {
@@ -194,17 +209,23 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
       try {
         const fileContents = await fs.readFile(filePath, 'utf8');
         const quizData = JSON.parse(fileContents) as QuizConfig;
+        const analytics = getMockAnalyticsForQuiz(quizData.slug);
         return { 
           title: quizData.title || `Quiz ${filename.replace('.json', '')}`,
           slug: quizData.slug || filename.replace('.json', ''),
           successIcon: quizData.successIcon,
+          startedCount: analytics.startedCount,
+          completedCount: analytics.completedCount,
         };
       } catch (parseError) {
         console.error(`Failed to parse quiz file ${filename}:`, parseError);
+        const analytics = getMockAnalyticsForQuiz(filename.replace('.json', ''));
         return {
           title: `Erro ao carregar: ${filename}`,
           slug: filename.replace('.json', ''),
           successIcon: undefined, 
+          startedCount: analytics.startedCount,
+          completedCount: analytics.completedCount,
         };
       }
     });
@@ -216,6 +237,53 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
   }
 }
 
-interface QuizListItem extends Omit<QuizConfig, 'questions'> {
-  // Adicione quaisquer outros campos que você deseja na lista, se necessário
+export async function getOverallQuizAnalytics(): Promise<OverallQuizStats> {
+  // Simulação: Em uma aplicação real, você buscaria isso de um banco de dados ou serviço de analytics.
+  const quizzes = await getQuizzesList();
+  let totalStarted = 0;
+  let totalCompleted = 0;
+  let mostEngagingQuiz: QuizListItem | null = null;
+  let highestConversionRate = -1;
+
+  quizzes.forEach(quiz => {
+    totalStarted += quiz.startedCount || 0;
+    totalCompleted += quiz.completedCount || 0;
+    const conversionRate = (quiz.startedCount && quiz.startedCount > 0) ? ((quiz.completedCount || 0) / quiz.startedCount) : 0;
+    if (conversionRate > highestConversionRate) {
+      highestConversionRate = conversionRate;
+      mostEngagingQuiz = quiz;
+    }
+  });
+  
+  const mostEngagingQuizData = mostEngagingQuiz ? {
+        ...mostEngagingQuiz,
+        conversionRate: parseFloat((highestConversionRate * 100).toFixed(1))
+      } : undefined;
+
+
+  return {
+    totalStarted: totalStarted, // Ex: 1250
+    totalCompleted: totalCompleted,  // Ex: 870
+    mostEngagingQuiz: mostEngagingQuizData,
+  };
 }
+
+
+export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalyticsData | null> {
+  const quizzes = await getQuizzesList(); // Reutiliza a lista que já tem os mocks
+  const quiz = quizzes.find(q => q.slug === slug);
+
+  if (!quiz) {
+    return null;
+  }
+  // Em um cenário real, aqui você buscaria dados mais detalhados, como respostas por pergunta.
+  // Por enquanto, retorna os dados agregados já mockados.
+  return {
+    title: quiz.title,
+    slug: quiz.slug,
+    successIcon: quiz.successIcon,
+    startedCount: quiz.startedCount,
+    completedCount: quiz.completedCount,
+  };
+}
+

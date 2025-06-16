@@ -4,7 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 export interface QuizOption {
   value: string;
   label: string;
-  icon?: keyof typeof import('lucide-react'); // Store icon name
+  icon?: keyof typeof import('lucide-react');
   explanation?: string;
   imageUrl?: string;
   dataAiHint?: string;
@@ -15,19 +15,19 @@ export interface FormFieldConfig {
   label: string;
   type: 'text' | 'tel' | 'email';
   placeholder?: string;
-  icon?: keyof typeof import('lucide-react'); // Store icon name
+  icon?: keyof typeof import('lucide-react');
 }
 
 export interface QuizQuestion {
   id: string;
-  name: string; // for form data
+  name: string; 
   text: string;
   explanation?: string;
   type: 'radio' | 'checkbox' | 'textFields';
   options?: QuizOption[];
   fields?: FormFieldConfig[];
-  condition?: (formData: Record<string, any>) => boolean; // Condition logic might be tricky to serialize/deserialize if complex
-  icon?: keyof typeof import('lucide-react'); // Store icon name
+  condition?: (formData: Record<string, any>) => boolean; 
+  icon?: keyof typeof import('lucide-react');
 }
 
 export interface QuizConfig {
@@ -40,11 +40,11 @@ export interface QuizConfig {
 export interface WhitelabelConfig {
   projectName: string;
   logoUrl: string;
-  primaryColorHex: string; // Cor primária do tema (para anéis de foco, gráficos, etc.)
-  secondaryColorHex: string; // Cor secundária do tema
-  buttonPrimaryBgColorHex?: string; // Cor de fundo específica para botões primários
-  pageBackgroundColorHex: string; // Cor de fundo da página inteira
-  quizBackgroundColorHex: string; // Cor de fundo do card/container do quiz
+  primaryColorHex: string; 
+  secondaryColorHex: string; 
+  buttonPrimaryBgColorHex?: string; 
+  pageBackgroundColorHex: string; 
+  quizBackgroundColorHex: string; 
   quizSubmissionWebhookUrl: string;
   facebookPixelId?: string;
   facebookPixelIdSecondary?: string;
@@ -52,6 +52,19 @@ export interface WhitelabelConfig {
   footerCopyrightText?: string;
 }
 
-// Removida a função getLucideIcon daqui. Ela será gerenciada localmente nos componentes que precisam de carregamento dinâmico de ícones.
-// O QuizForm.tsx terá sua própria implementação otimizada.
-// Outros componentes que usam poucos ícones específicos podem importá-los diretamente de 'lucide-react'.
+export interface QuizListItem extends Omit<QuizConfig, 'questions'> {
+  startedCount?: number;
+  completedCount?: number;
+}
+
+export interface OverallQuizStats {
+  totalStarted: number;
+  totalCompleted: number;
+  mostEngagingQuiz?: QuizListItem & { conversionRate?: number };
+}
+
+export interface QuizAnalyticsData extends QuizListItem {
+  // Se precisarmos de estatísticas mais detalhadas por pergunta no futuro:
+  // questionStats?: Array<{ questionId: string; responseCount: number; answers: Record<string, number> }>;
+}
+
