@@ -1,29 +1,21 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/authService'; // Assuming getSession can be adapted or a similar check exists
+import { decrypt } from '@/lib/authService'; 
 import { AUTH_COOKIE_NAME, APP_BASE_URL } from '@/config/appConfig';
 
 async function isUserAuthenticated(request: NextRequest): Promise<boolean> {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (!token) return false;
+  if (!token) {
+    // console.log('[Middleware] No auth token found in cookies.');
+    return false;
+  }
 
-  // In a real app with jose, you'd decrypt and validate the token here.
-  // For simplicity, we're just checking for presence.
-  // If using jose, `getSession` might involve `jwtVerify`.
-  // This simplified check is NOT secure for production without actual token validation.
-  // The getSession function in authService.ts does validation with jose.
-  // However, middleware runs in Edge runtime, which has some limitations.
-  // For a robust solution, consider NextAuth.js or ensure jose works in Edge.
-
-  // Placeholder for actual decryption/validation logic if not using a full getSession that works in Edge
-  // This example assumes a simplified check. For a production app, full validation is needed.
-  // For now, let's assume if a cookie exists, it's "valid" for this middleware example.
-  // A better check:
   try {
-    const session = await getSession(); // This uses jose, ensure it works in Edge or use a simpler check
-    return !!session;
+    const decryptedPayload = await decrypt(token);
+    // console.log('[Middleware] Decrypted payload:', decryptedPayload);
+    return !!decryptedPayload;
   } catch (e) {
-    console.error("Middleware auth check error", e); // Should not happen if getSession handles errors
+    // console.error("[Middleware] Error during token decryption:", e);
     return false;
   }
 }
@@ -31,13 +23,16 @@ async function isUserAuthenticated(request: NextRequest): Promise<boolean> {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // console.log(`[Middleware] Path: ${pathname}, Auth Cookie: ${request.cookies.get(AUTH_COOKIE_NAME)?.value ? 'Present' : 'Absent'}`);
 
   // Protect /config/dashboard/** routes
   if (pathname.startsWith('/config/dashboard')) {
     const isAuthenticated = await isUserAuthenticated(request);
+    // console.log(`[Middleware] Accessing ${pathname}, IsAuthenticated: ${isAuthenticated}`);
     if (!isAuthenticated) {
       const loginUrl = new URL('/config/login', APP_BASE_URL || request.url);
       loginUrl.searchParams.set('redirectedFrom', pathname);
+      // console.log(`[Middleware] Not authenticated, redirecting to: ${loginUrl.toString()}`);
       return NextResponse.redirect(loginUrl);
     }
   }
@@ -45,7 +40,9 @@ export async function middleware(request: NextRequest) {
   // If user is authenticated and tries to access /config/login, redirect to dashboard
   if (pathname === ('/config/login')) {
       const isAuthenticated = await isUserAuthenticated(request);
+      // console.log(`[Middleware] Accessing /config/login, IsAuthenticated: ${isAuthenticated}`);
       if (isAuthenticated) {
+          // console.log('[Middleware] Authenticated user accessing /config/login, redirecting to dashboard.');
           return NextResponse.redirect(new URL('/config/dashboard', APP_BASE_URL || request.url));
       }
   }
@@ -69,3 +66,4 @@ export const config = {
     '/config/login',
   ],
 };
+
