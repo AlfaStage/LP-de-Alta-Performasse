@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw } from 'lucide-react';
 import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, resetAllQuizAnalyticsAction } from './quiz/actions';
 import type { QuizListItem, OverallQuizStats } from '@/types/quiz';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,14 +52,16 @@ export default function DashboardPage() {
   const [overallStats, setOverallStats] = useState<OverallQuizStats | null>(null);
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [isFetchingData, setIsFetchingData] = useState(true);
   const [quizToDelete, setQuizToDelete] = useState<QuizListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showResetStatsDialog, setShowResetStatsDialog] = useState(false);
   const [isResettingStats, setIsResettingStats] = useState(false);
   const { toast } = useToast();
 
-  async function fetchData() {
-    setIsLoadingList(true);
+  const fetchData = useCallback(async () => {
+    setIsFetchingData(true);
+    setIsLoadingList(true); // Set individual loading states as well if needed
     setIsLoadingStats(true);
     try {
       const [quizList, stats] = await Promise.all([
@@ -78,13 +80,15 @@ export default function DashboardPage() {
     } finally {
       setIsLoadingList(false);
       setIsLoadingStats(false);
+      setIsFetchingData(false);
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast]); // Removed fetchData from dependencies as it causes infinite loop
 
   useEffect(() => {
     fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchData]);
+
 
   const handleDeleteQuiz = async () => {
     if (!quizToDelete || quizToDelete.slug === DEFAULT_QUIZ_SLUG) {
@@ -132,10 +136,10 @@ export default function DashboardPage() {
       if (result.success) {
         toast({
           title: "Estatísticas Resetadas!",
-          description: "As estatísticas simuladas foram 'resetadas'. Novos dados serão gerados.",
+          description: "As estatísticas de todos os quizzes foram resetadas.",
           variant: "default",
         });
-        fetchData(); // Recarrega os dados para mostrar novos números mockados
+        fetchData(); 
       } else {
         toast({
           title: "Erro ao Resetar",
@@ -166,19 +170,29 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-foreground tracking-tight">Visão Geral dos Quizzes</h1>
             <p className="text-muted-foreground">Gerencie seus quizzes e acompanhe o desempenho.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={fetchData} 
+            disabled={isFetchingData}
+            className="whitespace-nowrap w-full sm:w-auto"
+          >
+            {isFetchingData ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <RefreshCcw className="h-5 w-5 mr-2" />}
+            Atualizar Dados
+          </Button>
           <Button 
             variant="outline" 
             size="lg" 
             onClick={() => setShowResetStatsDialog(true)} 
-            disabled={isLoadingList || isLoadingStats || isResettingStats}
-            className="whitespace-nowrap"
+            disabled={isFetchingData || isResettingStats}
+            className="whitespace-nowrap w-full sm:w-auto border-destructive/50 text-destructive hover:bg-destructive/5 hover:text-destructive"
           >
             <RotateCcw className="h-5 w-5 mr-2" />
-            Resetar Estatísticas (Simulado)
+            Resetar Estatísticas
           </Button>
-          <Link href="/config/dashboard/quiz/create">
-            <Button size="lg" className="flex items-center gap-2 shadow-sm whitespace-nowrap w-full sm:w-auto">
+          <Link href="/config/dashboard/quiz/create" className="w-full sm:w-auto">
+            <Button size="lg" className="flex items-center gap-2 shadow-sm whitespace-nowrap w-full">
               <PlusCircle className="h-5 w-5" />
               Criar Novo Quiz
             </Button>
@@ -335,12 +349,12 @@ export default function DashboardPage() {
       <AlertDialog open={!!quizToDelete} onOpenChange={(open) => !open && setQuizToDelete(null)}>
         <AlertDialogContent className="bg-card">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-xl">
+            <AlertDialogTitle className="flex items-center gap-2 text-xl text-foreground">
               <ShieldAlert className="h-7 w-7 text-destructive" />
               Confirmar Exclusão
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-base">
-              Você tem certeza que deseja apagar o quiz "<strong>{quizToDelete?.title}</strong>"? Esta ação não pode ser desfeita e o arquivo do quiz será removido permanentemente.
+            <AlertDialogDescription className="text-base text-muted-foreground">
+              Você tem certeza que deseja apagar o quiz "<strong>{quizToDelete?.title}</strong>"? Esta ação não pode ser desfeita e o arquivo do quiz será removido permanentemente, assim como suas estatísticas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -364,14 +378,14 @@ export default function DashboardPage() {
       <AlertDialog open={showResetStatsDialog} onOpenChange={setShowResetStatsDialog}>
         <AlertDialogContent className="bg-card">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-xl">
+            <AlertDialogTitle className="flex items-center gap-2 text-xl text-foreground">
               <ShieldAlert className="h-7 w-7 text-destructive" />
               Confirmar Reset de Estatísticas
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-base">
+            <AlertDialogDescription className="text-base text-muted-foreground">
               Você tem certeza que deseja resetar todas as estatísticas dos quizzes? 
-              Como os dados são simulados, isso apenas recarregará os números com novos valores mockados.
-              Esta ação não pode ser desfeita para os números atualmente exibidos.
+              Isso zerará as contagens de quizzes iniciados e finalizados para todos os quizzes.
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -395,3 +409,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
