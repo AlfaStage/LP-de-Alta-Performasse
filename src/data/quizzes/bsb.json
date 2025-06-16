@@ -119,6 +119,10 @@
         {
           "value": "jardins_mangueiral_df",
           "label": "Jardins Mangueiral, Brasília"
+        },
+        {
+          "value": "outra_localização",
+          "label": "Outro local"
         }
       ]
     },
