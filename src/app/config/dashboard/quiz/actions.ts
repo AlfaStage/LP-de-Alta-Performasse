@@ -262,8 +262,8 @@ export async function getOverallQuizAnalytics(): Promise<OverallQuizStats> {
 
 
   return {
-    totalStarted: totalStarted, // Ex: 1250
-    totalCompleted: totalCompleted,  // Ex: 870
+    totalStarted: totalStarted, 
+    totalCompleted: totalCompleted,
     mostEngagingQuiz: mostEngagingQuizData,
   };
 }
@@ -287,3 +287,16 @@ export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalytic
   };
 }
 
+export async function resetAllQuizAnalyticsAction(): Promise<{ success: boolean; message?: string }> {
+  // Em uma aplicação real, esta função interagiria com seu sistema de analytics
+  // para limpar ou resetar os dados.
+  // Como estamos usando dados mockados gerados dinamicamente, não há estado real para limpar aqui.
+  // Apenas simulamos o sucesso da operação. O recarregamento dos dados no frontend
+  // gerará novos números mockados.
+  console.log("Simulando reset de todas as estatísticas de quiz.");
+  // Adicionar uma pequena espera para simular uma operação de backend
+  await new Promise(resolve => setTimeout(resolve, 500)); 
+  
+  revalidatePath('/config/dashboard');
+  return { success: true, message: "Estatísticas simuladas foram 'resetadas'." };
+}

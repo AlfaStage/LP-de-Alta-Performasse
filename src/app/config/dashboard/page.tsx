@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, BarChart3, Target, Percent } from 'lucide-react';
-import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, getQuizAnalyticsBySlug } from './quiz/actions';
-import type { QuizListItem, OverallQuizStats, QuizAnalyticsData } from '@/types/quiz';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw } from 'lucide-react';
+import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, resetAllQuizAnalyticsAction } from './quiz/actions';
+import type { QuizListItem, OverallQuizStats } from '@/types/quiz';
 import { useEffect, useState } from 'react';
 import {
   AlertDialog,
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton'; // Added missing import
+import { Skeleton } from '@/components/ui/skeleton';
 
 const DEFAULT_QUIZ_SLUG = "default";
 
@@ -54,6 +54,8 @@ export default function DashboardPage() {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [quizToDelete, setQuizToDelete] = useState<QuizListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showResetStatsDialog, setShowResetStatsDialog] = useState(false);
+  const [isResettingStats, setIsResettingStats] = useState(false);
   const { toast } = useToast();
 
   async function fetchData() {
@@ -123,6 +125,36 @@ export default function DashboardPage() {
     }
   };
   
+  const handleResetStats = async () => {
+    setIsResettingStats(true);
+    try {
+      const result = await resetAllQuizAnalyticsAction();
+      if (result.success) {
+        toast({
+          title: "Estatísticas Resetadas!",
+          description: "As estatísticas simuladas foram 'resetadas'. Novos dados serão gerados.",
+          variant: "default",
+        });
+        fetchData(); // Recarrega os dados para mostrar novos números mockados
+      } else {
+        toast({
+          title: "Erro ao Resetar",
+          description: result.message || "Não foi possível resetar as estatísticas.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+       toast({
+        title: "Erro Inesperado",
+        description: "Ocorreu um erro ao tentar resetar as estatísticas.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResettingStats(false);
+      setShowResetStatsDialog(false);
+    }
+  }
+
   const overallConversionRate = overallStats && overallStats.totalStarted > 0 
     ? ((overallStats.totalCompleted / overallStats.totalStarted) * 100).toFixed(1) 
     : "0.0";
@@ -134,12 +166,24 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-foreground tracking-tight">Visão Geral dos Quizzes</h1>
             <p className="text-muted-foreground">Gerencie seus quizzes e acompanhe o desempenho.</p>
         </div>
-        <Link href="/config/dashboard/quiz/create">
-          <Button size="lg" className="flex items-center gap-2 shadow-sm whitespace-nowrap">
-            <PlusCircle className="h-5 w-5" />
-            Criar Novo Quiz
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={() => setShowResetStatsDialog(true)} 
+            disabled={isLoadingList || isLoadingStats || isResettingStats}
+            className="whitespace-nowrap"
+          >
+            <RotateCcw className="h-5 w-5 mr-2" />
+            Resetar Estatísticas (Simulado)
           </Button>
-        </Link>
+          <Link href="/config/dashboard/quiz/create">
+            <Button size="lg" className="flex items-center gap-2 shadow-sm whitespace-nowrap w-full sm:w-auto">
+              <PlusCircle className="h-5 w-5" />
+              Criar Novo Quiz
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {isLoadingStats ? (
@@ -316,7 +360,38 @@ export default function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={showResetStatsDialog} onOpenChange={setShowResetStatsDialog}>
+        <AlertDialogContent className="bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-xl">
+              <ShieldAlert className="h-7 w-7 text-destructive" />
+              Confirmar Reset de Estatísticas
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              Você tem certeza que deseja resetar todas as estatísticas dos quizzes? 
+              Como os dados são simulados, isso apenas recarregará os números com novos valores mockados.
+              Esta ação não pode ser desfeita para os números atualmente exibidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowResetStatsDialog(false)} disabled={isResettingStats} className="px-4 py-2">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleResetStats} 
+              disabled={isResettingStats}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-4 py-2"
+            >
+              {isResettingStats ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Resetando...
+                </>
+              ) : "Sim, Resetar Estatísticas"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
-
