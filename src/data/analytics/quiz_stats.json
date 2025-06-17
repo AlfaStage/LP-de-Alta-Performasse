@@ -1,1 +1,18 @@
-{}
+{
+  "ba": {
+    "startedCount": 1,
+    "completedCount": 0
+  },
+  "bsb": {
+    "startedCount": 0,
+    "completedCount": 0
+  },
+  "cam": {
+    "startedCount": 1,
+    "completedCount": 0
+  },
+  "default": {
+    "startedCount": 2,
+    "completedCount": 0
+  }
+}
