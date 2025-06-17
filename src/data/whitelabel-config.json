@@ -6,7 +6,7 @@
   "buttonPrimaryBgColorHex": "#FEC3A9",
   "pageBackgroundColorHex": "#FCEFEA",
   "quizBackgroundColorHex": "#FFFFFF",
-  "quizSubmissionWebhookUrl": "https://webhook.workflow.alfastage.com.br/webhook/Test",
+  "quizSubmissionWebhookUrl": "https://webhook.workflow.alfastage.com.br/webhook/icelazerquiz-mensagem",
   "facebookPixelId": "724967076682767",
   "facebookPixelIdSecondary": "3949746165337932",
   "googleAnalyticsId": "G-YV9GYV3385",

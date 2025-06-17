@@ -70,7 +70,7 @@ export default function WhitelabelSettingsPage() {
         variant: "default",
       });
       reset(data, { keepDirty: false }); 
-      window.location.reload(); 
+      // window.location.reload(); // Removido para observar o comportamento do estado
     } else {
       toast({
         title: "Erro ao Salvar",
