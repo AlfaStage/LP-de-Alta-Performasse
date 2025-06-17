@@ -2,5 +2,9 @@
   "ba": {
     "startedCount": 3,
     "completedCount": 1
+  },
+  "default": {
+    "startedCount": 1,
+    "completedCount": 0
   }
 }

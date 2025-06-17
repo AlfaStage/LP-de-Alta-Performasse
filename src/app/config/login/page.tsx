@@ -8,9 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { KeyRound, LogIn, AlertTriangle, Loader2, ShieldCheck } from 'lucide-react';
-// import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions'; // Logo is replaced by text
-// import type { WhitelabelConfig } from '@/types/quiz';
+import { KeyRound, LogIn, AlertTriangle, Loader2 } from 'lucide-react';
 
 
 function LoginLoadingSkeleton() {
@@ -18,11 +16,11 @@ function LoginLoadingSkeleton() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <div className="text-3xl font-bold text-primary mb-6">LP de Alta Performasse</div>
+          <div className="text-4xl font-bold text-primary mb-8 font-headline">LP de Alta Performasse</div>
           <h1 className="text-3xl font-bold text-foreground">Acessar Painel</h1>
           <p className="text-muted-foreground mt-2">Carregando...</p>
         </div>
-        <Card className="shadow-2xl rounded-lg">
+        <Card className="shadow-2xl rounded-lg bg-card">
           <CardContent className="p-8 space-y-6">
             <div className="space-y-2">
               <Label htmlFor="password-loading">Senha de Acesso</Label>
@@ -34,6 +32,9 @@ function LoginLoadingSkeleton() {
             </Button>
           </CardContent>
         </Card>
+         <p className="text-xs text-muted-foreground text-center mt-8">
+            Todos os direitos reservados FR Digital
+          </p>
       </div>
     </div>
   );
@@ -46,11 +47,9 @@ function LoginClientContent() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [redirectedFrom, setRedirectedFrom] = useState<string | null>(null);
-  // const [logoUrl, setLogoUrl] = useState<string>("https://placehold.co/150x50.png?text=Logo"); // Replaced by text
 
   useEffect(() => {
     setRedirectedFrom(searchParams.get('redirectedFrom'));
-    // Logo fetching removed
   }, [searchParams]);
 
 
@@ -77,7 +76,7 @@ function LoginClientContent() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-            <div className="text-4xl font-bold text-primary mb-8">
+            <div className="text-4xl font-bold text-primary mb-8 font-headline">
               LP de Alta Performasse
             </div>
           <h1 className="text-3xl font-bold text-foreground tracking-tight">Acesso ao Painel de Controle</h1>
@@ -124,8 +123,11 @@ function LoginClientContent() {
             </form>
           </CardContent>
         </Card>
-         <p className="text-xs text-muted-foreground text-center w-full">
+         <p className="text-xs text-muted-foreground text-center w-full mt-8">
             Utilize a senha mestra configurada para o sistema.
+          </p>
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Todos os direitos reservados FR Digital
           </p>
       </div>
     </div>
