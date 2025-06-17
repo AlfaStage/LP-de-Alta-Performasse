@@ -30,7 +30,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { APP_BASE_URL } from '@/config/appConfig';
+import { APP_BASE_URL } from '@/config/appConfig'; // Import APP_BASE_URL
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from './settings/actions';
@@ -211,7 +211,7 @@ export default function DashboardPage() {
       .then(() => {
         toast({
           title: "Link Copiado!",
-          description: `O link para "${slug}" foi copiado para a área de transferência.`,
+          description: `O link para "${slug}" foi copiado para a área de transferência. URL: ${url}`,
           variant: "default",
         });
       })
@@ -383,7 +383,7 @@ export default function DashboardPage() {
                 >
                   <Eye className="h-4 w-4" /> Pré-visualizar
                 </Button>
-                <Link href={`/${quiz.slug}`} target="_blank" rel="noopener noreferrer" className="w-full">
+                <Link href={`${APP_BASE_URL}/${quiz.slug}`} target="_blank" rel="noopener noreferrer" className="w-full">
                    <Button variant="outline" size="sm" className="w-full flex items-center gap-1">
                      <ExternalLink className="h-4 w-4" /> Abrir Quiz
                    </Button>

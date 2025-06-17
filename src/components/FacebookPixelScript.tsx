@@ -3,8 +3,8 @@
 
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
-import { trackPageView as fbTrackPageView } from '@/lib/fpixel';
+import { useEffect, useMemo } from 'react'; // Added useMemo
+import { trackPageView as fbTrackPageView, getActivePixelIds } from '@/lib/fpixel';
 import { pageview as gaTrackPageView } from '@/lib/gtag';
 
 interface FacebookPixelScriptProps {
@@ -13,8 +13,6 @@ interface FacebookPixelScriptProps {
   googleAnalyticsId?: string;
 }
 
-const PLACEHOLDER_FB_PIXEL_ID = "YOUR_PRIMARY_FACEBOOK_PIXEL_ID"; // Usado para verificar se um ID real foi fornecido
-const PLACEHOLDER_SECONDARY_FB_PIXEL_ID = "YOUR_SECONDARY_FACEBOOK_PIXEL_ID";
 const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
 
 
@@ -25,37 +23,39 @@ export default function FacebookPixelScript({
 }: FacebookPixelScriptProps) {
   const pathname = usePathname();
 
-  const isPrimaryPixelConfigured = !!facebookPixelId && facebookPixelId.trim() !== "" && facebookPixelId !== PLACEHOLDER_FB_PIXEL_ID;
-  const isSecondaryPixelConfigured = !!facebookPixelIdSecondary && facebookPixelIdSecondary.trim() !== "" && facebookPixelIdSecondary !== PLACEHOLDER_SECONDARY_FB_PIXEL_ID;
-  const areAnyFbPixelsConfigured = isPrimaryPixelConfigured || isSecondaryPixelConfigured;
+  const configuredFbPixelIds = useMemo(
+    () => getActivePixelIds(facebookPixelId, facebookPixelIdSecondary),
+    [facebookPixelId, facebookPixelIdSecondary]
+  );
+  
+  const areAnyFbPixelsConfigured = configuredFbPixelIds.length > 0;
   const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== PLACEHOLDER_GA_ID;
 
 
   useEffect(() => {
+    // This component is only rendered on quiz pages due to TrackingScriptsWrapper
     if (areAnyFbPixelsConfigured && typeof window.fbq === 'function') {
-      console.log("FB Pixel: PageView event triggered by route change.", pathname);
-      fbTrackPageView();
+      // console.log("FB Pixel: PageView event triggered by route change.", pathname, "Pixels:", configuredFbPixelIds);
+      fbTrackPageView(configuredFbPixelIds); // Pass configuredFbPixelIds for subsequent page views
     }
 
     if (isGaConfigured && typeof window.gtag === 'function') {
-      console.log("GA: pageview event triggered by route change.", pathname);
+      // console.log("GA: pageview event triggered by route change (from FacebookPixelScript).", pathname);
       gaTrackPageView(new URL(pathname, window.location.origin), googleAnalyticsId);
     }
-  }, [pathname, areAnyFbPixelsConfigured, isGaConfigured, googleAnalyticsId]); // Adicionado googleAnalyticsId às dependências
+  }, [pathname, areAnyFbPixelsConfigured, isGaConfigured, googleAnalyticsId, configuredFbPixelIds]);
 
-  if (!areAnyFbPixelsConfigured && !isGaConfigured) {
-    // console.warn("Neither Facebook Pixel nor Google Analytics is configured via Whitelabel settings. No tracking scripts rendered.");
+  if (!areAnyFbPixelsConfigured) {
+    // console.warn("FB Pixel: No valid Facebook Pixel IDs configured. FB Pixel script not rendered by FacebookPixelScript component.");
     return null;
   }
   
   let fbPixelInits = "";
-  if (isPrimaryPixelConfigured) {
-    fbPixelInits += `fbq('init', '${facebookPixelId}');\n`;
-  }
-  if (isSecondaryPixelConfigured) {
-    fbPixelInits += `fbq('init', '${facebookPixelIdSecondary}');\n`;
-  }
+  configuredFbPixelIds.forEach(id => {
+    fbPixelInits += `fbq('init', '${id}');\n`;
+  });
 
+  // The initial PageView for ALL configured pixels is sent here after init.
   const pixelScriptContent = `
     !function(f,b,e,v,n,t,s)
     {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -66,16 +66,15 @@ export default function FacebookPixelScript({
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
     ${fbPixelInits}
-    ${areAnyFbPixelsConfigured ? `fbq('track', 'PageView'); console.log("FB Pixel: Initial PageView event sent via script (IDs: Primary=${facebookPixelId}, Secondary=${facebookPixelIdSecondary}).");` : `console.warn("FB Pixel: No pixels configured, initial PageView not sent.");`}
+    fbq('track', 'PageView'); 
+    console.log("FB Pixel: Initial PageView event sent via script for IDs: ${configuredFbPixelIds.join(', ')}.");
   `;
 
   return (
     <>
-      {areAnyFbPixelsConfigured && (
-        <Script id="fb-pixel-base" strategy="afterInteractive">
-          {pixelScriptContent}
-        </Script>
-      )}
+      <Script id="fb-pixel-base" strategy="afterInteractive">
+        {pixelScriptContent}
+      </Script>
     </>
   );
 }

@@ -1,11 +1,11 @@
 
 import type { Metadata, Viewport } from 'next';
+// import dynamic from 'next/dynamic'; // Remove dynamic import
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
-import FacebookPixelScript from '@/components/FacebookPixelScript';
-import Script from 'next/script';
-import { getWhitelabelConfig } from '@/lib/whitelabel.server'; 
+import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { hexToHslString } from '@/lib/whitelabel';
+import TrackingScriptsWrapper from '@/components/TrackingScriptsWrapper';
+import { ClientOnlyToaster } from '@/components/ClientOnlyToaster'; // Direct import
 
 export async function generateMetadata(): Promise<Metadata> {
   const whitelabelConfig = await getWhitelabelConfig();
@@ -16,9 +16,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: [ 
-    { media: '(prefers-color-scheme: light)', color: 'white' }, 
-    { media: '(prefers-color-scheme: dark)', color: 'black' },  
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'white' },
+    { media: '(prefers-color-scheme: dark)', color: 'black' },
   ],
 }
 
@@ -33,12 +33,12 @@ export default async function RootLayout({
   const secondaryColorHslString = whitelabelConfig.secondaryColorHex ? hexToHslString(whitelabelConfig.secondaryColorHex) : null;
   const pageBackgroundColorHslString = whitelabelConfig.pageBackgroundColorHex ? hexToHslString(whitelabelConfig.pageBackgroundColorHex) : null;
   const quizBackgroundColorHslString = whitelabelConfig.quizBackgroundColorHex ? hexToHslString(whitelabelConfig.quizBackgroundColorHex) : null;
-  
+
   let buttonSpecificPrimaryHslString: string | null = null;
   if (whitelabelConfig.buttonPrimaryBgColorHex && whitelabelConfig.buttonPrimaryBgColorHex.trim() !== "") {
     buttonSpecificPrimaryHslString = hexToHslString(whitelabelConfig.buttonPrimaryBgColorHex);
   }
-  
+
   const finalPrimaryInteractiveHsl = buttonSpecificPrimaryHslString || themePrimaryColorHslString;
 
   const accentColorHslString = secondaryColorHslString; // --accent will follow --secondary
@@ -50,7 +50,7 @@ export default async function RootLayout({
       ${finalPrimaryInteractiveHsl ? `--primary: ${finalPrimaryInteractiveHsl};` : ''}
       ${secondaryColorHslString ? `--secondary: ${secondaryColorHslString};` : ''}
       ${accentColorHslString ? `--accent: ${accentColorHslString};` : ''}
-      
+
       /* --ring and --chart-1 will consistently use the theme's primary color (not button color) */
       ${themePrimaryColorHslString ? `--ring: ${themePrimaryColorHslString};` : ''}
       ${themePrimaryColorHslString ? `--chart-1: ${themePrimaryColorHslString};` : ''}
@@ -64,40 +64,17 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
         <meta name="facebook-domain-verification" content="7dowgwz24hni45q2fjdp19cp0ztgzn" />
-        
-        <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
 
-        {whitelabelConfig.googleAnalyticsId && whitelabelConfig.googleAnalyticsId.trim() !== "" && (
-          <>
-            <Script
-              strategy="afterInteractive"
-              src={`https://www.googletagmanager.com/gtag/js?id=${whitelabelConfig.googleAnalyticsId.trim()}`}
-            />
-            <Script
-              id="gtag-init"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${whitelabelConfig.googleAnalyticsId.trim()}', {
-                    page_path: window.location.pathname,
-                  });
-                `,
-              }}
-            />
-          </>
-        )}
-        <FacebookPixelScript 
-          facebookPixelId={whitelabelConfig.facebookPixelId}
-          facebookPixelIdSecondary={whitelabelConfig.facebookPixelIdSecondary}
-          googleAnalyticsId={whitelabelConfig.googleAnalyticsId} 
-        />
+        <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
       </head>
       <body className="font-body antialiased">
         {children}
-        <Toaster />
+        <ClientOnlyToaster />
+        <TrackingScriptsWrapper
+          facebookPixelId={whitelabelConfig.facebookPixelId}
+          facebookPixelIdSecondary={whitelabelConfig.facebookPixelIdSecondary}
+          googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
+        />
       </body>
     </html>
   );

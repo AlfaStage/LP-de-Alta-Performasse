@@ -17,7 +17,6 @@ export const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || "app-auth-token"
 export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_BASE_URL || "http://localhost:9002";
 
 // Validações importantes (mantidas para auth settings)
-// Removidos os console.warn para a senha e segredo do cookie.
 // É responsabilidade do desenvolvedor configurar isso corretamente em produção.
 
 // API_STATS_ACCESS_TOKEN foi movido para whitelabel-config.json
