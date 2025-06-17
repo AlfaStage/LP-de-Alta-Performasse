@@ -13,7 +13,7 @@ export function getActivePixelIds(primaryId?: string, secondaryId?: string): str
   return ids;
 }
 
-// For SPA navigations after initial load and init.
+// For SPA navigations after initial load. The initial PageView is handled by the script in TrackingScriptsWrapper.
 export const trackFbPageView = () => {
   if (typeof window !== 'undefined' && (window as any).fbq) {
     (window as any).fbq('track', 'PageView');
@@ -37,3 +37,5 @@ export const trackFbCustomEvent = (eventName: string, eventData: Record<string, 
     });
   }
 };
+
+    

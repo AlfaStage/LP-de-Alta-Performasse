@@ -1,0 +1,34 @@
+{
+  "q1_default": {
+    "id": "q1_default",
+    "type": "radio",
+    "totalAnswers": 1,
+    "options": {
+      "sim": 1
+    }
+  },
+  "q2_default": {
+    "id": "q2_default",
+    "type": "checkbox",
+    "totalAnswers": 1,
+    "options": {
+      "virilha": 1
+    }
+  },
+  "q3_default": {
+    "id": "q3_default",
+    "type": "radio",
+    "totalAnswers": 1,
+    "options": {
+      "reducao_permanente": 1
+    }
+  },
+  "q4_default": {
+    "id": "q4_default",
+    "type": "radio",
+    "totalAnswers": 1,
+    "options": {
+      "feira_de_santana_ba": 1
+    }
+  }
+}

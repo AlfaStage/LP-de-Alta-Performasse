@@ -48,7 +48,6 @@ interface QuizFormProps {
 
 const IconComponents = LucideIcons;
 
-const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
 const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
 
 
@@ -94,7 +93,7 @@ export default function QuizForm({
     () => getActivePixelIds(facebookPixelId, facebookPixelIdSecondary),
     [facebookPixelId, facebookPixelIdSecondary]
   );
-  const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== PLACEHOLDER_GA_ID;
+  const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== "YOUR_GA_ID";
 
 
   useEffect(() => {
@@ -260,9 +259,11 @@ export default function QuizForm({
     };
 
     if (!isPreview && currentQuestion && currentQuestion.id === activeQuestions[activeQuestions.length -1].id) {
+        // This check is technically redundant for pixel firing QuestionAnswered, as it's done in handleNext.
+        // Keeping recordQuestionAnswerAction for backend stats of the last step.
         const lastAnswerValue = currentQuestion.fields ? getValues(currentQuestion.fields.map(f => f.name)) : getValues(currentQuestion.name);
         recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, lastAnswerValue, currentQuestion.type)
-            .catch(err => console.error("Failed to record final question answer:", err));
+            .catch(err => console.error("Failed to record final question answer for backend:", err));
     }
 
     if (isPreview && onSubmitOverride) {
@@ -289,8 +290,8 @@ export default function QuizForm({
             const quizCompleteData = { quiz_slug: quizSlug, quiz_title: quizTitle };
             const leadData = { 
                 quiz_slug: quizSlug, 
-                value: 1, // Example value for lead
-                currency: 'BRL', // Example currency 
+                value: 1, 
+                currency: 'BRL', 
             };
 
             if (configuredFbPixelIds.length > 0) {
@@ -605,3 +606,5 @@ export default function QuizForm({
     </FormProvider>
   );
 }
+
+    

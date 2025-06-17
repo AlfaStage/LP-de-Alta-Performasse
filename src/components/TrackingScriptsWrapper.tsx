@@ -13,7 +13,7 @@ interface TrackingScriptsWrapperProps {
   googleAnalyticsId?: string;
 }
 
-const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
+const PLACEHOLDER_GA_ID = "YOUR_GA_ID"; // Define if not already present in gtag.ts
 
 export default function TrackingScriptsWrapper({
   facebookPixelId,
@@ -35,12 +35,12 @@ export default function TrackingScriptsWrapper({
   useEffect(() => {
     if (!isQuizPage) return;
 
+    // Subsequent PageViews
     if (isAnyFbPixelConfigured && typeof window.fbq === 'function') {
-      trackFbPageView(); // Tracks PageView for all initialized FB pixels
+      trackFbPageView(); // Global PageView for all initialized FB pixels
     }
 
     if (isGaConfigured && typeof window.gtag === 'function' && googleAnalyticsId) {
-      // GA pageview for SPA navigations (initial one is handled by config)
       trackGaPageView(new URL(pathname, window.location.origin), googleAnalyticsId);
     }
   }, [pathname, isQuizPage, isAnyFbPixelConfigured, isGaConfigured, googleAnalyticsId]);
@@ -53,7 +53,7 @@ export default function TrackingScriptsWrapper({
   // Construct FB Pixel initialization script
   let fbPixelInitScript = "";
   if (isAnyFbPixelConfigured) {
-    const initCalls = activeFbPixelIds.map(id => `fbq('init', '${id}');`).join('\n');
+    const initCalls = activeFbPixelIds.map(id => `fbq('init', '${id}');`).join('\n      ');
     fbPixelInitScript = `
       !function(f,b,e,v,n,t,s)
       {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -106,3 +106,5 @@ export default function TrackingScriptsWrapper({
     </>
   );
 }
+
+    
