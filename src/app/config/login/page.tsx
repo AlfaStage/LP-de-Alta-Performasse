@@ -8,33 +8,35 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { KeyRound, LogIn, AlertTriangle, Loader2 } from 'lucide-react';
+import { KeyRound, LogIn, AlertTriangle, Loader2, ShieldCheck } from 'lucide-react';
+import Image from 'next/image'; // Assuming you might want a logo
+import { getWhitelabelConfig } from '@/lib/whitelabel.server'; // To fetch logo if needed, though this is client
+import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
+import type { WhitelabelConfig } from '@/types/quiz';
 
-function LoginLoading() {
+
+function LoginLoadingSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <KeyRound className="mx-auto h-12 w-12 text-primary mb-4" />
-          <CardTitle className="text-2xl font-bold">Acesso ao Painel</CardTitle>
-          <CardDescription>Carregando...</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <KeyRound className="mx-auto h-12 w-12 text-primary mb-6" />
+          <h1 className="text-3xl font-bold text-foreground">Acessar Painel</h1>
+          <p className="text-muted-foreground mt-2">Carregando...</p>
+        </div>
+        <Card className="shadow-2xl rounded-lg">
+          <CardContent className="p-8 space-y-6">
             <div className="space-y-2">
-                <Label htmlFor="password-loading">Senha de Acesso</Label>
-                <Input id="password-loading" type="password" disabled placeholder="********" className="text-base bg-muted/50" />
+              <Label htmlFor="password-loading">Senha de Acesso</Label>
+              <Input id="password-loading" type="password" disabled placeholder="●●●●●●●●" className="text-lg py-3 bg-muted/50" />
             </div>
-            <Button type="submit" className="w-full text-base py-3" disabled>
-                <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
-                Carregando...
+            <Button type="submit" className="w-full text-lg py-6" disabled>
+              <Loader2 className="animate-spin -ml-1 mr-3 h-6 w-6" />
+              Carregando
             </Button>
-        </CardContent>
-         <CardFooter>
-          <p className="text-xs text-muted-foreground text-center w-full">
-            Use a senha configurada nas variáveis de ambiente.
-          </p>
-        </CardFooter>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -46,10 +48,21 @@ function LoginClientContent() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [redirectedFrom, setRedirectedFrom] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string>("https://placehold.co/150x50.png?text=Logo");
 
   useEffect(() => {
-    // searchParams só está disponível após a hidratação no cliente
     setRedirectedFrom(searchParams.get('redirectedFrom'));
+    async function loadLogo() {
+        try {
+            const settings = await fetchWhitelabelSettings();
+            if (settings && settings.logoUrl) {
+                setLogoUrl(settings.logoUrl);
+            }
+        } catch (e) {
+            console.error("Failed to fetch whitelabel settings for logo on login:", e);
+        }
+    }
+    loadLogo();
   }, [searchParams]);
 
 
@@ -73,62 +86,75 @@ function LoginClientContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <KeyRound className="mx-auto h-12 w-12 text-primary mb-4" />
-          <CardTitle className="text-2xl font-bold">Acesso ao Painel de Configuração</CardTitle>
-          <CardDescription>Digite sua senha para gerenciar os quizzes.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha de Acesso</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="********"
-                className="text-base"
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+            {logoUrl && (
+              <Image 
+                src={logoUrl} 
+                alt="Logo do Projeto" 
+                width={180} 
+                height={60} 
+                className="mx-auto mb-8 h-auto"
+                data-ai-hint="company logo"
+                priority 
               />
-            </div>
-            {error && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Erro de Login</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
             )}
-            <Button type="submit" className="w-full text-base py-3" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  <LogIn className="mr-2 h-5 w-5" />
-                  Entrar
-                </>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Acesso ao Painel de Controle</h1>
+          <p className="text-muted-foreground mt-2">Gerencie seus quizzes e configurações.</p>
+        </div>
+        <Card className="shadow-2xl rounded-lg bg-card">
+          <CardHeader className="p-8 text-center">
+            <CardTitle className="text-2xl flex items-center justify-center gap-2"><KeyRound className="h-6 w-6 text-primary" /> Autenticação Segura</CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 pt-0 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha de Acesso</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="●●●●●●●●"
+                  className="text-lg py-3 h-12"
+                />
+              </div>
+              {error && (
+                <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/30">
+                  <AlertTriangle className="h-5 w-5" />
+                  <AlertTitle>Falha no Login</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter>
-          <p className="text-xs text-muted-foreground text-center w-full">
-            Use a senha configurada nas variáveis de ambiente.
+              <Button type="submit" className="w-full text-lg py-6 h-14 rounded-md" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-3 h-6 w-6" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="mr-2 h-5 w-5" />
+                    Entrar
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+         <p className="text-xs text-muted-foreground text-center w-full">
+            Utilize a senha mestra configurada para o sistema.
           </p>
-        </CardFooter>
-      </Card>
+      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<LoginLoading />}>
+    <Suspense fallback={<LoginLoadingSkeleton />}>
       <LoginClientContent />
     </Suspense>
   );
