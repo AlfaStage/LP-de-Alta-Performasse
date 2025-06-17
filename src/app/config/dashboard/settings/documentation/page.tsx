@@ -213,7 +213,6 @@ curl -X GET \\
                   {isGeneratingToken ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                   {isGeneratingToken ? "Gerando..." : (apiToken ? "Gerar Novo Token" : "Gerar Token de API")}
                 </Button>
-                 {/* Removido o Alert sobre segurança do token em whitelabel-config.json */}
               </div>
 
               <div>
@@ -232,13 +231,6 @@ curl -X GET \\
                   <code>{exampleJsonResponse.trim()}</code>
                 </pre>
               </div>
-               <Alert variant="default">
-                <Info className="h-4 w-4"/>
-                <AlertTitle>Nota sobre Persistência de Dados</AlertTitle>
-                <AlertDescription>
-                  Os dados de quizzes, configurações whitelabel (incluindo o token da API) e estatísticas são atualmente armazenados em arquivos JSON no servidor. Em ambientes de produção (especialmente PaaS/Serverless como Firebase App Hosting), esta abordagem pode não ser persistente. Para produção, é <strong>altamente recomendado</strong> migrar o armazenamento para um banco de dados (ex: Firestore, PostgreSQL).
-                </AlertDescription>
-              </Alert>
             </div>
           </section>
         </CardContent>
