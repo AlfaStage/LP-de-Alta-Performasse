@@ -1,19 +1,84 @@
 
 "use client";
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { API_STATS_ACCESS_TOKEN } from "@/config/appConfig";
-import { Code, Terminal, Key, Info, Database, ListChecks, BookText } from "lucide-react"; // Adicionado BookText aqui
+import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Code, Terminal, Key, Info, Database, ListChecks, BookText, RefreshCw, Loader2, ShieldAlert } from "lucide-react";
+import { fetchWhitelabelSettings, generateApiStatsTokenAction } from '../actions'; // Actions from the same directory
+import type { WhitelabelConfig } from '@/types/quiz';
+import { useToast } from '@/hooks/use-toast';
 
 const codeBlockClass = "block whitespace-pre-wrap bg-muted/50 p-4 rounded-md text-sm font-mono overflow-x-auto";
 
 export default function DocumentationPage() {
+  const [apiToken, setApiToken] = useState<string | null | undefined>(undefined); // undefined for loading state
+  const [isLoadingToken, setIsLoadingToken] = useState(false);
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const { toast } = useToast();
 
-  const exampleCurlCall = `
+  useEffect(() => {
+    async function loadToken() {
+      setIsLoadingToken(true);
+      try {
+        const settings = await fetchWhitelabelSettings();
+        setApiToken(settings.apiStatsAccessToken || null); // Set to null if empty string or undefined
+      } catch (error) {
+        console.error("Failed to fetch API token:", error);
+        toast({
+          title: "Erro ao Carregar Token",
+          description: "Não foi possível buscar o token da API.",
+          variant: "destructive",
+        });
+        setApiToken(null);
+      } finally {
+        setIsLoadingToken(false);
+      }
+    }
+    loadToken();
+  }, [toast]);
+
+  const handleGenerateToken = async () => {
+    setIsGeneratingToken(true);
+    try {
+      const result = await generateApiStatsTokenAction();
+      if (result.success && result.newToken) {
+        setApiToken(result.newToken);
+        toast({
+          title: "Token Gerado!",
+          description: result.message || "Novo token de API gerado com sucesso.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Erro ao Gerar Token",
+          description: result.message || "Não foi possível gerar um novo token.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro Inesperado",
+        description: "Ocorreu um erro ao tentar gerar o token.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingToken(false);
+    }
+  };
+
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'SUA_APP_BASE_URL';
+  const exampleCurlCall = apiToken 
+    ? `
 curl -X GET \\
-  '${typeof window !== 'undefined' ? window.location.origin : 'YOUR_APP_BASE_URL'}/api/quiz-stats' \\
-  -H 'Authorization: Bearer ${API_STATS_ACCESS_TOKEN}'
+  '${baseUrl}/api/quiz-stats' \\
+  -H 'Authorization: Bearer ${apiToken}'
+  `
+    : `
+curl -X GET \\
+  '${baseUrl}/api/quiz-stats' \\
+  -H 'Authorization: Bearer SEU_TOKEN_DE_ACESSO_AQUI'
   `;
 
   const exampleJsonResponse = `
@@ -24,6 +89,7 @@ curl -X GET \\
     "mostEngagingQuiz": {
       "title": "Quiz de Engajamento Top",
       "slug": "top-quiz",
+      // ... outros campos do quiz
       "startedCount": 50,
       "completedCount": 40,
       "conversionRate": 80
@@ -35,8 +101,10 @@ curl -X GET \\
       "title": "Quiz Padrão Ice Lazer",
       "dashboardName": "Quiz Padrão (Homepage)",
       "aggregateStats": {
+        // ... campos do QuizAnalyticsData
         "startedCount": 100,
         "completedCount": 55
+        // ...
       },
       "questionLevelStats": {
         "q1_default": {
@@ -48,25 +116,13 @@ curl -X GET \\
             "nao": 30
           }
         },
-        "final_contact_step": {
-          "id": "final_contact_step",
-          "type": "textFields",
-          "totalAnswers": 55,
-          "fieldsHandled": true
-        }
         // ... outras perguntas
-      }
-    },
-    {
-      "slug": "quiz-bahia",
-      "title": "SmartCheck Bahia",
-      "dashboardName": "Quiz Bahia",
-      "aggregateStats": {
-        "startedCount": 50,
-        "completedCount": 20
-      },
-      "questionLevelStats": {
-        // ... estatísticas das perguntas do quiz-bahia
+        "final_contact_step": {
+            "id": "final_contact_step",
+            "type": "textFields",
+            "totalAnswers": 55,
+            "fieldsHandled": true
+        }
       }
     }
     // ... outros quizzes
@@ -97,9 +153,10 @@ curl -X GET \\
             <ul className="list-disc list-inside space-y-1 mt-2 text-muted-foreground pl-4">
               <li>Criação e edição de múltiplos quizzes com diferentes tipos de perguntas.</li>
               <li>Coleta de informações de contato (nome, WhatsApp).</li>
-              <li>Configurações Whitelabel para personalização (logo, cores, webhooks, IDs de rastreamento).</li>
+              <li>Configurações Whitelabel para personalização (logo, cores, webhooks, IDs de rastreamento, token de API).</li>
               <li>Acompanhamento de estatísticas de quizzes iniciados, finalizados e por pergunta.</li>
               <li>Integração com Facebook Pixel e Google Analytics.</li>
+              <li>API para acesso programático às estatísticas dos quizzes.</li>
             </ul>
           </section>
 
@@ -116,19 +173,55 @@ curl -X GET \\
               </div>
 
               <div>
-                <h3 className="font-medium text-lg flex items-center gap-2"><Key className="h-4 w-4 text-muted-foreground"/>Autenticação:</h3>
-                <p className="text-muted-foreground">A API requer um token de acesso Bearer no cabeçalho de autorização.</p>
-                <p className="text-muted-foreground mt-1">Seu Token de Acesso:</p>
-                <Alert variant="default" className="bg-primary/10 border-primary/30">
-                    <Key className="h-5 w-5 text-primary"/>
-                    <AlertTitle className="text-primary">Token de Acesso (API Stats)</AlertTitle>
-                    <AlertDescription className="font-mono text-primary/80 break-all">
-                        {API_STATS_ACCESS_TOKEN}
+                <h3 className="font-medium text-lg flex items-center gap-2"><Key className="h-4 w-4 text-muted-foreground"/>Autenticação e Token de Acesso:</h3>
+                <p className="text-muted-foreground">
+                  A API requer um token de acesso Bearer no cabeçalho de autorização.
+                  Você pode gerar ou visualizar seu token abaixo.
+                </p>
+                
+                {isLoadingToken && (
+                  <div className="flex items-center gap-2 text-muted-foreground mt-2">
+                    <Loader2 className="h-5 w-5 animate-spin" /> Carregando token...
+                  </div>
+                )}
+
+                {!isLoadingToken && apiToken && (
+                  <Alert variant="default" className="mt-2 bg-primary/10 border-primary/30">
+                      <Key className="h-5 w-5 text-primary"/>
+                      <AlertTitle className="text-primary">Seu Token de Acesso Atual (API Stats)</AlertTitle>
+                      <AlertDescription className="font-mono text-primary/80 break-all text-sm">
+                          {apiToken}
+                      </AlertDescription>
+                  </Alert>
+                )}
+                 {!isLoadingToken && !apiToken && (
+                  <Alert variant="destructive" className="mt-2">
+                      <ShieldAlert className="h-5 w-5"/>
+                      <AlertTitle>Nenhum Token de API Configurado</AlertTitle>
+                      <AlertDescription>
+                          Nenhum token de acesso à API de estatísticas foi gerado ainda. Clique no botão abaixo para gerar um.
+                      </AlertDescription>
+                  </Alert>
+                )}
+
+                <Button 
+                  onClick={handleGenerateToken} 
+                  disabled={isGeneratingToken || isLoadingToken}
+                  variant="outline"
+                  className="mt-3"
+                >
+                  {isGeneratingToken ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                  {isGeneratingToken ? "Gerando..." : (apiToken ? "Gerar Novo Token" : "Gerar Token de API")}
+                </Button>
+                 <Alert variant="destructive" className="mt-3">
+                    <ShieldAlert className="h-4 w-4" />
+                    <AlertTitle>Atenção sobre Segurança do Token</AlertTitle>
+                    <AlertDescription>
+                        Este token de API é armazenado no arquivo <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">src/data/whitelabel-config.json</code>. 
+                        Se este arquivo for incluído no seu controle de versão (Git), o token também será. 
+                        Para ambientes de produção, considere mecanismos de armazenamento de segredos mais robustos e certifique-se de que este arquivo (ou o diretório `src/data`) não seja versionado se contiver dados sensíveis.
                     </AlertDescription>
                 </Alert>
-                <p className="text-xs text-destructive mt-1">
-                  <strong>Atenção:</strong> Este token é apenas para fins de demonstração neste protótipo. Em um ambiente de produção, ele deve ser gerenciado de forma segura e não exposto publicamente.
-                </p>
               </div>
 
               <div>
@@ -137,7 +230,7 @@ curl -X GET \\
                   <code>{exampleCurlCall.trim()}</code>
                 </pre>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Substitua <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">YOUR_APP_BASE_URL</code> pela URL base da sua aplicação se estiver testando de fora do navegador.
+                  Substitua <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">SUA_APP_BASE_URL</code> pela URL base da sua aplicação se estiver testando de fora do navegador ou se o token ainda não foi carregado.
                 </p>
               </div>
 
@@ -151,7 +244,7 @@ curl -X GET \\
                 <Info className="h-4 w-4"/>
                 <AlertTitle>Nota sobre Persistência de Dados</AlertTitle>
                 <AlertDescription>
-                  Os dados de quizzes, configurações whitelabel e estatísticas são atualmente armazenados em arquivos JSON no servidor. Em ambientes de produção (especialmente PaaS/Serverless como Firebase App Hosting), esta abordagem pode não ser persistente. Para produção, é <strong>altamente recomendado</strong> migrar o armazenamento para um banco de dados (ex: Firestore, PostgreSQL).
+                  Os dados de quizzes, configurações whitelabel (incluindo o token da API) e estatísticas são atualmente armazenados em arquivos JSON no servidor. Em ambientes de produção (especialmente PaaS/Serverless como Firebase App Hosting), esta abordagem pode não ser persistente. Para produção, é <strong>altamente recomendado</strong> migrar o armazenamento para um banco de dados (ex: Firestore, PostgreSQL).
                 </AlertDescription>
               </Alert>
             </div>

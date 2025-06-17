@@ -52,6 +52,7 @@ export interface WhitelabelConfig {
   facebookPixelIdSecondary?: string;
   googleAnalyticsId?: string;
   footerCopyrightText?: string;
+  apiStatsAccessToken?: string; // Novo campo para o token da API
 }
 
 // Statistics types
@@ -104,3 +105,4 @@ export interface QuizEditData {
   dashboardName?: string;
   questionsJson: string; 
 }
+

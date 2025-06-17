@@ -2,6 +2,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { WhitelabelConfig } from '@/types/quiz';
+import crypto from 'crypto';
 
 const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-config.json');
 
@@ -12,20 +13,23 @@ const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-confi
 // For production, dynamic configurations like these should be stored in a
 // persistent database (e.g., Firestore, PostgreSQL, MySQL) or a dedicated config service.
 // This implementation is suitable for local development or environments with persistent writable storage.
+// STORING THE API ACCESS TOKEN IN THIS FILE MEANS IT CAN BE COMMITTED TO VERSION CONTROL
+// IF THIS FILE IS NOT IN .gitignore. THIS IS A SECURITY RISK.
 
 export const defaultConfig: WhitelabelConfig = {
-  projectName: "Ice Lazer Quiz System",
-  logoUrl: "https://placehold.co/150x50.png?text=Logo",
+  projectName: "LP de Alta Performasse",
+  logoUrl: "/logo-lp-alta-performasse.png",
   primaryColorHex: "#E09677", 
   secondaryColorHex: "#F5D4C6", 
-  buttonPrimaryBgColorHex: "", 
+  buttonPrimaryBgColorHex: "#FEC3A9", 
   pageBackgroundColorHex: "#FCEFEA", 
   quizBackgroundColorHex: "#FFFFFF", 
-  quizSubmissionWebhookUrl: "",
-  facebookPixelId: "",
-  facebookPixelIdSecondary: "",
-  googleAnalyticsId: "",
-  footerCopyrightText: `© ${new Date().getFullYear()} Ice Lazer Quizzes. Todos os direitos reservados.`
+  quizSubmissionWebhookUrl: "https://webhook.workflow.alfastage.com.br/webhook/icelazerquiz-mensagem",
+  facebookPixelId: "724967076682767",
+  facebookPixelIdSecondary: "3949746165337932",
+  googleAnalyticsId: "G-YV9GYV3385",
+  footerCopyrightText: `© ${new Date().getFullYear()} LP de Alta Performasse. Todos os direitos reservados. Desenvolvido por FR Digital.`,
+  apiStatsAccessToken: "" // Default empty token
 };
 
 async function ensureConfigFileExists() {
@@ -33,9 +37,10 @@ async function ensureConfigFileExists() {
     await fs.access(configFilePath);
   } catch (error) {
     try {
-      // Ensure the directory exists before writing the file
       await fs.mkdir(path.dirname(configFilePath), { recursive: true });
-      await fs.writeFile(configFilePath, JSON.stringify(defaultConfig, null, 2), 'utf8');
+      const initialConfig = { ...defaultConfig };
+      // Do not auto-generate a token here, let the UI/action do it.
+      await fs.writeFile(configFilePath, JSON.stringify(initialConfig, null, 2), 'utf8');
       console.log('Created default whitelabel-config.json at:', configFilePath);
     } catch (writeError) {
       console.error('Failed to write default whitelabel-config.json:', writeError);
@@ -53,22 +58,15 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
       ...defaultConfig, 
       ...savedConfig 
     };
-
-     if (typeof savedConfig.buttonPrimaryBgColorHex === 'string') {
-        mergedConfig.buttonPrimaryBgColorHex = savedConfig.buttonPrimaryBgColorHex;
-    } else {
-        mergedConfig.buttonPrimaryBgColorHex = defaultConfig.buttonPrimaryBgColorHex; 
-    }
     
-    if (typeof savedConfig.footerCopyrightText === 'string' && savedConfig.footerCopyrightText.trim() !== "") {
-        mergedConfig.footerCopyrightText = savedConfig.footerCopyrightText;
-    } else {
-        mergedConfig.footerCopyrightText = defaultConfig.footerCopyrightText;
-    }
-    
+    // Ensure all fields from defaultConfig are present, overwritten by savedConfig if they exist there.
+    // Specific handling for potentially undefined optional fields from older configs:
+    mergedConfig.buttonPrimaryBgColorHex = typeof savedConfig.buttonPrimaryBgColorHex === 'string' ? savedConfig.buttonPrimaryBgColorHex : defaultConfig.buttonPrimaryBgColorHex;
+    mergedConfig.footerCopyrightText = (typeof savedConfig.footerCopyrightText === 'string' && savedConfig.footerCopyrightText.trim() !== "") ? savedConfig.footerCopyrightText : defaultConfig.footerCopyrightText;
     mergedConfig.facebookPixelId = typeof savedConfig.facebookPixelId === 'string' ? savedConfig.facebookPixelId : defaultConfig.facebookPixelId;
     mergedConfig.facebookPixelIdSecondary = typeof savedConfig.facebookPixelIdSecondary === 'string' ? savedConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary;
     mergedConfig.googleAnalyticsId = typeof savedConfig.googleAnalyticsId === 'string' ? savedConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId;
+    mergedConfig.apiStatsAccessToken = typeof savedConfig.apiStatsAccessToken === 'string' ? savedConfig.apiStatsAccessToken : defaultConfig.apiStatsAccessToken;
 
     return mergedConfig as WhitelabelConfig;
 
@@ -93,6 +91,7 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
         facebookPixelIdSecondary: typeof newConfig.facebookPixelIdSecondary === 'string' ? newConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary,
         googleAnalyticsId: typeof newConfig.googleAnalyticsId === 'string' ? newConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId,
         footerCopyrightText: (typeof newConfig.footerCopyrightText === 'string' && newConfig.footerCopyrightText.trim() !== "") ? newConfig.footerCopyrightText : defaultConfig.footerCopyrightText,
+        apiStatsAccessToken: typeof newConfig.apiStatsAccessToken === 'string' ? newConfig.apiStatsAccessToken : defaultConfig.apiStatsAccessToken,
     };
 
     await fs.writeFile(configFilePath, JSON.stringify(dataToSave, null, 2), 'utf8');
@@ -103,3 +102,8 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
     return { success: false, message: `Erro ao salvar configurações: ${errorMessage}` };
   }
 }
+
+export async function generateNewApiToken(): Promise<string> {
+  return crypto.randomBytes(32).toString('hex');
+}
+

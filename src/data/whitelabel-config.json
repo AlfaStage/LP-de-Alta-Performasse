@@ -1,6 +1,7 @@
+
 {
-  "projectName": "Ice Lazer Quiz",
-  "logoUrl": "https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png",
+  "projectName": "LP de Alta Performasse",
+  "logoUrl": "/logo-lp-alta-performasse.png",
   "primaryColorHex": "#E09677",
   "secondaryColorHex": "#F5D4C6",
   "buttonPrimaryBgColorHex": "#FEC3A9",
@@ -10,5 +11,6 @@
   "facebookPixelId": "724967076682767",
   "facebookPixelIdSecondary": "3949746165337932",
   "googleAnalyticsId": "G-YV9GYV3385",
-  "footerCopyrightText": "© 2025 Ice Lazer. Todos os direitos reservados."
+  "footerCopyrightText": "© 2024 LP de Alta Performasse. Todos os direitos reservados. Desenvolvido por FR Digital.",
+  "apiStatsAccessToken": ""
 }

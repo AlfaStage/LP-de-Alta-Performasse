@@ -1,6 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { API_STATS_ACCESS_TOKEN } from '@/config/appConfig';
+import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { getQuizzesList, getOverallQuizAnalytics, getQuizQuestionAnalytics, getQuizAnalyticsBySlug } from '@/app/config/dashboard/quiz/actions';
 import type { QuizListItem, OverallQuizStats, QuizQuestionAnalytics, QuizAnalyticsData } from '@/types/quiz';
 
@@ -16,10 +16,20 @@ interface QuizStatsApiResponse {
 }
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('Authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const whitelabelSettings = await getWhitelabelConfig();
+  const configuredApiToken = whitelabelSettings.apiStatsAccessToken;
 
-  if (!token || token !== API_STATS_ACCESS_TOKEN) {
+  if (!configuredApiToken || configuredApiToken.trim() === "") {
+    return NextResponse.json(
+      { error: 'Unauthorized: API access token is not configured. Please generate one in the dashboard settings.' },
+      { status: 401 }
+    );
+  }
+
+  const authHeader = request.headers.get('Authorization');
+  const providedToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+
+  if (!providedToken || providedToken !== configuredApiToken) {
     return NextResponse.json({ error: 'Unauthorized: Invalid or missing access token.' }, { status: 401 });
   }
 
@@ -56,3 +66,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 }
+
