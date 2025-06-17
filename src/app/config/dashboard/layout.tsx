@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Home, ListPlus, Settings2, LogOut, UserCircle } from "lucide-react";
 import { logoutAction } from "../actions";
-import Image from "next/image";
-import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
+// import Image from "next/image"; // Replaced by text
+// import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions'; // Logo is replaced by text
 
 export const metadata: Metadata = {
   title: "Dashboard de Configuração",
@@ -23,8 +23,9 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const whitelabelConfig = await fetchWhitelabelSettings();
-  const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x40.png?text=Logo";
+  // const whitelabelConfig = await fetchWhitelabelSettings(); // Removed as logo is replaced by text
+  // const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x40.png?text=Logo"; // Replaced by text
+  const projectTitle = "LP de Alta Performasse";
 
   const navItems = [
     { href: "/config/dashboard", label: "Quizzes (Início)", icon: Home },
@@ -38,15 +39,7 @@ export default async function DashboardLayout({
       <div className="hidden border-r bg-card md:flex flex-col shadow-sm sticky top-0 h-screen">
         <div className="flex h-20 items-center border-b px-6 shrink-0">
           <Link href="/config/dashboard" className="flex items-center gap-3" aria-label="Página Inicial do Dashboard">
-            <Image 
-                src={logoUrlToUse} 
-                alt="Logo" 
-                width={150} 
-                height={40} 
-                className="h-auto object-contain" 
-                data-ai-hint="company logo"
-                priority
-            />
+            <span className="text-xl font-semibold text-primary">{projectTitle}</span>
           </Link>
         </div>
         <div className="flex-1 overflow-y-auto py-4">
@@ -90,15 +83,7 @@ export default async function DashboardLayout({
             <SheetContent side="left" className="flex flex-col bg-card p-0 w-[280px] shadow-xl">
               <div className="flex h-20 items-center border-b px-6">
                 <Link href="/config/dashboard" className="flex items-center gap-3" aria-label="Página Inicial do Dashboard">
-                   <Image 
-                    src={logoUrlToUse} 
-                    alt="Logo" 
-                    width={150} 
-                    height={40} 
-                    className="h-auto object-contain"
-                    data-ai-hint="company logo"
-                    priority
-                   />
+                   <span className="text-xl font-semibold text-primary">{projectTitle}</span>
                 </Link>
               </div>
               <nav className="grid gap-2 text-base font-medium p-4">

@@ -1,6 +1,8 @@
 {
   "title": "SmartCheck",
   "slug": "ba",
+  "description": "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!",
+  "dashboardName": "Quiz Bahia",
   "questions": [
     {
       "id": "q1_default",
