@@ -248,6 +248,34 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
   }
 }
 
+export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig | null> {
+  const quizzesDir = path.join(process.cwd(), 'src', 'data', 'quizzes');
+  const filePath = path.join(quizzesDir, `${slug}.json`);
+  try {
+    const fileContents = await fs.readFile(filePath, 'utf8');
+    const quizData = JSON.parse(fileContents) as QuizConfig;
+    
+    // Ensure defaults and contact step are present
+    quizData.title = quizData.title || "Quiz Interativo";
+    quizData.slug = quizData.slug || slug; // Ensure slug in config matches requested slug
+    quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
+    quizData.dashboardName = quizData.dashboardName || quizData.title;
+
+    if (quizData.questions && Array.isArray(quizData.questions)) {
+      quizData.questions = quizData.questions.filter(q => q.id !== defaultContactStep.id);
+      quizData.questions.push(defaultContactStep);
+    } else {
+      quizData.questions = [defaultContactStep];
+    }
+    
+    return quizData;
+  } catch (error) {
+    console.error(`Failed to read quiz config for preview (slug ${slug}):`, error);
+    return null;
+  }
+}
+
+
 interface UpdateQuizPayload {
   title: string;
   slug: string;
@@ -369,7 +397,7 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
         return { 
           title: quizData.title || `Quiz ${slug}`,
           slug: quizData.slug || slug,
-          description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
+          // description: quizData.description || DEFAULT_QUIZ_DESCRIPTION, // Description removed from list item
           dashboardName: quizData.dashboardName || quizData.title,
           successIcon: quizData.successIcon,
           startedCount: analytics.startedCount,
@@ -381,7 +409,7 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
         return {
           title: `Erro ao carregar: ${filename}`,
           slug: slug,
-          description: DEFAULT_QUIZ_DESCRIPTION,
+          // description: DEFAULT_QUIZ_DESCRIPTION,
           dashboardName: `Erro: ${filename}`,
           successIcon: undefined, 
           startedCount: analytics.startedCount,
@@ -492,3 +520,5 @@ export async function resetAllQuizAnalyticsAction(): Promise<{ success: boolean;
     return { success: false, message: `Failed to reset statistics: ${errorMessage}` };
   }
 }
+
+    

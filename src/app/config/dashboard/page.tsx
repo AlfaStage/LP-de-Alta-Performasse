@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw, BadgeInfo } from 'lucide-react';
-import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, resetAllQuizAnalyticsAction } from './quiz/actions';
-import type { QuizListItem, OverallQuizStats } from '@/types/quiz';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw, ExternalLink, Copy } from 'lucide-react';
+import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, resetAllQuizAnalyticsAction, getQuizConfigForPreview } from './quiz/actions';
+import type { QuizListItem, OverallQuizStats, QuizConfig, WhitelabelConfig } from '@/types/quiz';
 import { useEffect, useState, useCallback } from 'react';
 import {
   AlertDialog,
@@ -19,13 +19,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { APP_BASE_URL } from '@/config/appConfig';
+import dynamic from 'next/dynamic';
+import QuizFormLoading from '@/components/quiz/QuizFormLoading';
+import { fetchWhitelabelSettings } from './settings/actions';
+
+const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
+  ssr: false,
+  loading: () => <div className="p-4"><QuizFormLoading/></div>,
+});
 
 const DEFAULT_QUIZ_SLUG = "default";
-const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
-
 
 function StatCard({ title, value, icon: Icon, description, trendValue, trendUnit = "%" }: { title: string, value: string | number, icon: React.ElementType, description?: string, trendValue?: string, trendUnit?: string }) {
   return (
@@ -59,6 +74,12 @@ export default function DashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showResetStatsDialog, setShowResetStatsDialog] = useState(false);
   const [isResettingStats, setIsResettingStats] = useState(false);
+  
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewQuizConfig, setPreviewQuizConfig] = useState<QuizConfig | null>(null);
+  const [whitelabelSettingsForPreview, setWhitelabelSettingsForPreview] = useState<Partial<WhitelabelConfig> | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -160,6 +181,50 @@ export default function DashboardPage() {
     }
   }
 
+  const handleOpenPreview = async (slug: string) => {
+    setIsLoadingPreview(true);
+    setIsPreviewModalOpen(true);
+    try {
+      const [config, wlSettings] = await Promise.all([
+        getQuizConfigForPreview(slug),
+        fetchWhitelabelSettings()
+      ]);
+      setPreviewQuizConfig(config);
+      setWhitelabelSettingsForPreview(wlSettings);
+    } catch (error) {
+      console.error("Error fetching data for preview:", error);
+      setPreviewQuizConfig(null);
+      setWhitelabelSettingsForPreview(null);
+      toast({
+        title: "Erro ao Carregar Pré-visualização",
+        description: "Não foi possível carregar os dados do quiz para pré-visualização.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const handleCopyLink = (slug: string) => {
+    const url = `${APP_BASE_URL}/${slug}`;
+    navigator.clipboard.writeText(url)
+      .then(() => {
+        toast({
+          title: "Link Copiado!",
+          description: `O link para "${slug}" foi copiado para a área de transferência.`,
+          variant: "default",
+        });
+      })
+      .catch(err => {
+        console.error("Failed to copy link:", err);
+        toast({
+          title: "Erro ao Copiar",
+          description: "Não foi possível copiar o link.",
+          variant: "destructive",
+        });
+      });
+  };
+
   const overallConversionRate = overallStats && overallStats.totalStarted > 0 
     ? ((overallStats.totalCompleted / overallStats.totalStarted) * 100).toFixed(1) 
     : "0.0";
@@ -168,7 +233,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Visão Geral dos Quizzes</h1>
+            <h1 className="font-display text-3xl font-bold text-sky-600">LP de Alta Performasse</h1>
             <p className="text-muted-foreground">Gerencie seus quizzes e acompanhe o desempenho.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -306,12 +371,28 @@ export default function DashboardPage() {
                   <Progress value={conversionRate} className="h-2" />
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+              <CardFooter className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full flex items-center gap-1"
+                  onClick={() => handleOpenPreview(quiz.slug)}
+                >
+                  <Eye className="h-4 w-4" /> Pré-visualizar
+                </Button>
                 <Link href={`/${quiz.slug}`} target="_blank" rel="noopener noreferrer" className="w-full">
                    <Button variant="outline" size="sm" className="w-full flex items-center gap-1">
-                     <Eye className="h-4 w-4" /> Visualizar
+                     <ExternalLink className="h-4 w-4" /> Abrir Quiz
                    </Button>
                 </Link>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full flex items-center gap-1"
+                  onClick={() => handleCopyLink(quiz.slug)}
+                >
+                  <Copy className="h-4 w-4" /> Copiar Link
+                </Button>
                 <Link href={`/config/dashboard/quiz/edit/${quiz.slug}`} className="w-full">
                    <Button variant="outline" size="sm" className="w-full flex items-center gap-1">
                      <Edit className="h-4 w-4" /> Editar
@@ -320,7 +401,7 @@ export default function DashboardPage() {
                 <Button 
                   variant="destructive" 
                   size="sm" 
-                  className="w-full flex items-center gap-1"
+                  className="w-full flex items-center gap-1 md:col-span-2 lg:col-span-1"
                   onClick={() => setQuizToDelete(quiz)}
                   disabled={isDeleting || quiz.slug === DEFAULT_QUIZ_SLUG}
                 >
@@ -408,6 +489,58 @@ export default function DashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <Dialog open={isPreviewModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          setPreviewQuizConfig(null); // Clear data when closing
+          setWhitelabelSettingsForPreview(null);
+        }
+        setIsPreviewModalOpen(open);
+      }}>
+        <DialogContent className="max-w-2xl w-[95vw] h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle>Pré-visualização: {isLoadingPreview ? "Carregando..." : previewQuizConfig?.title || 'Quiz'}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-grow overflow-y-auto bg-background">
+            {isLoadingPreview ? (
+              <div className="flex items-center justify-center h-full"><QuizFormLoading/></div>
+            ) : previewQuizConfig && whitelabelSettingsForPreview ? (
+              <QuizForm
+                quizQuestions={previewQuizConfig.questions}
+                quizSlug={previewQuizConfig.slug}
+                quizTitle={previewQuizConfig.title}
+                quizDescription={previewQuizConfig.description}
+                logoUrl={whitelabelSettingsForPreview.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
+                footerCopyrightText={whitelabelSettingsForPreview.footerCopyrightText || `© ${new Date().getFullYear()} Preview`}
+                facebookPixelId="" 
+                googleAnalyticsId="" 
+                onSubmitOverride={async (data) => {
+                  console.log("Preview Submit:", data);
+                  toast({ title: "Simulação de Envio", description: "Dados do quiz simulados no console." });
+                  setIsPreviewModalOpen(false); 
+                }}
+                onAbandonmentOverride={async () => {
+                  console.log("Preview Abandonment for quiz:", previewQuizConfig?.slug);
+                  toast({ title: "Simulação de Abandono", description: "Abandono simulado no console." });
+                }}
+                isPreview={true}
+              />
+            ) : (
+              <div className="p-4 text-center text-muted-foreground">Não foi possível carregar a pré-visualização do quiz.</div>
+            )}
+          </div>
+          <DialogFooter className="p-4 border-t">
+            <DialogClose asChild>
+              <Button variant="outline">Fechar</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <footer className="text-center text-xs text-muted-foreground py-4 border-t mt-auto">
+        Todos os direitos reservados FR Digital
+      </footer>
     </div>
   );
 }
+
+    
