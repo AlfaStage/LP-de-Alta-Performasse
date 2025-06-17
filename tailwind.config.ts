@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -11,7 +12,8 @@ export default {
     extend: {
       fontFamily: {
         body: ['PT Sans', 'sans-serif'],
-        headline: ['PT Sans', 'sans-serif'],
+        headline: ['PT Sans', 'sans-serif'], // Existing headline font
+        display: ['Montserrat', 'sans-serif'], // New display font for "LP de Alta Performasse"
         code: ['monospace'],
       },
       colors: {

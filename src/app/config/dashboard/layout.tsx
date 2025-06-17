@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Home, ListPlus, Settings2, LogOut } from "lucide-react";
 import { logoutAction } from "../actions";
+import Image from 'next/image';
 
 export const metadata: Metadata = {
   title: "Dashboard de Configuração",
@@ -21,7 +22,6 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const projectTitle = "LP de Alta Performasse";
 
   const navItems = [
     { href: "/config/dashboard", label: "Quizzes (Início)", icon: Home },
@@ -35,7 +35,7 @@ export default async function DashboardLayout({
       <div className="hidden border-r bg-card md:flex flex-col shadow-sm sticky top-0 h-screen">
         <div className="flex h-20 items-center border-b px-6 shrink-0">
           <Link href="/config/dashboard" className="flex items-center gap-3" aria-label="Página Inicial do Dashboard">
-            <span className="text-2xl font-bold text-primary font-headline">{projectTitle}</span>
+            <span className="font-display text-2xl font-bold text-sky-600">LP de Alta Performasse</span>
           </Link>
         </div>
         <div className="flex-1 overflow-y-auto py-4">
@@ -79,7 +79,7 @@ export default async function DashboardLayout({
             <SheetContent side="left" className="flex flex-col bg-card p-0 w-[280px] shadow-xl">
               <div className="flex h-20 items-center border-b px-6">
                 <Link href="/config/dashboard" className="flex items-center gap-3" aria-label="Página Inicial do Dashboard">
-                   <span className="text-2xl font-bold text-primary font-headline">{projectTitle}</span>
+                   <span className="font-display text-2xl font-bold text-sky-600">LP de Alta Performasse</span>
                 </Link>
               </div>
               <nav className="grid gap-2 text-base font-medium p-4">

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { KeyRound, LogIn, AlertTriangle, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 
 function LoginLoadingSkeleton() {
@@ -16,7 +17,9 @@ function LoginLoadingSkeleton() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <div className="text-4xl font-bold text-primary mb-8 font-headline">LP de Alta Performasse</div>
+          <div className="font-display text-4xl font-bold text-sky-600 mb-8">
+            LP de Alta Performasse
+          </div>
           <h1 className="text-3xl font-bold text-foreground">Acessar Painel</h1>
           <p className="text-muted-foreground mt-2">Carregando...</p>
         </div>
@@ -76,7 +79,7 @@ function LoginClientContent() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-            <div className="text-4xl font-bold text-primary mb-8 font-headline">
+            <div className="font-display text-4xl font-bold text-sky-600 mb-8">
               LP de Alta Performasse
             </div>
           <h1 className="text-3xl font-bold text-foreground tracking-tight">Acesso ao Painel de Controle</h1>
