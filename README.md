@@ -1,14 +1,14 @@
 
 # Quiz Interativo Ice Lazer para Qualificação de Leads
 
-Este projeto é uma aplicação web construída com Next.js, projetada para qualificar leads para tratamentos de depilação a laser da Ice Lazer através de um quiz interativo. Ele coleta respostas, informações de contato e integra-se com o Facebook Pixel para rastreamento de eventos e otimização de campanhas.
+Este projeto é uma aplicação web construída com Next.js, projetada para qualificar leads para tratamentos de depilação a laser da Ice Lazer através de um quiz interativo. Ele coleta respostas, informações de contato e integra-se com o Facebook Pixel e Google Analytics para rastreamento de eventos e otimização de campanhas.
 
 ## Funcionalidades Principais
 
 *   **Quiz Interativo:** Múltiplas etapas com diferentes tipos de perguntas (escolha única, múltipla escolha, campos de texto).
 *   **Criação e Edição de Quizzes:** Interface administrativa para criar, editar e gerenciar múltiplos quizzes.
 *   **Configurações Whitelabel:** Painel para personalizar nome do projeto, logo, cores do tema, webhooks e IDs de rastreamento.
-*   **Estatísticas de Quiz:** Dashboard para visualizar quizzes iniciados, finalizados e taxas de conversão (agregado e por quiz).
+*   **Estatísticas de Quiz:** Dashboard para visualizar quizzes iniciados, finalizados e taxas de conversão (agregado e por quiz). **Página de estatísticas dedicada por quiz** com detalhes por pergunta.
 *   **Lógica Condicional:** (Suporte básico, mais complexidade via JSON) Algumas perguntas aparecem com base nas respostas anteriores.
 *   **Coleta de Leads:** Coleta nome completo e WhatsApp ao final do quiz.
 *   **Integração com Webhooks:**
@@ -17,6 +17,8 @@ Este projeto é uma aplicação web construída com Next.js, projetada para qual
 *   **Rastreamento com Facebook Pixel e Google Analytics:**
     *   Suporte para múltiplos IDs de Pixel do Facebook e ID do Google Analytics (configurável via Whitelabel).
     *   Rastreia eventos chave: `PageView`, `QuizStart`, `QuestionAnswered` (para cada etapa), `QuizComplete` e `Lead`.
+    *   O rastreamento é ativado apenas nas páginas públicas do quiz, não no painel de configuração.
+*   **API de Estatísticas:** Endpoint protegido por token para acesso programático às estatísticas agregadas e por quiz.
 *   **Design Responsivo:** Interface adaptada para desktops e dispositivos móveis.
 *   **Componentes Modernos:** Utiliza ShadCN UI para componentes de interface e Tailwind CSS para estilização.
 *   **Validação:** Validação de formulário com React Hook Form e Zod.
@@ -84,7 +86,7 @@ Este projeto é uma aplicação web construída com Next.js, projetada para qual
     ```
 
     **Importante sobre Configurações Whitelabel:**
-    As configurações de Whitelabel (como IDs de Pixel do Facebook, Google Analytics ID, Webhook de Submissão de Quiz, cores, logo) são gerenciadas através do dashboard em `/config/dashboard/settings`. Os valores iniciais são carregados de `src/data/whitelabel-config.json`.
+    As configurações de Whitelabel (como IDs de Pixel do Facebook, Google Analytics ID, Webhook de Submissão de Quiz, cores, logo, Token da API de Estatísticas) são gerenciadas através do dashboard em `/config/dashboard/settings`. Os valores iniciais são carregados de `src/data/whitelabel-config.json`.
 
 4.  **Execute o servidor de desenvolvimento:**
     ```bash
@@ -193,28 +195,38 @@ Este guia detalha como implantar esta aplicação Next.js em um servidor Ubuntu 
 │   │   │       ├── layout.tsx
 │   │   │       ├── page.tsx      (Página inicial do dashboard)
 │   │   │       ├── quiz/         (CRUD e estatísticas de quizzes)
-│   │   │       └── settings/     (Configurações Whitelabel)
+│   │   │       │   ├── create/page.tsx
+│   │   │       │   ├── edit/[quizSlug]/page.tsx
+│   │   │       │   └── stats/[quizSlug]/page.tsx  (Estatísticas detalhadas do quiz)
+│   │   │       ├── settings/     (Configurações Whitelabel)
+│   │   │       │   ├── page.tsx
+│   │   │       │   └── documentation/page.tsx (Documentação e Gestão de Token API)
+│   │   │       └── actions.ts    (Server Actions específicas do dashboard)
+│   │   ├── api/                 # Rotas de API (ex: /api/quiz-stats)
+│   │   │   └── quiz-stats/route.ts
 │   │   ├── globals.css
 │   │   ├── layout.tsx         (Layout raiz da aplicação)
-│   │   └── page.tsx           (Página inicial, renderiza o quiz "default")
+│   │   ├── page.tsx           (Página inicial, renderiza o quiz "default")
+│   │   └── actions.ts         (Server Actions globais da aplicação)
 │   ├── components/          # Componentes React reutilizáveis
-│   │   ├── quiz/            # Componentes específicos do Quiz (QuizForm, QuizProgressBar)
+│   │   ├── dashboard/       # Componentes do Painel (DashboardShell)
+│   │   ├── quiz/            # Componentes específicos do Quiz (QuizForm, QuizProgressBar, QuizFormLoading)
 │   │   ├── ui/              # Componentes ShadCN UI
-│   │   └── FacebookPixelScript.tsx
+│   │   └── TrackingScriptsWrapper.tsx # Wrapper para scripts de rastreamento (FB, GA)
 │   ├── config/              # Configurações globais da app (env vars, quizConfig base)
 │   │   ├── appConfig.ts
 │   │   └── quizConfig.ts
 │   ├── data/                # Dados dinâmicos (idealmente em DB para produção)
 │   │   ├── quizzes/         # Arquivos JSON de configuração de cada quiz (ex: default.json)
-│   │   ├── analytics/       # Arquivos JSON para estatísticas (ex: quiz_stats.json)
+│   │   ├── analytics/       # Arquivos JSON para estatísticas (ex: quiz_stats.json, [slug]_question_stats.json)
 │   │   └── whitelabel-config.json # Configurações de Whitelabel
-│   ├── hooks/               # Hooks React customizados
+│   ├── hooks/               # Hooks React customizados (use-toast, use-mobile)
 │   ├── lib/                 # Funções utilitárias e bibliotecas auxiliares
 │   │   ├── authService.ts   # Lógica de autenticação
 │   │   ├── fpixel.ts        # Helpers para Facebook Pixel
 │   │   ├── gtag.ts          # Helpers para Google Analytics
-│   │   ├── utils.ts         # Utilitários gerais
-│   │   ├── whitelabel.ts    # Utils Whitelabel (client-safe)
+│   │   ├── utils.ts         # Utilitários gerais (cn)
+│   │   ├── whitelabel.ts    # Utils Whitelabel (client-safe, ex: hexToHsl)
 │   │   └── whitelabel.server.ts # Utils Whitelabel (server-only, file access)
 │   ├── middleware.ts        # Middleware para proteger rotas do dashboard
 │   └── types/               # Definições TypeScript
@@ -236,4 +248,5 @@ Se desejar contribuir com o projeto, por favor, siga estas etapas:
 5.  Crie um novo Pull Request.
 
 Por favor, certifique-se de que seu código segue os padrões de linting e que os testes (se aplicável) passam.
-```
+
+    
