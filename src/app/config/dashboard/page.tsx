@@ -107,7 +107,7 @@ export default function DashboardPage() {
       if (result.success) {
         toast({
           title: "Quiz Apagado!",
-          description: `O quiz "${quizToDelete.title}" foi apagado com sucesso.`,
+          description: `O quiz "${quizToDelete.dashboardName || quizToDelete.title}" foi apagado com sucesso.`,
           variant: "default",
         });
         fetchData(); 
@@ -285,19 +285,11 @@ export default function DashboardPage() {
                     )}
                 </div>
                 <CardTitle className="text-xl font-semibold pt-2 text-card-foreground">{displayTitle}</CardTitle>
-                {quiz.dashboardName && quiz.dashboardName !== quiz.title && (
-                     <p className="text-xs text-muted-foreground -mt-1">Título público: {quiz.title}</p>
-                )}
                 <CardDescription className="mt-1">
                     <Badge variant="outline">/{quiz.slug}</Badge>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow space-y-3">
-                 {quiz.description && quiz.description !== DEFAULT_QUIZ_DESCRIPTION && (
-                    <p className="text-sm text-muted-foreground italic line-clamp-2">
-                        "{quiz.description}"
-                    </p>
-                 )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground flex items-center"><Users className="h-4 w-4 mr-1.5"/> Iniciados:</span>
                   <span className="font-semibold">{quiz.startedCount || 0}</span>
