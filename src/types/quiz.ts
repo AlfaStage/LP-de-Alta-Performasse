@@ -33,6 +33,8 @@ export interface QuizQuestion {
 export interface QuizConfig {
   title: string;
   slug: string;
+  description?: string;
+  dashboardName?: string;
   questions: QuizQuestion[];
   successIcon?: keyof typeof import('lucide-react');
 }
@@ -53,7 +55,12 @@ export interface WhitelabelConfig {
 }
 
 // Statistics types
-export interface QuizListItem extends Omit<QuizConfig, 'questions'> {
+export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'description' | 'dashboardName'> {
+  title: string;
+  slug: string;
+  description?: string;
+  dashboardName?: string;
+  successIcon?: keyof typeof import('lucide-react');
   startedCount?: number;
   completedCount?: number;
 }
@@ -90,3 +97,10 @@ export interface QuizQuestionAnalytics {
   [questionId: string]: QuestionSpecificAnalytics;
 }
 
+export interface QuizEditData {
+  title: string;
+  slug: string;
+  description?: string;
+  dashboardName?: string;
+  questionsJson: string; 
+}

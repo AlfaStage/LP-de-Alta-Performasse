@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw } from 'lucide-react';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw, BadgeInfo } from 'lucide-react';
 import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, resetAllQuizAnalyticsAction } from './quiz/actions';
 import type { QuizListItem, OverallQuizStats } from '@/types/quiz';
 import { useEffect, useState, useCallback } from 'react';
@@ -24,6 +24,8 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const DEFAULT_QUIZ_SLUG = "default";
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
+
 
 function StatCard({ title, value, icon: Icon, description, trendValue, trendUnit = "%" }: { title: string, value: string | number, icon: React.ElementType, description?: string, trendValue?: string, trendUnit?: string }) {
   return (
@@ -61,7 +63,7 @@ export default function DashboardPage() {
 
   const fetchData = useCallback(async () => {
     setIsFetchingData(true);
-    setIsLoadingList(true); // Set individual loading states as well if needed
+    setIsLoadingList(true); 
     setIsLoadingStats(true);
     try {
       const [quizList, stats] = await Promise.all([
@@ -82,8 +84,7 @@ export default function DashboardPage() {
       setIsLoadingStats(false);
       setIsFetchingData(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast]); // Removed fetchData from dependencies as it causes infinite loop
+  }, [toast]); 
 
   useEffect(() => {
     fetchData();
@@ -233,7 +234,7 @@ export default function DashboardPage() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                    <TrendingUp className="h-6 w-6 text-primary" />
-                   <CardTitle className="text-xl">Quiz em Destaque: {overallStats.mostEngagingQuiz.title}</CardTitle>
+                   <CardTitle className="text-xl">Quiz em Destaque: {overallStats.mostEngagingQuiz.dashboardName || overallStats.mostEngagingQuiz.title}</CardTitle>
                 </div>
                 <CardDescription>Com a maior taxa de conclusão ({overallStats.mostEngagingQuiz.conversionRate}%).</CardDescription>
               </CardHeader>
@@ -271,6 +272,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {quizzes.map((quiz) => {
             const conversionRate = quiz.startedCount && quiz.startedCount > 0 ? ((quiz.completedCount || 0) / quiz.startedCount) * 100 : 0;
+            const displayTitle = quiz.dashboardName || quiz.title;
             return (
             <Card key={quiz.slug} className="shadow-lg hover:shadow-xl transition-shadow bg-card flex flex-col">
               <CardHeader className="pb-4">
@@ -282,12 +284,20 @@ export default function DashboardPage() {
                         </Badge>
                     )}
                 </div>
-                <CardTitle className="text-xl font-semibold pt-2 text-card-foreground">{quiz.title}</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl font-semibold pt-2 text-card-foreground">{displayTitle}</CardTitle>
+                {quiz.dashboardName && quiz.dashboardName !== quiz.title && (
+                     <p className="text-xs text-muted-foreground -mt-1">Título público: {quiz.title}</p>
+                )}
+                <CardDescription className="mt-1">
                     <Badge variant="outline">/{quiz.slug}</Badge>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow space-y-3">
+                 {quiz.description && quiz.description !== DEFAULT_QUIZ_DESCRIPTION && (
+                    <p className="text-sm text-muted-foreground italic line-clamp-2">
+                        "{quiz.description}"
+                    </p>
+                 )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground flex items-center"><Users className="h-4 w-4 mr-1.5"/> Iniciados:</span>
                   <span className="font-semibold">{quiz.startedCount || 0}</span>
@@ -354,7 +364,7 @@ export default function DashboardPage() {
               Confirmar Exclusão
             </AlertDialogTitle>
             <AlertDialogDescription className="text-base text-muted-foreground">
-              Você tem certeza que deseja apagar o quiz "<strong>{quizToDelete?.title}</strong>"? Esta ação não pode ser desfeita e o arquivo do quiz será removido permanentemente, assim como suas estatísticas.
+              Você tem certeza que deseja apagar o quiz "<strong>{quizToDelete?.dashboardName || quizToDelete?.title}</strong>"? Esta ação não pode ser desfeita e o arquivo do quiz será removido permanentemente, assim como suas estatísticas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -409,5 +419,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-

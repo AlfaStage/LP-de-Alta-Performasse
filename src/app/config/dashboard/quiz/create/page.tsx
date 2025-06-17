@@ -11,12 +11,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon } from 'lucide-react';
 import { createQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
 import { APP_BASE_URL } from '@/config/appConfig';
-// import QuizForm from '@/components/quiz/QuizForm'; // Original
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
@@ -27,6 +26,7 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   loading: () => <div className="p-4"><QuizFormLoading/></div>,
 });
 
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
 
 const exampleQuestion: QuizQuestion = {
   id: "q_example",
@@ -47,6 +47,8 @@ export default function CreateQuizPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
+  const [description, setDescription] = useState(DEFAULT_QUIZ_DESCRIPTION);
+  const [dashboardName, setDashboardName] = useState('');
   const [questionsJson, setQuestionsJson] = useState('');
   const [interactiveQuestions, setInteractiveQuestions] = useState<QuizQuestion[]>([]);
   const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive');
@@ -201,7 +203,6 @@ export default function CreateQuizPage() {
   const mockSubmitOverride = async (data: Record<string, any>) => {
     console.log("Preview Submit:", data);
     alert("Submissão simulada! Verifique o console para os dados.");
-    // In a real preview, you might want to show a success-like message in the modal
   };
 
 
@@ -225,7 +226,7 @@ export default function CreateQuizPage() {
     let parsedQuestions: QuizQuestion[];
     if (currentTab === 'json') {
       if (!questionsJson.trim()) {
-         parsedQuestions = []; // Allow empty questions if creating
+         parsedQuestions = [];
       } else {
         try {
           parsedQuestions = JSON.parse(questionsJson);
@@ -245,7 +246,13 @@ export default function CreateQuizPage() {
     }
     
     try {
-      const result = await createQuizAction({ title, slug, questions: parsedQuestions });
+      const result = await createQuizAction({ 
+        title, 
+        slug, 
+        description: description || DEFAULT_QUIZ_DESCRIPTION, 
+        dashboardName: dashboardName || title, 
+        questions: parsedQuestions 
+      });
       if (result.success) {
         setSuccess(`Quiz "${title}" criado com sucesso! Acessível em /${result.slug}`);
         router.push(`/config/dashboard/quiz/edit/${result.slug}`);
@@ -273,12 +280,12 @@ export default function CreateQuizPage() {
             <CardHeader>
                 <CardTitle>Detalhes Gerais do Quiz</CardTitle>
                 <CardDescription>
-                    Defina o título e o slug para a URL do seu novo quiz.
+                    Defina o título público, slug, descrição pública e nome interno para o seu novo quiz.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-2">
-                <Label htmlFor="title">Título do Quiz</Label>
+                <Label htmlFor="title" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público do Quiz</Label>
                 <Input
                     id="title"
                     value={title}
@@ -288,7 +295,32 @@ export default function CreateQuizPage() {
                 />
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="slug">Slug do Quiz (para URL)</Label>
+                  <Label htmlFor="dashboardName" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno (para o Dashboard)</Label>
+                  <Input
+                      id="dashboardName"
+                      value={dashboardName}
+                      onChange={(e) => setDashboardName(e.target.value)}
+                      placeholder="Ex: Quiz Capilar Clientes VIP (opcional, usa título público se vazio)"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                      Este nome aparecerá apenas no seu painel de controle. Se deixado em branco, o título público será usado.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição do Quiz (visível ao usuário)</Label>
+                  <Textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Ex: Responda algumas perguntas e descubra o tratamento ideal para você!"
+                      rows={3}
+                  />
+                   <p className="text-xs text-muted-foreground">
+                      Esta descrição aparecerá abaixo do título na página do quiz.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="slug" className="flex items-center gap-1.5"><Link className="h-4 w-4 text-muted-foreground" />Slug do Quiz (para URL)</Label>
                 <Input
                     id="slug"
                     value={slug}
@@ -507,6 +539,7 @@ export default function CreateQuizPage() {
                 quizQuestions={previewQuizData}
                 quizSlug={slug || "preview-slug"}
                 quizTitle={title || "Pré-visualização do Quiz"}
+                quizDescription={description || DEFAULT_QUIZ_DESCRIPTION}
                 logoUrl={whitelabelSettings.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
                 footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview. Todos os direitos reservados.`}
                 facebookPixelId="" 
@@ -528,6 +561,3 @@ export default function CreateQuizPage() {
     </div>
   );
 }
-    
-
-    

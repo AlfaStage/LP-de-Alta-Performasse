@@ -7,18 +7,18 @@ import { Button } from '@/components/ui/button';
 import { AlertTriangle, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { QuizConfig } from '@/types/quiz';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
-// import QuizForm from '@/components/quiz/QuizForm'; // Importação original
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { defaultContactStep } from '@/config/quizConfig';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
-  // ssr: false, // Removido: Não permitido em Server Components
   loading: () => <QuizFormLoading />,
 });
 
 const DEFAULT_QUIZ_SLUG = "default";
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
+
 
 async function getDefaultQuizConfig(): Promise<QuizConfig | null> {
   const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
@@ -29,6 +29,9 @@ async function getDefaultQuizConfig(): Promise<QuizConfig | null> {
     
     quizData.title = quizData.title || "Quiz Interativo";
     quizData.slug = quizData.slug || DEFAULT_QUIZ_SLUG;
+    quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
+    quizData.dashboardName = quizData.dashboardName || quizData.title;
+
 
     if (quizData.questions && Array.isArray(quizData.questions)) {
       quizData.questions = quizData.questions.filter(q => q.id !== defaultContactStep.id);
@@ -88,6 +91,7 @@ export default async function HomePage() {
         quizQuestions={defaultQuizConfig.questions} 
         quizSlug={defaultQuizConfig.slug} 
         quizTitle={defaultQuizConfig.title || whitelabelConfig.projectName || "Quiz Interativo"} 
+        quizDescription={defaultQuizConfig.description}
         logoUrl={logoUrlToUse}
         facebookPixelId={whitelabelConfig.facebookPixelId}
         googleAnalyticsId={whitelabelConfig.googleAnalyticsId}

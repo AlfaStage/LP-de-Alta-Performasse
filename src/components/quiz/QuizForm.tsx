@@ -21,7 +21,7 @@ import * as LucideIcons from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
-import type { QuizQuestion, QuizOption } from '@/types/quiz'; // Added QuizOption
+import type { QuizQuestion, QuizOption } from '@/types/quiz';
 
 type FormData = Record<string, any>;
 
@@ -34,6 +34,7 @@ interface QuizFormProps {
   quizQuestions: QuizQuestion[];
   quizSlug: string;
   quizTitle?: string;
+  quizDescription?: string;
   logoUrl: string;
   facebookPixelId?: string; 
   facebookPixelIdSecondary?: string;
@@ -50,11 +51,14 @@ const IconComponents = LucideIcons;
 const PLACEHOLDER_FB_PIXEL_ID = "YOUR_PRIMARY_FACEBOOK_PIXEL_ID";
 const PLACEHOLDER_SECONDARY_FB_PIXEL_ID = "YOUR_SECONDARY_FACEBOOK_PIXEL_ID";
 const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
+
 
 export default function QuizForm({ 
   quizQuestions, 
   quizSlug, 
   quizTitle = "Quiz", 
+  quizDescription = DEFAULT_QUIZ_DESCRIPTION,
   logoUrl,
   facebookPixelId,
   facebookPixelIdSecondary,
@@ -208,7 +212,7 @@ export default function QuizForm({
               console.log("FB Pixel: QuestionAnswered event triggered.", answerDataFb, "Pixels:", configuredFbPixelIds);
               fbTrackEvent('QuestionAnswered', answerDataFb, configuredFbPixelIds);
             }
-            if(isGaConfigured) {
+            if(isGaConfigured){
               console.log("GA: question_answered event triggered.", gaAnswerData);
               gaEvent({ action: 'question_answered', ...gaAnswerData });
             }
@@ -266,7 +270,6 @@ export default function QuizForm({
       submittedAt: new Date().toISOString() 
     }; 
 
-    // Record answer for the last question (contact step) if not already recorded by handleNext
     if (!isPreview && currentQuestion && currentQuestion.id === activeQuestions[activeQuestions.length -1].id) {
         const lastAnswerValue = currentQuestion.fields ? getValues(currentQuestion.fields.map(f => f.name)) : getValues(currentQuestion.name);
         recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, lastAnswerValue, currentQuestion.type)
@@ -465,7 +468,9 @@ export default function QuizForm({
                 />
                 <div>
                     <CardTitle className="text-3xl font-headline text-primary">{quizTitle}</CardTitle>
-                    <CardDescription className="text-primary/80">Descubra o tratamento ideal para você!</CardDescription>
+                    {quizDescription && quizDescription.trim() !== "" && (
+                        <CardDescription className="text-primary/80">{quizDescription}</CardDescription>
+                    )}
                 </div>
             </div>
           </CardHeader>
@@ -633,4 +638,3 @@ export default function QuizForm({
     </FormProvider>
   );
 }
-

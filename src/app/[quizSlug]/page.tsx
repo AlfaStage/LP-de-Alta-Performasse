@@ -15,6 +15,7 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   loading: () => <QuizFormLoading />,
 });
 
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
 
 interface QuizPageProps {
   params: {
@@ -31,6 +32,9 @@ async function getQuizConfigFromFile(slug: string): Promise<QuizConfig | null> {
     
     quizData.title = quizData.title || "Quiz Interativo";
     quizData.slug = quizData.slug || slug;
+    quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
+    quizData.dashboardName = quizData.dashboardName || quizData.title;
+
 
     if (quizData.questions && Array.isArray(quizData.questions)) {
       quizData.questions = quizData.questions.filter(q => q.id !== defaultContactStep.id);
@@ -56,9 +60,6 @@ export async function generateStaticParams() {
         quizSlug: filename.replace('.json', ''),
       }));
   } catch (error) {
-    // Se o diretório não puder ser lido (ex: não existe durante o build inicial em alguns ambientes),
-    // é melhor retornar um array vazio para evitar que o build falhe,
-    // e logar um aviso. As páginas serão geradas dinamicamente no primeiro acesso.
     console.warn("Could not read quizzes directory for generateStaticParams. No quizzes will be pre-rendered.", error);
     return [];
   }
@@ -100,6 +101,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
         quizQuestions={quizConfigFromFile.questions} 
         quizSlug={quizConfigFromFile.slug} 
         quizTitle={quizConfigFromFile.title || whitelabelConfig.projectName || "Quiz Interativo"} 
+        quizDescription={quizConfigFromFile.description}
         logoUrl={logoUrlToUse}
         facebookPixelId={whitelabelConfig.facebookPixelId}
         facebookPixelIdSecondary={whitelabelConfig.facebookPixelIdSecondary}

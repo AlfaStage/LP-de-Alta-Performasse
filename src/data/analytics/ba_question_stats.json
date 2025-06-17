@@ -1,0 +1,40 @@
+{
+  "q1_default": {
+    "id": "q1_default",
+    "type": "radio",
+    "totalAnswers": 1,
+    "options": {
+      "sim": 1
+    }
+  },
+  "q2_default": {
+    "id": "q2_default",
+    "type": "checkbox",
+    "totalAnswers": 1,
+    "options": {
+      "virilha": 1
+    }
+  },
+  "q3_default": {
+    "id": "q3_default",
+    "type": "radio",
+    "totalAnswers": 1,
+    "options": {
+      "evitar_foliculite": 1
+    }
+  },
+  "q4_default": {
+    "id": "q4_default",
+    "type": "radio",
+    "totalAnswers": 1,
+    "options": {
+      "lauro_de_freitas_ba": 1
+    }
+  },
+  "final_contact_step": {
+    "id": "final_contact_step",
+    "type": "textFields",
+    "totalAnswers": 2,
+    "fieldsHandled": true
+  }
+}

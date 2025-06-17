@@ -2,22 +2,15 @@
 "use server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuestionSpecificAnalytics, QuizOption } from '@/types/quiz';
+import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig'; 
 import { revalidatePath } from 'next/cache';
-
-// IMPORTANT PRODUCTION NOTE:
-// Writing to the local filesystem (JSON files in src/data/) at runtime for quizzes and analytics
-// is NOT SUITABLE for most PaaS/serverless hosting environments (e.g., Firebase App Hosting, Vercel)
-// as their filesystems are often ephemeral or read-only after deployment.
-// For production, dynamic data like quizzes and analytics should be stored in a
-// persistent database (e.g., Firestore, PostgreSQL, MySQL).
-// This implementation is suitable for local development or environments with persistent writable storage.
 
 const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
 const analyticsDirectory = path.join(process.cwd(), 'src', 'data', 'analytics');
 const AGGREGATE_STATS_FILE_PATH = path.join(analyticsDirectory, 'quiz_stats.json');
 const DEFAULT_QUIZ_SLUG = "default";
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
 
 interface AggregateQuizStats {
   [quizSlug: string]: {
@@ -26,7 +19,6 @@ interface AggregateQuizStats {
   };
 }
 
-// Helper to get path for per-question stats file
 function getQuestionStatsFilePath(quizSlug: string): string {
   return path.join(analyticsDirectory, `${quizSlug}_question_stats.json`);
 }
@@ -48,7 +40,6 @@ async function ensureFileExists(filePath: string, defaultContent: string = '{}')
   }
 }
 
-// Aggregate Stats Functions
 async function getAggregateQuizStatsData(): Promise<AggregateQuizStats> {
   await ensureFileExists(AGGREGATE_STATS_FILE_PATH, JSON.stringify({}, null, 2));
   try {
@@ -85,7 +76,6 @@ export async function recordQuizStartedAction(quizSlug: string): Promise<void> {
   await updateQuizStat(quizSlug, 'startedCount');
 }
 
-// Per-Question Stats Functions
 async function getQuizQuestionAnalyticsData(quizSlug: string): Promise<QuizQuestionAnalytics> {
   const filePath = getQuestionStatsFilePath(quizSlug);
   await ensureFileExists(filePath);
@@ -165,16 +155,17 @@ export async function getQuizQuestionAnalytics(quizSlug: string): Promise<QuizQu
 }
 
 
-// Quiz Management Actions (CRUD)
 interface CreateQuizPayload {
   title: string;
   slug: string;
+  description?: string;
+  dashboardName?: string;
   questions: QuizQuestion[]; 
 }
 
 export async function createQuizAction(payload: CreateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, questions } = payload;
+  const { title, slug, description, dashboardName, questions } = payload;
 
   if (!title || !slug ) { 
     return { success: false, message: "Título e slug são obrigatórios." };
@@ -205,6 +196,8 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
   const quizConfig: QuizConfig = {
     title,
     slug,
+    description: description || DEFAULT_QUIZ_DESCRIPTION,
+    dashboardName: dashboardName || title,
     questions: questionsWithContactStep,
     successIcon: 'CheckCircle', 
   };
@@ -228,6 +221,8 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
 export interface QuizEditData {
   title: string;
   slug: string;
+  description?: string;
+  dashboardName?: string;
   questionsJson: string; 
 }
 
@@ -243,6 +238,8 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
     return {
       title: quizData.title,
       slug: quizData.slug,
+      description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
+      dashboardName: quizData.dashboardName || quizData.title,
       questionsJson: JSON.stringify(questionsForEditing, null, 2),
     };
   } catch (error) {
@@ -253,13 +250,15 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
 
 interface UpdateQuizPayload {
   title: string;
-  slug: string; 
+  slug: string;
+  description?: string;
+  dashboardName?: string;
   questions: QuizQuestion[];
 }
 
 export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, questions } = payload;
+  const { title, slug, description, dashboardName, questions } = payload;
 
   if (!title || !slug) {
     return { success: false, message: "Título e slug são obrigatórios." };
@@ -282,6 +281,8 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
   const quizConfig: QuizConfig = {
     title,
     slug, 
+    description: description || DEFAULT_QUIZ_DESCRIPTION,
+    dashboardName: dashboardName || title,
     questions: questionsWithContactStep,
     successIcon: 'CheckCircle', 
   };
@@ -368,6 +369,8 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
         return { 
           title: quizData.title || `Quiz ${slug}`,
           slug: quizData.slug || slug,
+          description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
+          dashboardName: quizData.dashboardName || quizData.title,
           successIcon: quizData.successIcon,
           startedCount: analytics.startedCount,
           completedCount: analytics.completedCount,
@@ -378,6 +381,8 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
         return {
           title: `Erro ao carregar: ${filename}`,
           slug: slug,
+          description: DEFAULT_QUIZ_DESCRIPTION,
+          dashboardName: `Erro: ${filename}`,
           successIcon: undefined, 
           startedCount: analytics.startedCount,
           completedCount: analytics.completedCount,
@@ -440,15 +445,19 @@ export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalytic
     return {
       title: quizData.title,
       slug: quizData.slug,
+      description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
+      dashboardName: quizData.dashboardName || quizData.title,
       successIcon: quizData.successIcon,
       startedCount: quizAggStats?.startedCount || 0,
       completedCount: quizAggStats?.completedCount || 0,
     };
   } catch {
-    if (quizAggStats) {
+    if (quizAggStats) { // If file not found but stats exist (should be rare)
         return {
             title: `Quiz ${slug} (Arquivo não encontrado)`,
             slug: slug,
+            description: DEFAULT_QUIZ_DESCRIPTION,
+            dashboardName: `Quiz ${slug} (Arquivo não encontrado)`,
             successIcon: undefined,
             startedCount: quizAggStats.startedCount,
             completedCount: quizAggStats.completedCount,
@@ -465,10 +474,13 @@ export async function resetAllQuizAnalyticsAction(): Promise<{ success: boolean;
     await ensureDirectoryExists(analyticsDirectory);
     const analyticsFiles = await fs.readdir(analyticsDirectory);
     for (const file of analyticsFiles) {
-      if (file.endsWith('_question_stats.json')) {
+      if (file.endsWith('_question_stats.json') || file === 'quiz_stats.json') { // ensure main stats file is also cleared if re-written by saveAggregate
         await fs.unlink(path.join(analyticsDirectory, file));
       }
     }
+     // Re-create the main stats file with empty content
+    await saveAggregateQuizStatsData({});
+
 
     console.log("All quiz statistics (aggregate and per-question) have been reset.");
     await new Promise(resolve => setTimeout(resolve, 300)); 

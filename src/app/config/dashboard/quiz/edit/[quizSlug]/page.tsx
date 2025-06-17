@@ -11,9 +11,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BarChart3, Percent } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BarChart3, Percent, BadgeInfo, FileTextIcon, LinkIcon } from 'lucide-react';
 import { getQuizForEdit, updateQuizAction, type QuizEditData, getQuizAnalyticsBySlug, getQuizQuestionAnalytics } from '@/app/config/dashboard/quiz/actions';
-import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData, QuizQuestionAnalytics, QuestionSpecificAnalytics } from '@/types/quiz';
+import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData, QuizQuestionAnalytics } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
 import { APP_BASE_URL } from '@/config/appConfig';
 import Link from 'next/link';
@@ -29,6 +29,8 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   ssr: false,
   loading: () => <div className="p-4"><QuizFormLoading/></div>,
 });
+
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
 
 const exampleQuestion: QuizQuestion = {
   id: "q_example_edit",
@@ -52,6 +54,8 @@ export default function EditQuizPage() {
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState(quizSlugFromParams);
+  const [description, setDescription] = useState(DEFAULT_QUIZ_DESCRIPTION);
+  const [dashboardName, setDashboardName] = useState('');
   const [questionsJson, setQuestionsJson] = useState('');
   const [interactiveQuestions, setInteractiveQuestions] = useState<QuizQuestion[]>([]);
   const [currentTab, setCurrentTab] = useState<'interactive' | 'json' | 'stats'>('interactive');
@@ -101,6 +105,8 @@ export default function EditQuizPage() {
         setOriginalQuizData(data);
         setTitle(data.title);
         setSlug(data.slug);
+        setDescription(data.description || DEFAULT_QUIZ_DESCRIPTION);
+        setDashboardName(data.dashboardName || data.title);
         setQuestionsJson(data.questionsJson);
         try {
             const parsedForInteractive = JSON.parse(data.questionsJson);
@@ -260,8 +266,7 @@ export default function EditQuizPage() {
         alert("JSON inválido para pré-visualização.");
         return;
       }
-    } else { // currentTab is 'stats'
-        // Use interactiveQuestions for preview from stats tab, or parsed JSON if interactive is empty
+    } else { 
         if (interactiveQuestions.length > 0) {
             questionsForPreview = interactiveQuestions;
         } else {
@@ -317,12 +322,18 @@ export default function EditQuizPage() {
                 return;
             }
         }
-    } else { // 'interactive' or 'stats' tab, use interactiveQuestions
+    } else { 
       parsedQuestions = interactiveQuestions;
     }
 
     try {
-      const result = await updateQuizAction({ title, slug, questions: parsedQuestions });
+      const result = await updateQuizAction({ 
+        title, 
+        slug, 
+        description: description || DEFAULT_QUIZ_DESCRIPTION,
+        dashboardName: dashboardName || title,
+        questions: parsedQuestions 
+      });
       if (result.success) {
         setSuccess(`Quiz "${title}" atualizado com sucesso!`);
         fetchQuizData(); 
@@ -372,7 +383,7 @@ export default function EditQuizPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 className="text-2xl font-semibold md:text-3xl text-foreground">Editar Quiz: {originalQuizData?.title || slug}</h1>
+            <h1 className="text-2xl font-semibold md:text-3xl text-foreground">Editar Quiz: {originalQuizData?.dashboardName || originalQuizData?.title || slug}</h1>
             <p className="text-muted-foreground">Modifique os detalhes, perguntas e veja estatísticas do seu quiz.</p>
         </div>
          <div className="flex flex-wrap gap-2">
@@ -433,13 +444,13 @@ export default function EditQuizPage() {
                   <CardHeader>
                   <CardTitle>Detalhes do Quiz</CardTitle>
                   <CardDescription>
-                      Modifique o título e as perguntas do quiz. O slug não pode ser alterado.
+                      Modifique o título público, slug, descrição pública e nome interno do quiz.
                       A etapa de contato é gerenciada automaticamente.
                   </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                       <div className="space-y-2">
-                      <Label htmlFor="title">Título do Quiz</Label>
+                      <Label htmlFor="title" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público do Quiz</Label>
                       <Input
                           id="title"
                           value={title}
@@ -448,8 +459,33 @@ export default function EditQuizPage() {
                           required
                       />
                       </div>
+                       <div className="space-y-2">
+                        <Label htmlFor="dashboardName" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno (para o Dashboard)</Label>
+                        <Input
+                            id="dashboardName"
+                            value={dashboardName}
+                            onChange={(e) => setDashboardName(e.target.value)}
+                            placeholder="Ex: Quiz Capilar Clientes VIP (opcional)"
+                        />
+                         <p className="text-xs text-muted-foreground">
+                            Este nome aparecerá apenas no seu painel de controle. Se deixado em branco, o título público será usado.
+                        </p>
+                      </div>
                       <div className="space-y-2">
-                      <Label htmlFor="slug">Slug do Quiz (URL)</Label>
+                        <Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição do Quiz (visível ao usuário)</Label>
+                        <Textarea
+                            id="description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Ex: Responda algumas perguntas e descubra o tratamento ideal para você!"
+                            rows={3}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Esta descrição aparecerá abaixo do título na página do quiz.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                      <Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIcon className="h-4 w-4 text-muted-foreground" />Slug do Quiz (URL)</Label>
                       <Input
                           id="slug"
                           value={slug}
@@ -618,12 +654,12 @@ export default function EditQuizPage() {
                     <CardHeader>
                     <CardTitle>Detalhes do Quiz (JSON)</CardTitle>
                     <CardDescription>
-                        Modifique o título. O slug não pode ser alterado.
+                        Modifique o título, descrição e nome interno. O slug não pode ser alterado.
                     </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-2">
-                        <Label htmlFor="title-json">Título do Quiz</Label>
+                        <Label htmlFor="title-json" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público do Quiz</Label>
                         <Input
                             id="title-json"
                             value={title}
@@ -632,8 +668,27 @@ export default function EditQuizPage() {
                             required
                         />
                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="dashboardName-json" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno (Dashboard)</Label>
+                            <Input
+                                id="dashboardName-json"
+                                value={dashboardName}
+                                onChange={(e) => setDashboardName(e.target.value)}
+                                placeholder="Ex: Quiz Capilar Clientes VIP (opcional)"
+                            />
+                        </div>
                         <div className="space-y-2">
-                        <Label htmlFor="slug-json">Slug do Quiz (URL)</Label>
+                            <Label htmlFor="description-json" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição do Quiz</Label>
+                            <Textarea
+                                id="description-json"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Ex: Responda algumas perguntas e descubra o tratamento ideal para você!"
+                                rows={3}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                        <Label htmlFor="slug-json" className="flex items-center gap-1.5"><LinkIcon className="h-4 w-4 text-muted-foreground" />Slug do Quiz (URL)</Label>
                         <Input
                             id="slug-json"
                             value={slug}
@@ -740,12 +795,6 @@ export default function EditQuizPage() {
                                             <div className="space-y-2">
                                                 {quizQ.options.map(optionDef => {
                                                     const count = qStats.options?.[optionDef.value] || 0;
-                                                    const percentage = qStats.totalAnswers > 0 ? (count / qStats.totalAnswers) * 100 : 0;
-                                                    // If multiple checkboxes selected, totalAnswers might be less than sum of option counts.
-                                                    // For checkboxes, percentage can be > 100 if sum of option counts > totalAnswers (people can select multiple)
-                                                    // Let's adjust percentage for checkbox to be based on total responses to that question, where one response can have multiple options.
-                                                    // For a better representation of checkbox selection rate, we might use a different denominator.
-                                                    // For now, (count / totalAnswers for this question) * 100.
                                                     const displayPercentage = qStats.totalAnswers > 0 ? (count / qStats.totalAnswers) * 100 : 0;
 
                                                     return (
@@ -791,6 +840,7 @@ export default function EditQuizPage() {
                 quizQuestions={previewQuizData}
                 quizSlug={slug} 
                 quizTitle={title || originalQuizData?.title || "Pré-visualização"}
+                quizDescription={description || DEFAULT_QUIZ_DESCRIPTION}
                 logoUrl={whitelabelSettings.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
                 footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview. Todos os direitos reservados.`}
                 facebookPixelId="" 
@@ -812,4 +862,3 @@ export default function EditQuizPage() {
     </div>
   );
 }
-

@@ -1,6 +1,9 @@
+
 {
-  "title": "Quiz",
+  "title": "Quiz Padrão Ice Lazer",
   "slug": "default",
+  "dashboardName": "Quiz Padrão (Homepage)",
+  "description": "Descubra o tratamento de depilação a laser ideal para você respondendo a algumas perguntas rápidas. Conheça a tecnologia Ice Lazer e prepare-se para uma pele lisinha!",
   "questions": [
     {
       "id": "q1_default",
