@@ -69,6 +69,7 @@ export async function updateQuizStat(quizSlug: string, statType: 'startedCount' 
   await saveAggregateQuizStatsData(stats);
   revalidatePath('/config/dashboard');
   revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`);
+  revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`);
 }
 
 export async function recordQuizStartedAction(quizSlug: string): Promise<void> {
@@ -141,6 +142,7 @@ export async function recordQuestionAnswerAction(
 
     await saveQuizQuestionAnalyticsData(quizSlug, questionStats);
     revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`); 
+    revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`);
     return { success: true };
   } catch (error) {
     console.error(`Error recording answer for q:${questionId} in quiz:${quizSlug}:`, error);
@@ -255,9 +257,8 @@ export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig 
     const fileContents = await fs.readFile(filePath, 'utf8');
     const quizData = JSON.parse(fileContents) as QuizConfig;
     
-    // Ensure defaults and contact step are present
     quizData.title = quizData.title || "Quiz Interativo";
-    quizData.slug = quizData.slug || slug; // Ensure slug in config matches requested slug
+    quizData.slug = quizData.slug || slug; 
     quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
     quizData.dashboardName = quizData.dashboardName || quizData.title;
 
@@ -321,6 +322,7 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
     revalidatePath(`/${slug}`);
     revalidatePath('/config/dashboard');
     revalidatePath(`/config/dashboard/quiz/edit/${slug}`);
+    revalidatePath(`/config/dashboard/quiz/stats/${slug}`);
     return { success: true, message: `Quiz "${title}" atualizado com sucesso.`, slug };
   } catch (error) {
     console.error("Failed to update quiz file:", error);
@@ -361,7 +363,8 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
       await fs.access(questionStatsFilePath);
       await fs.unlink(questionStatsFilePath);
     } catch (questionStatsError) {
-      if ((questionStatsError as NodeJS.ErrnoException).code !== 'ENOENT') {
+      const nodeError = questionStatsError as NodeJS.ErrnoException;
+      if (nodeError.code !== 'ENOENT') {
         console.warn(`Could not delete question stats file ${questionStatsFilePath}:`, questionStatsError);
       }
     }
@@ -370,6 +373,7 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
     revalidatePath('/config/dashboard'); 
     revalidatePath(`/${slug}`); 
     revalidatePath(`/config/dashboard/quiz/edit/${slug}`); 
+    revalidatePath(`/config/dashboard/quiz/stats/${slug}`);
     
     return { success: true, message: `Quiz "${slug}" e suas estatísticas foram apagados com sucesso.` };
   } catch (error) {
@@ -397,7 +401,6 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
         return { 
           title: quizData.title || `Quiz ${slug}`,
           slug: quizData.slug || slug,
-          // description: quizData.description || DEFAULT_QUIZ_DESCRIPTION, // Description removed from list item
           dashboardName: quizData.dashboardName || quizData.title,
           successIcon: quizData.successIcon,
           startedCount: analytics.startedCount,
@@ -409,7 +412,6 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
         return {
           title: `Erro ao carregar: ${filename}`,
           slug: slug,
-          // description: DEFAULT_QUIZ_DESCRIPTION,
           dashboardName: `Erro: ${filename}`,
           successIcon: undefined, 
           startedCount: analytics.startedCount,
@@ -480,7 +482,7 @@ export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalytic
       completedCount: quizAggStats?.completedCount || 0,
     };
   } catch {
-    if (quizAggStats) { // If file not found but stats exist (should be rare)
+    if (quizAggStats) { 
         return {
             title: `Quiz ${slug} (Arquivo não encontrado)`,
             slug: slug,
@@ -497,28 +499,75 @@ export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalytic
 
 export async function resetAllQuizAnalyticsAction(): Promise<{ success: boolean; message?: string }> {
   try {
+    // Clear aggregate stats
     await saveAggregateQuizStatsData({}); 
     
+    // Delete all per-question stats files
     await ensureDirectoryExists(analyticsDirectory);
     const analyticsFiles = await fs.readdir(analyticsDirectory);
     for (const file of analyticsFiles) {
-      if (file.endsWith('_question_stats.json') || file === 'quiz_stats.json') { // ensure main stats file is also cleared if re-written by saveAggregate
+      if (file.endsWith('_question_stats.json')) { 
         await fs.unlink(path.join(analyticsDirectory, file));
       }
     }
-     // Re-create the main stats file with empty content
+     // Re-create the main stats file with empty content to ensure it exists after clearing.
     await saveAggregateQuizStatsData({});
-
 
     console.log("All quiz statistics (aggregate and per-question) have been reset.");
     await new Promise(resolve => setTimeout(resolve, 300)); 
     revalidatePath('/config/dashboard', 'layout'); 
     return { success: true, message: "Estatísticas de todos os quizzes foram resetadas." };
   } catch (error) {
-    console.error("Error resetting quiz statistics:", error);
+    console.error("Error resetting all quiz statistics:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return { success: false, message: `Failed to reset statistics: ${errorMessage}` };
+    return { success: false, message: `Falha ao resetar estatísticas: ${errorMessage}` };
   }
 }
 
+export async function resetSingleQuizAnalyticsAction(quizSlug: string): Promise<{ success: boolean; message?: string }> {
+  if (!quizSlug) {
+    return { success: false, message: "Slug do quiz é obrigatório para resetar estatísticas." };
+  }
+
+  try {
+    const aggStats = await getAggregateQuizStatsData();
+    if (aggStats[quizSlug]) {
+      aggStats[quizSlug].startedCount = 0;
+      aggStats[quizSlug].completedCount = 0;
+      await saveAggregateQuizStatsData(aggStats);
+    } else {
+      // If quiz not in aggregate, ensure it's added with 0 counts
+      aggStats[quizSlug] = { startedCount: 0, completedCount: 0 };
+      await saveAggregateQuizStatsData(aggStats);
+    }
+
+    const questionStatsFilePath = getQuestionStatsFilePath(quizSlug);
+    try {
+      // Attempt to delete, if fails (e.g. not found), ensure a clean empty file
+      await fs.unlink(questionStatsFilePath);
+    } catch (unlinkError) {
+      const nodeError = unlinkError as NodeJS.ErrnoException;
+      if (nodeError.code !== 'ENOENT') {
+        console.warn(`Could not delete question stats file ${questionStatsFilePath} during reset, will attempt to clear:`, unlinkError);
+      }
+    }
+    // Ensure the file exists as an empty JSON object after attempting deletion or if it didn't exist
+    await ensureDirectoryExists(path.dirname(questionStatsFilePath));
+    await fs.writeFile(questionStatsFilePath, JSON.stringify({}, null, 2), 'utf8');
+
+
+    console.log(`Statistics for quiz "${quizSlug}" have been reset.`);
+
+    revalidatePath('/config/dashboard', 'layout');
+    revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`, 'page');
+    revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`, 'page');
+    revalidatePath(`/${quizSlug}`);
+
+    return { success: true, message: `Estatísticas do quiz "${quizSlug}" foram resetadas com sucesso.` };
+  } catch (error) {
+    console.error(`Error resetting statistics for quiz "${quizSlug}":`, error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    return { success: false, message: `Falha ao resetar estatísticas do quiz: ${errorMessage}` };
+  }
+}
     
