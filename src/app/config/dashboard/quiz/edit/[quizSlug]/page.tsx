@@ -58,7 +58,7 @@ export default function EditQuizPage() {
   const [dashboardName, setDashboardName] = useState('');
   const [questionsJson, setQuestionsJson] = useState('');
   const [interactiveQuestions, setInteractiveQuestions] = useState<QuizQuestion[]>([]);
-  const [currentTab, setCurrentTab] = useState<'interactive' | 'json' | 'stats'>('interactive');
+  const [currentTab, setCurrentTab] = useState<'interactive' | 'json' | 'stats'>('stats');
   const [originalQuizData, setOriginalQuizData] = useState<QuizEditData | null>(null);
   const [quizAggregatedAnalytics, setQuizAggregatedAnalytics] = useState<QuizAnalyticsData | null>(null);
   const [quizQuestionLevelAnalytics, setQuizQuestionLevelAnalytics] = useState<QuizQuestionAnalytics | null>(null);
