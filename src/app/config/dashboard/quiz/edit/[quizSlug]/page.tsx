@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BarChart3, Percent, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react'; // Renamed Link from lucide-react
+import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BarChart3, Percent, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react';
 import { getQuizForEdit, updateQuizAction, type QuizEditData, getQuizAnalyticsBySlug, getQuizQuestionAnalytics } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData, QuizQuestionAnalytics } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
@@ -72,12 +72,15 @@ export default function EditQuizPage() {
   const [previewQuizData, setPreviewQuizData] = useState<QuizQuestion[] | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [whitelabelSettings, setWhitelabelSettings] = useState<Partial<WhitelabelConfig>>({});
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
 
   useEffect(() => {
     async function fetchPreviewConfig() {
+      setIsLoadingPreview(true);
       const config = await fetchWhitelabelSettings();
       setWhitelabelSettings(config);
+      setIsLoadingPreview(false);
     }
     fetchPreviewConfig();
   }, []);
@@ -252,6 +255,8 @@ export default function EditQuizPage() {
   };
 
   const handleOpenPreview = () => {
+    setIsLoadingPreview(true);
+    setIsPreviewModalOpen(true);
     let questionsForPreview: QuizQuestion[];
     if (currentTab === 'interactive') {
       questionsForPreview = interactiveQuestions;
@@ -260,10 +265,12 @@ export default function EditQuizPage() {
         questionsForPreview = questionsJson.trim() ? JSON.parse(questionsJson) : [];
          if (!Array.isArray(questionsForPreview)) {
           alert("JSON inválido para pré-visualização.");
+          setIsLoadingPreview(false);
           return;
         }
       } catch (e) {
         alert("JSON inválido para pré-visualização.");
+        setIsLoadingPreview(false);
         return;
       }
     } else { 
@@ -274,21 +281,24 @@ export default function EditQuizPage() {
                 questionsForPreview = questionsJson.trim() ? JSON.parse(questionsJson) : [];
                 if (!Array.isArray(questionsForPreview)) {
                     alert("JSON de perguntas (da aba JSON) inválido para pré-visualização.");
+                    setIsLoadingPreview(false);
                     return;
                 }
             } catch (e) {
                  alert("JSON de perguntas (da aba JSON) inválido para pré-visualização.");
+                 setIsLoadingPreview(false);
                 return;
             }
         }
     }
     setPreviewQuizData([...questionsForPreview, defaultContactStep]);
-    setIsPreviewModalOpen(true);
+    setIsLoadingPreview(false);
   };
   
   const mockSubmitOverride = async (data: Record<string, any>) => {
     console.log("Preview Submit:", data);
     alert("Submissão simulada! Verifique o console para os dados.");
+    setIsPreviewModalOpen(false);
   };
 
 
@@ -829,13 +839,20 @@ export default function EditQuizPage() {
           </TabsContent>
       </Tabs>
 
-      <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
-        <DialogContent className="max-w-2xl w-[95vw] h-[90vh] flex flex-col p-0">
-          <DialogHeader className="p-4 border-b">
-            <DialogTitle>Pré-visualização do Quiz: {title || originalQuizData?.title || "Quiz"}</DialogTitle>
+      <Dialog open={isPreviewModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          setPreviewQuizData(null); 
+        }
+        setIsPreviewModalOpen(open);
+      }}>
+        <DialogContent className="max-w-2xl w-[95vw] h-[90vh] flex flex-col p-0 bg-transparent border-0 shadow-none">
+          <DialogHeader className="p-4 border-b bg-card rounded-t-lg">
+            <DialogTitle>Pré-visualização: {isLoadingPreview ? "Carregando..." : title || originalQuizData?.title || "Quiz"}</DialogTitle>
           </DialogHeader>
            <div className="flex-grow overflow-y-auto bg-background"> 
-            {previewQuizData ? (
+            {isLoadingPreview ? (
+                <div className="flex items-center justify-center h-full"><QuizFormLoading/></div>
+            ) : previewQuizData && whitelabelSettings ? (
               <QuizForm
                 quizQuestions={previewQuizData}
                 quizSlug={slug} 
@@ -849,9 +866,9 @@ export default function EditQuizPage() {
                 onAbandonmentOverride={async () => { console.log("Preview abandonment") }}
                 isPreview={true}
               />
-            ) : <div className="p-4"><QuizFormLoading /></div>}
+            ) : <div className="p-4 text-center text-muted-foreground">Não foi possível carregar a pré-visualização do quiz.</div>}
           </div>
-          <DialogFooter className="p-4 border-t">
+          <DialogFooter className="p-4 border-t bg-card rounded-b-lg">
             <DialogClose asChild>
               <Button variant="outline">Fechar Pré-visualização</Button>
             </DialogClose>

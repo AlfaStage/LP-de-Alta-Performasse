@@ -5,8 +5,9 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Code, Terminal, Key, Info, Database, ListChecks, BookText, RefreshCw, Loader2, ShieldAlert } from "lucide-react";
-import { fetchWhitelabelSettings, generateApiStatsTokenAction } from '../actions'; 
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Code, Terminal, Key, Info, Database, ListChecks, BookText, RefreshCw, Loader2, ShieldAlert, Trash2 } from "lucide-react";
+import { fetchWhitelabelSettings, generateApiStatsTokenAction, deleteApiStatsTokenAction } from '../actions'; 
 import type { WhitelabelConfig } from '@/types/quiz';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,6 +17,8 @@ export default function DocumentationPage() {
   const [apiToken, setApiToken] = useState<string | null | undefined>(undefined); 
   const [isLoadingToken, setIsLoadingToken] = useState(false);
   const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const [isDeletingToken, setIsDeletingToken] = useState(false);
+  const [showDeleteTokenDialog, setShowDeleteTokenDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,6 +70,37 @@ export default function DocumentationPage() {
       setIsGeneratingToken(false);
     }
   };
+
+  const handleDeleteToken = async () => {
+    setIsDeletingToken(true);
+    try {
+      const result = await deleteApiStatsTokenAction();
+      if (result.success) {
+        setApiToken(null); // Clear the token in UI
+        toast({
+          title: "Token Excluído!",
+          description: result.message || "Token da API foi excluído com sucesso.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Erro ao Excluir Token",
+          description: result.message || "Não foi possível excluir o token.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro Inesperado",
+        description: "Ocorreu um erro ao tentar excluir o token.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingToken(false);
+      setShowDeleteTokenDialog(false);
+    }
+  };
+
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'SUA_APP_BASE_URL';
   const exampleCurlCall = apiToken 
@@ -176,7 +210,7 @@ curl -X GET \\
                 <h3 className="font-medium text-lg flex items-center gap-2"><Key className="h-4 w-4 text-muted-foreground"/>Autenticação e Token de Acesso:</h3>
                 <p className="text-muted-foreground">
                   A API requer um token de acesso Bearer no cabeçalho de autorização.
-                  Você pode gerar ou visualizar seu token abaixo.
+                  Você pode gerar, visualizar ou excluir seu token abaixo.
                 </p>
                 
                 {isLoadingToken && (
@@ -195,24 +229,58 @@ curl -X GET \\
                   </Alert>
                 )}
                  {!isLoadingToken && !apiToken && (
-                  <Alert variant="destructive" className="mt-2">
-                      <ShieldAlert className="h-5 w-5"/>
-                      <AlertTitle>Nenhum Token de API Configurado</AlertTitle>
-                      <AlertDescription>
-                          Nenhum token de acesso à API de estatísticas foi gerado ainda. Clique no botão abaixo para gerar um.
+                  <Alert variant="default" className="mt-2">
+                      <ShieldAlert className="h-5 w-5 text-amber-600"/>
+                      <AlertTitle className="text-amber-700">Nenhum Token de API Configurado</AlertTitle>
+                      <AlertDescription className="text-amber-600">
+                          Nenhum token de acesso à API de estatísticas foi gerado ou configurado. Clique no botão abaixo para gerar um, ou configure um manualmente se necessário.
                       </AlertDescription>
                   </Alert>
                 )}
 
-                <Button 
-                  onClick={handleGenerateToken} 
-                  disabled={isGeneratingToken || isLoadingToken}
-                  variant="outline"
-                  className="mt-3"
-                >
-                  {isGeneratingToken ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  {isGeneratingToken ? "Gerando..." : (apiToken ? "Gerar Novo Token" : "Gerar Token de API")}
-                </Button>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Button 
+                    onClick={handleGenerateToken} 
+                    disabled={isGeneratingToken || isLoadingToken}
+                    variant="outline"
+                  >
+                    {isGeneratingToken ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    {isGeneratingToken ? "Gerando..." : (apiToken ? "Gerar Novo Token" : "Gerar Token de API")}
+                  </Button>
+                  <AlertDialog open={showDeleteTokenDialog} onOpenChange={setShowDeleteTokenDialog}>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        disabled={!apiToken || isLoadingToken || isDeletingToken}
+                        onClick={() => setShowDeleteTokenDialog(true)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir Chave API
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2"><ShieldAlert className="h-6 w-6 text-destructive" />Confirmar Exclusão do Token</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Você tem certeza que deseja excluir o token de acesso da API? 
+                          Qualquer integração usando o token atual deixará de funcionar. 
+                          Você poderá gerar um novo token a qualquer momento.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeletingToken}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteToken}
+                          disabled={isDeletingToken}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          {isDeletingToken ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          Sim, Excluir Token
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
 
               <div>
@@ -238,3 +306,4 @@ curl -X GET \\
     </div>
   );
 }
+

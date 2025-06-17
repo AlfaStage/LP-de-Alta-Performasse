@@ -233,7 +233,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 className="font-display text-3xl font-bold text-sky-600">LP de Alta Performasse</h1>
+            <span className="font-display text-3xl font-bold text-sky-600">LP de Alta Performasse</span>
             <p className="text-muted-foreground">Gerencie seus quizzes e acompanhe o desempenho.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -491,16 +491,16 @@ export default function DashboardPage() {
 
       <Dialog open={isPreviewModalOpen} onOpenChange={(open) => {
         if (!open) {
-          setPreviewQuizConfig(null); // Clear data when closing
+          setPreviewQuizConfig(null); 
           setWhitelabelSettingsForPreview(null);
         }
         setIsPreviewModalOpen(open);
       }}>
-        <DialogContent className="max-w-2xl w-[95vw] h-[90vh] flex flex-col p-0">
-          <DialogHeader className="p-4 border-b">
+        <DialogContent className="max-w-2xl w-[95vw] h-[90vh] flex flex-col p-0 bg-transparent border-0 shadow-none">
+          <DialogHeader className="p-4 border-b bg-card rounded-t-lg">
             <DialogTitle>Pré-visualização: {isLoadingPreview ? "Carregando..." : previewQuizConfig?.title || 'Quiz'}</DialogTitle>
           </DialogHeader>
-          <div className="flex-grow overflow-y-auto bg-background">
+          <div className="flex-grow overflow-y-auto bg-background"> {/* Use background here for scroll area */}
             {isLoadingPreview ? (
               <div className="flex items-center justify-center h-full"><QuizFormLoading/></div>
             ) : previewQuizConfig && whitelabelSettingsForPreview ? (
@@ -528,9 +528,9 @@ export default function DashboardPage() {
               <div className="p-4 text-center text-muted-foreground">Não foi possível carregar a pré-visualização do quiz.</div>
             )}
           </div>
-          <DialogFooter className="p-4 border-t">
+          <DialogFooter className="p-4 border-t bg-card rounded-b-lg">
             <DialogClose asChild>
-              <Button variant="outline">Fechar</Button>
+              <Button variant="outline">Fechar Pré-visualização</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
