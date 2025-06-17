@@ -11,13 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getSuccessIcon } from '@/config/quizConfig'; 
+import { getSuccessIcon } from '@/config/quizConfig';
 import QuizProgressBar from './QuizProgressBar';
 import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent, getActivePixelIds } from '@/lib/fpixel';
 import { event as gaEvent } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
 import { recordQuizStartedAction, recordQuestionAnswerAction } from '@/app/config/dashboard/quiz/actions';
-import * as LucideIcons from 'lucide-react'; 
+import * as LucideIcons from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
@@ -36,10 +36,10 @@ interface QuizFormProps {
   quizTitle?: string;
   quizDescription?: string;
   logoUrl: string;
-  facebookPixelId?: string; 
+  facebookPixelId?: string;
   facebookPixelIdSecondary?: string;
-  googleAnalyticsId?: string; 
-  clientAbandonmentWebhookUrl?: string; 
+  googleAnalyticsId?: string;
+  clientAbandonmentWebhookUrl?: string;
   footerCopyrightText?: string;
   onSubmitOverride?: (data: FormData) => Promise<void>;
   onAbandonmentOverride?: (data: FormData, quizSlug?: string) => Promise<void>;
@@ -54,10 +54,10 @@ const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
 const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
 
 
-export default function QuizForm({ 
-  quizQuestions, 
-  quizSlug, 
-  quizTitle = "Quiz", 
+export default function QuizForm({
+  quizQuestions,
+  quizSlug,
+  quizTitle = "Quiz",
   quizDescription = DEFAULT_QUIZ_DESCRIPTION,
   logoUrl,
   facebookPixelId,
@@ -89,7 +89,7 @@ export default function QuizForm({
     if (!quizQuestions) return [];
     return quizQuestions.filter(q => !q.condition || q.condition(formData));
   }, [formData, quizQuestions]);
-  
+
   const currentQuestion = activeQuestions[currentStep];
 
   const configuredFbPixelIds = useMemo(() => getActivePixelIds(facebookPixelId, facebookPixelIdSecondary), [facebookPixelId, facebookPixelIdSecondary]);
@@ -100,9 +100,9 @@ export default function QuizForm({
   useEffect(() => {
     if (!quizQuestions || quizQuestions.length === 0 || isPreview) return;
     const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
-    
+
     recordQuizStartedAction(quizSlug).catch(err => console.error("Failed to record quiz started:", err));
-    
+
     if (isFbPixelConfigured) {
       console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking, "Pixels:", configuredFbPixelIds);
       fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking }, configuredFbPixelIds);
@@ -112,11 +112,14 @@ export default function QuizForm({
         gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview]); 
+  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (isPreview || !isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
+      if (isPreview) { // Skip all abandonment logic in preview
+        return;
+      }
+      if (!isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
         const clientInfo = {
           userAgent: navigator.userAgent,
           language: navigator.language,
@@ -125,19 +128,19 @@ export default function QuizForm({
           windowWidth: window.innerWidth,
           windowHeight: window.innerHeight,
         };
-        const dataToLog = { 
-          ...getValues(), 
-          abandonedAtStep: currentQuestion?.id || currentStep, 
-          quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}`, 
+        const dataToLog = {
+          ...getValues(),
+          abandonedAtStep: currentQuestion?.id || currentStep,
+          quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}`,
           quizSlug,
           clientInfo,
           abandonedAt: new Date().toISOString()
         };
-        
+
         if (onAbandonmentOverride) {
           onAbandonmentOverride(dataToLog, quizSlug);
         } else {
-            const webhookUrl = clientAbandonmentWebhookUrl; 
+            const webhookUrl = clientAbandonmentWebhookUrl;
             if (webhookUrl && webhookUrl !== "YOUR_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL") {
               if (navigator.sendBeacon) {
                 try {
@@ -241,7 +244,7 @@ export default function QuizForm({
   };
 
   const handleValueChange = (name: string, value: any) => {
-    setValue(name, value, { shouldValidate: true }); 
+    setValue(name, value, { shouldValidate: true });
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) clearErrors(name);
   };
@@ -260,15 +263,15 @@ export default function QuizForm({
       windowWidth: window.innerWidth,
       windowHeight: window.innerHeight,
     };
-    
-    const finalData = { 
-      ...formData, 
-      ...data, 
-      quizSlug, 
-      quizTitle, 
-      clientInfo, 
-      submittedAt: new Date().toISOString() 
-    }; 
+
+    const finalData = {
+      ...formData,
+      ...data,
+      quizSlug,
+      quizTitle,
+      clientInfo,
+      submittedAt: new Date().toISOString()
+    };
 
     if (!isPreview && currentQuestion && currentQuestion.id === activeQuestions[activeQuestions.length -1].id) {
         const lastAnswerValue = currentQuestion.fields ? getValues(currentQuestion.fields.map(f => f.name)) : getValues(currentQuestion.name);
@@ -278,15 +281,15 @@ export default function QuizForm({
 
     if (isPreview && onSubmitOverride) {
         await onSubmitOverride(finalData);
-        setSubmissionStatus('success'); 
-        setIsQuizCompleted(true); 
+        setSubmissionStatus('success');
+        setIsQuizCompleted(true);
         return;
     }
-    
+
     if (isPreview && !onSubmitOverride) {
         console.log("Preview mode: onSubmit called but no override provided.", finalData);
         toast({title: "Pré-visualização", description: "Submissão simulada. Nenhum dado enviado."})
-        setSubmissionStatus('success'); 
+        setSubmissionStatus('success');
         setIsQuizCompleted(true);
         return;
     }
@@ -298,27 +301,27 @@ export default function QuizForm({
         if (result.status === 'success') {
             setIsQuizCompleted(true);
             setSubmissionStatus('success');
-            
+
             const leadDataFb = {
                 content_name: `${quizNameForTracking}_Submission`,
-                value: 50.00, 
-                currency: 'BRL', 
+                value: 50.00,
+                currency: 'BRL',
                 lead_name: finalData.nomeCompleto,
                 lead_whatsapp: finalData.whatsapp
             };
             const quizCompleteDataFb = { quiz_name: quizNameForTracking, ...finalData };
-            
+
             const leadDataGa = {
                 category: 'Quiz',
                 label: `${quizNameForTracking}_Lead`,
-                value: 50, 
+                value: 50,
                 lead_name: finalData.nomeCompleto,
             };
             const quizCompleteDataGa = {
                 category: 'Quiz',
                 label: `${quizNameForTracking}_Complete`,
                 quiz_name: quizNameForTracking,
-                 ...finalData 
+                 ...finalData
             };
 
             if (isFbPixelConfigured) {
@@ -335,7 +338,7 @@ export default function QuizForm({
             }
 
         } else if (result.status === 'invalid_number') {
-            setSubmissionStatus('idle'); 
+            setSubmissionStatus('idle');
             setFormError('whatsapp', {
                 type: 'manual',
                 message: result.message || "O número de WhatsApp informado parece ser inválido. Por favor, corrija e tente novamente."
@@ -345,7 +348,7 @@ export default function QuizForm({
                 description: result.message || "Por favor, verifique o número de WhatsApp e tente enviar novamente.",
                 variant: "destructive",
             });
-        } else { 
+        } else {
             setSubmissionStatus('error');
             toast({
                 title: "Erro ao Enviar Respostas",
@@ -364,13 +367,13 @@ export default function QuizForm({
         console.error("Client-side error during onSubmit:", error);
     }
   };
-  
+
   const getIconComponent = useCallback((iconName?: keyof typeof IconComponents): React.ElementType | undefined => {
     if (!iconName || typeof iconName !== 'string' || !IconComponents[iconName]) return undefined;
     return IconComponents[iconName];
   }, []);
-  
-  const loadingJsx = ( 
+
+  const loadingJsx = (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
       <Alert className="bg-card text-card-foreground">
         {IconComponents.Info && <IconComponents.Info className="h-4 w-4" />}
@@ -385,7 +388,7 @@ export default function QuizForm({
   if ((!quizQuestions || quizQuestions.length === 0) && !isQuizCompleted) {
     return loadingJsx;
   }
-  
+
   if (!currentQuestion && !isQuizCompleted && quizQuestions && quizQuestions.length > 0) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
@@ -409,14 +412,14 @@ export default function QuizForm({
         <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center bg-card text-card-foreground">
           <CardHeader className="p-6 bg-card">
             <div className="flex items-center justify-center space-x-3">
-                <Image 
+                <Image
                   src={logoUrl}
-                  alt="Logo da Empresa" 
-                  data-ai-hint="company logo" 
-                  width={150} 
-                  height={50} 
-                  className="h-auto w-28 md:w-36" 
-                  priority={true} 
+                  alt="Logo da Empresa"
+                  data-ai-hint="company logo"
+                  width={150}
+                  height={50}
+                  className="object-contain max-h-[50px]" // Ensure it fits within 50px height, width adjusts
+                  priority={true}
                 />
             </div>
             <CardTitle className="text-3xl mt-4 text-primary">{quizTitle}</CardTitle>
@@ -457,14 +460,14 @@ export default function QuizForm({
         <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8 bg-card text-card-foreground`}>
           <CardHeader className="p-6 bg-card">
              <div className="flex items-center space-x-3">
-                <Image 
+                <Image
                   src={logoUrl}
                   alt="Logo da Empresa"
-                  data-ai-hint="company logo" 
-                  width={150} 
+                  data-ai-hint="company logo"
+                  width={150}
                   height={50}
-                  className="h-auto w-28 md:w-36"
-                  priority={true} 
+                  className="object-contain max-h-[50px]" // Ensure it fits within 50px height, width adjusts
+                  priority={true}
                 />
                 <div>
                     <CardTitle className="text-3xl font-headline text-primary">{quizTitle}</CardTitle>
@@ -505,8 +508,8 @@ export default function QuizForm({
                           {currentQuestion.options!.map(option => {
                             const OptionIconComponent = getIconComponent(option.icon);
                             return (
-                            <div 
-                              key={option.value} 
+                            <div
+                              key={option.value}
                               className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80"
                             >
                               {OptionIconComponent && <OptionIconComponent className="h-5 w-5 text-muted-foreground group-has-[:checked]:text-primary" />}
@@ -579,7 +582,7 @@ export default function QuizForm({
                         return (
                         <div key={f.name} className="space-y-1">
                            <Label htmlFor={f.name} className="font-medium flex items-center text-card-foreground">
-                             {FieldIconComponent && <FieldIconComponent className="h-4 w-4 mr-2 text-primary" />} 
+                             {FieldIconComponent && <FieldIconComponent className="h-4 w-4 mr-2 text-primary" />}
                              {f.label}
                           </Label>
                           <Controller
@@ -587,12 +590,12 @@ export default function QuizForm({
                             control={control}
                             defaultValue=""
                             render={({ field: controllerField }) => (
-                              <Input 
-                                {...controllerField} 
-                                id={f.name} 
-                                type={f.type} 
-                                placeholder={f.placeholder} 
-                                onChange={(e) => handleValueChange(f.name, e.target.value)} 
+                              <Input
+                                {...controllerField}
+                                id={f.name}
+                                type={f.type}
+                                placeholder={f.placeholder}
+                                onChange={(e) => handleValueChange(f.name, e.target.value)}
                                 className="bg-muted/30 border-input focus:border-primary focus:ring-primary text-card-foreground placeholder:text-muted-foreground"
                               />
                             )}
@@ -613,13 +616,13 @@ export default function QuizForm({
                 <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0 || submissionStatus === 'pending'} className="px-6 py-3 text-base">
                     {IconComponents.ChevronLeft && <IconComponents.ChevronLeft className="mr-2 h-5 w-5" />} Voltar
                 </Button>
-                <Button 
-                    onClick={handleNext} 
-                    className="px-6 py-3 text-base" 
+                <Button
+                    onClick={handleNext}
+                    className="px-6 py-3 text-base"
                     disabled={
                         submissionStatus === 'pending' ||
                         (currentQuestion.type !== 'textFields' && (!getValues(currentQuestion.name) || (Array.isArray(getValues(currentQuestion.name)) && getValues(currentQuestion.name).length === 0))) ||
-                        (currentQuestion.type === 'textFields' && !formIsValid && Object.keys(errors).length > 0) 
+                        (currentQuestion.type === 'textFields' && !formIsValid && Object.keys(errors).length > 0)
                     }
                 >
                     {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
