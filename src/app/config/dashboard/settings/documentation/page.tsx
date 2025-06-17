@@ -6,14 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Code, Terminal, Key, Info, Database, ListChecks, BookText, RefreshCw, Loader2, ShieldAlert } from "lucide-react";
-import { fetchWhitelabelSettings, generateApiStatsTokenAction } from '../actions'; // Actions from the same directory
+import { fetchWhitelabelSettings, generateApiStatsTokenAction } from '../actions'; 
 import type { WhitelabelConfig } from '@/types/quiz';
 import { useToast } from '@/hooks/use-toast';
 
 const codeBlockClass = "block whitespace-pre-wrap bg-muted/50 p-4 rounded-md text-sm font-mono overflow-x-auto";
 
 export default function DocumentationPage() {
-  const [apiToken, setApiToken] = useState<string | null | undefined>(undefined); // undefined for loading state
+  const [apiToken, setApiToken] = useState<string | null | undefined>(undefined); 
   const [isLoadingToken, setIsLoadingToken] = useState(false);
   const [isGeneratingToken, setIsGeneratingToken] = useState(false);
   const { toast } = useToast();
@@ -23,7 +23,7 @@ export default function DocumentationPage() {
       setIsLoadingToken(true);
       try {
         const settings = await fetchWhitelabelSettings();
-        setApiToken(settings.apiStatsAccessToken || null); // Set to null if empty string or undefined
+        setApiToken(settings.apiStatsAccessToken || null); 
       } catch (error) {
         console.error("Failed to fetch API token:", error);
         toast({
@@ -213,15 +213,7 @@ curl -X GET \\
                   {isGeneratingToken ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                   {isGeneratingToken ? "Gerando..." : (apiToken ? "Gerar Novo Token" : "Gerar Token de API")}
                 </Button>
-                 <Alert variant="destructive" className="mt-3">
-                    <ShieldAlert className="h-4 w-4" />
-                    <AlertTitle>Atenção sobre Segurança do Token</AlertTitle>
-                    <AlertDescription>
-                        Este token de API é armazenado no arquivo <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">src/data/whitelabel-config.json</code>. 
-                        Se este arquivo for incluído no seu controle de versão (Git), o token também será. 
-                        Para ambientes de produção, considere mecanismos de armazenamento de segredos mais robustos e certifique-se de que este arquivo (ou o diretório `src/data`) não seja versionado se contiver dados sensíveis.
-                    </AlertDescription>
-                </Alert>
+                 {/* Removido o Alert sobre segurança do token em whitelabel-config.json */}
               </div>
 
               <div>
@@ -254,4 +246,3 @@ curl -X GET \\
     </div>
   );
 }
-

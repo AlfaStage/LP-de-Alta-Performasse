@@ -17,12 +17,8 @@ export const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || "app-auth-token"
 export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_BASE_URL || "http://localhost:9002";
 
 // Validações importantes (mantidas para auth settings)
-if (process.env.NODE_ENV === 'production' && AUTH_COOKIE_SECRET === "your-super-secret-auth-cookie-secret-key-must-be-at-least-32-characters") {
-  console.warn("CRITICAL SECURITY WARNING: AUTH_COOKIE_SECRET is not set to a secure, unique value in production!");
-}
-if (AUTH_COOKIE_SECRET.length < 32) {
-    console.warn("SECURITY WARNING: AUTH_COOKIE_SECRET should be at least 32 characters long for security.");
-}
+// Removidos os console.warn para a senha e segredo do cookie.
+// É responsabilidade do desenvolvedor configurar isso corretamente em produção.
 
 // API_STATS_ACCESS_TOKEN foi movido para whitelabel-config.json
 // e é gerenciado pela UI na página de documentação.

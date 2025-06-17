@@ -15,9 +15,9 @@ interface DashboardShellProps {
 
 const navItems = [
   { href: "/config/dashboard", label: "Quizzes (Início)", icon: Home, exactMatch: true },
-  { href: "/config/dashboard/quiz/create", label: "Criar Novo Quiz", icon: ListPlus },
-  { href: "/config/dashboard/settings", label: "Configurações App", icon: Settings2 },
-  { href: "/config/dashboard/settings/documentation", label: "Documentação API", icon: BookText },
+  { href: "/config/dashboard/quiz/create", label: "Criar Novo Quiz", icon: ListPlus, exactMatch: true }, // Ensure exact match for create
+  { href: "/config/dashboard/settings", label: "Configurações App", icon: Settings2, exactMatch: true }, // Changed to exactMatch: true
+  { href: "/config/dashboard/settings/documentation", label: "Documentação API", icon: BookText, exactMatch: true }, // Ensure exact match
 ];
 
 export default function DashboardShell({ children, logoutAction }: DashboardShellProps) {
@@ -30,7 +30,7 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
   
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   useEffect(() => {
-    setIsMobileSheetOpen(false); // Close mobile sheet on route change
+    setIsMobileSheetOpen(false); 
   }, [pathname]);
 
 
@@ -38,7 +38,9 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
     if (exactMatch) {
       return pathname === href;
     }
-    return pathname.startsWith(href);
+    // For non-exact matches, ensure it's a true parent and not just a prefix of a sibling
+    // This logic might need refinement if more complex nested routes are added that require parent highlighting
+    return pathname.startsWith(href) && (pathname === href || pathname.startsWith(`${href}/`));
   };
 
   return (
@@ -136,7 +138,7 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
                   <Link
                     key={item.label}
                     href={item.href}
-                    onClick={() => setIsMobileSheetOpen(false)} // Close sheet on click
+                    onClick={() => setIsMobileSheetOpen(false)} 
                     className={`flex items-center gap-4 rounded-lg px-3.5 py-3 transition-all duration-200 ease-in-out group
                                 ${isActive(item.href, item.exactMatch) 
                                     ? 'bg-primary/15 text-primary font-semibold' 
