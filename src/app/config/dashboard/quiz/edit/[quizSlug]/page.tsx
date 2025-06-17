@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BarChart3, Percent, BadgeInfo, FileTextIcon, LinkIcon } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BarChart3, Percent, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react'; // Renamed Link from lucide-react
 import { getQuizForEdit, updateQuizAction, type QuizEditData, getQuizAnalyticsBySlug, getQuizQuestionAnalytics } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData, QuizQuestionAnalytics } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
@@ -485,7 +485,7 @@ export default function EditQuizPage() {
                         </p>
                       </div>
                       <div className="space-y-2">
-                      <Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIcon className="h-4 w-4 text-muted-foreground" />Slug do Quiz (URL)</Label>
+                      <Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug do Quiz (URL)</Label>
                       <Input
                           id="slug"
                           value={slug}
@@ -688,7 +688,7 @@ export default function EditQuizPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                        <Label htmlFor="slug-json" className="flex items-center gap-1.5"><LinkIcon className="h-4 w-4 text-muted-foreground" />Slug do Quiz (URL)</Label>
+                        <Label htmlFor="slug-json" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug do Quiz (URL)</Label>
                         <Input
                             id="slug-json"
                             value={slug}
@@ -862,3 +862,5 @@ export default function EditQuizPage() {
     </div>
   );
 }
+
+    
