@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Home, ListPlus, Settings2, LogOut, Briefcase, ChevronDown, UserCircle } from "lucide-react";
+import { Menu, Home, ListPlus, Settings2, LogOut, UserCircle } from "lucide-react";
 import { logoutAction } from "../actions";
 import Image from "next/image";
 import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
@@ -34,17 +34,18 @@ export default async function DashboardLayout({
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[260px_1fr] lg:grid-cols-[280px_1fr] bg-background">
-      {/* Desktop Sidebar */}
-      <div className="hidden border-r bg-card md:flex flex-col shadow-sm">
+      {/* Desktop Sidebar - Fixed */}
+      <div className="hidden border-r bg-card md:flex flex-col shadow-sm sticky top-0 h-screen">
         <div className="flex h-20 items-center border-b px-6 shrink-0">
-          <Link href="/config/dashboard" className="flex items-center gap-3">
+          <Link href="/config/dashboard" className="flex items-center gap-3" aria-label="Página Inicial do Dashboard">
             <Image 
                 src={logoUrlToUse} 
                 alt="Logo" 
-                width={140} 
-                height={35} 
+                width={150} 
+                height={40} 
                 className="h-auto object-contain" 
                 data-ai-hint="company logo"
+                priority
             />
           </Link>
         </div>
@@ -71,8 +72,8 @@ export default async function DashboardLayout({
         </div>
       </div>
 
-      {/* Mobile Header & Main Content */}
-      <div className="flex flex-col">
+      {/* Mobile Header & Main Content Area */}
+      <div className="flex flex-col overflow-y-auto"> {/* This column will handle its own scroll */}
         <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30 shadow-sm md:shadow-none">
           {/* Mobile Menu Trigger */}
           <Sheet>
@@ -81,21 +82,22 @@ export default async function DashboardLayout({
                 variant="outline"
                 size="icon"
                 className="shrink-0 md:hidden border-muted-foreground/30"
+                aria-label="Abrir menu de navegação"
               >
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Abrir menu de navegação</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col bg-card p-0 w-[280px] shadow-xl">
               <div className="flex h-20 items-center border-b px-6">
-                <Link href="/config/dashboard" className="flex items-center gap-3">
+                <Link href="/config/dashboard" className="flex items-center gap-3" aria-label="Página Inicial do Dashboard">
                    <Image 
                     src={logoUrlToUse} 
                     alt="Logo" 
-                    width={140} 
-                    height={35} 
+                    width={150} 
+                    height={40} 
                     className="h-auto object-contain"
                     data-ai-hint="company logo"
+                    priority
                    />
                 </Link>
               </div>
@@ -121,19 +123,17 @@ export default async function DashboardLayout({
             </SheetContent>
           </Sheet>
           
-          {/* Header Title for Mobile / Breadcrumb Area for Desktop */}
           <div className="w-full flex-1">
             <h1 className="text-xl font-semibold text-foreground md:hidden">Dashboard</h1>
-            {/* Desktop can have breadcrumbs or page title here if needed */}
+            {/* Desktop can have breadcrumbs or page title here from children if needed */}
           </div>
 
-          {/* User Menu / Profile (Placeholder) */}
-          <Button variant="ghost" size="icon" className="rounded-full md:hidden">
+          {/* User Menu / Profile (Placeholder for Mobile) */}
+          <Button variant="ghost" size="icon" className="rounded-full md:hidden" aria-label="Menu do usuário">
             <UserCircle className="h-6 w-6 text-muted-foreground" />
-            <span className="sr-only">Usuário</span>
           </Button>
         </header>
-        <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8 bg-background overflow-auto">
+        <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 lg:p-8 bg-background">
           {children}
         </main>
       </div>
