@@ -16,12 +16,12 @@ import QuizProgressBar from './QuizProgressBar';
 import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent, getActivePixelIds } from '@/lib/fpixel';
 import { event as gaEvent } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
-import { recordQuizStartedAction } from '@/app/config/dashboard/quiz/actions';
+import { recordQuizStartedAction, recordQuestionAnswerAction } from '@/app/config/dashboard/quiz/actions';
 import * as LucideIcons from 'lucide-react'; 
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
-import type { QuizQuestion } from '@/types/quiz';
+import type { QuizQuestion, QuizOption } from '@/types/quiz'; // Added QuizOption
 
 type FormData = Record<string, any>;
 
@@ -94,21 +94,21 @@ export default function QuizForm({
 
 
   useEffect(() => {
-    if (!quizQuestions || quizQuestions.length === 0) return;
+    if (!quizQuestions || quizQuestions.length === 0 || isPreview) return;
     const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
-    if (!isPreview) {
-        recordQuizStartedAction(quizSlug).catch(err => console.error("Failed to record quiz started:", err));
-        if (isFbPixelConfigured) {
-          console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking, "Pixels:", configuredFbPixelIds);
-          fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking }, configuredFbPixelIds);
-        }
-        if(isGaConfigured) {
-            console.log("GA: quiz_start event triggered for", quizNameForTracking);
-            gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
-        }
+    
+    recordQuizStartedAction(quizSlug).catch(err => console.error("Failed to record quiz started:", err));
+    
+    if (isFbPixelConfigured) {
+      console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking, "Pixels:", configuredFbPixelIds);
+      fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking }, configuredFbPixelIds);
+    }
+    if(isGaConfigured) {
+        console.log("GA: quiz_start event triggered for", quizNameForTracking);
+        gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview, configuredFbPixelIds]); 
+  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview]); 
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -199,52 +199,30 @@ export default function QuizForm({
       quiz_name: quizNameForTracking
     };
 
-    if (stepIsValid && currentStep < activeQuestions.length - 1) {
-      setAnimationClass('animate-slide-out');
-      setTimeout(() => {
-        setCurrentStep(prev => prev + 1);
-        setAnimationClass('animate-slide-in');
-      }, 300);
-      if (!isPreview) {
-        if (isFbPixelConfigured) {
-          console.log("FB Pixel: QuestionAnswered event triggered.", answerDataFb, "Pixels:", configuredFbPixelIds);
-          fbTrackEvent('QuestionAnswered', answerDataFb, configuredFbPixelIds);
-        }
-        if(isGaConfigured) {
-          console.log("GA: question_answered event triggered.", gaAnswerData);
-          gaEvent({ action: 'question_answered', ...gaAnswerData });
-        }
-      }
-    } else if (stepIsValid && currentStep === activeQuestions.length - 1) {
-       if (!isPreview) {
-           const lastQuestionAnswerValue = currentQuestion.fields ? getValues(currentQuestion.fields.map(f => f.name)) : getValues(currentQuestion.name);
-           const lastAnswerString = Array.isArray(lastQuestionAnswerValue) ? lastQuestionAnswerValue.join(', ') : String(lastQuestionAnswerValue);
-
-            const lastAnswerDataFb = {
-                question_id: currentQuestion.id,
-                answer: lastAnswerString,
-                step: currentStep + 1,
-                quiz_name: quizNameForTracking
-            };
-            const lastGaAnswerData = {
-                category: 'Quiz',
-                label: `Question: ${currentQuestion.id}`,
-                question_id: currentQuestion.id,
-                answer: lastAnswerString,
-                step_number: currentStep + 1,
-                quiz_name: quizNameForTracking
-            };
+    if (stepIsValid) {
+        if (!isPreview) {
+            recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, answerValue, currentQuestion.type)
+              .catch(err => console.error("Failed to record question answer:", err));
 
             if (isFbPixelConfigured) {
-                console.log("FB Pixel: QuestionAnswered event triggered (last question).", lastAnswerDataFb, "Pixels:", configuredFbPixelIds);
-                fbTrackEvent('QuestionAnswered', lastAnswerDataFb, configuredFbPixelIds);
+              console.log("FB Pixel: QuestionAnswered event triggered.", answerDataFb, "Pixels:", configuredFbPixelIds);
+              fbTrackEvent('QuestionAnswered', answerDataFb, configuredFbPixelIds);
             }
-            if(isGaConfigured){
-                console.log("GA: question_answered event triggered (last question).", lastGaAnswerData);
-                gaEvent({ action: 'question_answered', ...lastGaAnswerData });
+            if(isGaConfigured) {
+              console.log("GA: question_answered event triggered.", gaAnswerData);
+              gaEvent({ action: 'question_answered', ...gaAnswerData });
             }
-       }
-      await handleSubmit(onSubmit)();
+        }
+
+        if (currentStep < activeQuestions.length - 1) {
+            setAnimationClass('animate-slide-out');
+            setTimeout(() => {
+                setCurrentStep(prev => prev + 1);
+                setAnimationClass('animate-slide-in');
+            }, 300);
+        } else { // Last step, proceed to submit
+            await handleSubmit(onSubmit)();
+        }
     }
   };
 
@@ -287,6 +265,13 @@ export default function QuizForm({
       clientInfo, 
       submittedAt: new Date().toISOString() 
     }; 
+
+    // Record answer for the last question (contact step) if not already recorded by handleNext
+    if (!isPreview && currentQuestion && currentQuestion.id === activeQuestions[activeQuestions.length -1].id) {
+        const lastAnswerValue = currentQuestion.fields ? getValues(currentQuestion.fields.map(f => f.name)) : getValues(currentQuestion.name);
+        recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, lastAnswerValue, currentQuestion.type)
+            .catch(err => console.error("Failed to record final question answer:", err));
+    }
 
     if (isPreview && onSubmitOverride) {
         await onSubmitOverride(finalData);
@@ -648,3 +633,4 @@ export default function QuizForm({
     </FormProvider>
   );
 }
+

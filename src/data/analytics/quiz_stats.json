@@ -2,5 +2,9 @@
   "cam": {
     "startedCount": 1,
     "completedCount": 0
+  },
+  "default": {
+    "startedCount": 2,
+    "completedCount": 0
   }
 }

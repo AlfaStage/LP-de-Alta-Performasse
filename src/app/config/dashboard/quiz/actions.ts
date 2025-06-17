@@ -2,67 +2,74 @@
 "use server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData } from '@/types/quiz';
+import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuestionSpecificAnalytics, QuizOption } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig'; 
 import { revalidatePath } from 'next/cache';
 
 const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
 const analyticsDirectory = path.join(process.cwd(), 'src', 'data', 'analytics');
-const STATS_FILE_PATH = path.join(analyticsDirectory, 'quiz_stats.json');
+const AGGREGATE_STATS_FILE_PATH = path.join(analyticsDirectory, 'quiz_stats.json');
 const DEFAULT_QUIZ_SLUG = "default";
 
-interface QuizStats {
+interface AggregateQuizStats {
   [quizSlug: string]: {
     startedCount: number;
     completedCount: number;
   };
 }
 
-async function ensureAnalyticsDirectoryExists() {
+// Helper to get path for per-question stats file
+function getQuestionStatsFilePath(quizSlug: string): string {
+  return path.join(analyticsDirectory, `${quizSlug}_question_stats.json`);
+}
+
+async function ensureDirectoryExists(directoryPath: string) {
   try {
-    await fs.access(analyticsDirectory);
+    await fs.access(directoryPath);
   } catch {
-    await fs.mkdir(analyticsDirectory, { recursive: true });
+    await fs.mkdir(directoryPath, { recursive: true });
   }
 }
 
-async function ensureStatsFileExists() {
-  await ensureAnalyticsDirectoryExists();
+async function ensureFileExists(filePath: string, defaultContent: string = '{}') {
+  await ensureDirectoryExists(path.dirname(filePath));
   try {
-    await fs.access(STATS_FILE_PATH);
+    await fs.access(filePath);
   } catch {
-    await fs.writeFile(STATS_FILE_PATH, JSON.stringify({}, null, 2), 'utf8');
+    await fs.writeFile(filePath, defaultContent, 'utf8');
   }
 }
 
-async function getQuizStatsData(): Promise<QuizStats> {
-  await ensureStatsFileExists();
+// Aggregate Stats Functions
+async function getAggregateQuizStatsData(): Promise<AggregateQuizStats> {
+  await ensureFileExists(AGGREGATE_STATS_FILE_PATH, JSON.stringify({}, null, 2));
   try {
-    const fileContents = await fs.readFile(STATS_FILE_PATH, 'utf8');
-    return JSON.parse(fileContents) as QuizStats;
+    const fileContents = await fs.readFile(AGGREGATE_STATS_FILE_PATH, 'utf8');
+    return JSON.parse(fileContents) as AggregateQuizStats;
   } catch (error) {
     console.error("Failed to read or parse quiz_stats.json:", error);
-    return {}; // Return empty object on error
+    return {}; 
   }
 }
 
-async function saveQuizStatsData(data: QuizStats): Promise<void> {
-  await ensureStatsFileExists();
+async function saveAggregateQuizStatsData(data: AggregateQuizStats): Promise<void> {
+  await ensureFileExists(AGGREGATE_STATS_FILE_PATH, JSON.stringify({}, null, 2));
   try {
-    await fs.writeFile(STATS_FILE_PATH, JSON.stringify(data, null, 2), 'utf8');
+    await fs.writeFile(AGGREGATE_STATS_FILE_PATH, JSON.stringify(data, null, 2), 'utf8');
   } catch (error) {
     console.error("Failed to write quiz_stats.json:", error);
   }
 }
 
 export async function updateQuizStat(quizSlug: string, statType: 'startedCount' | 'completedCount'): Promise<void> {
-  const stats = await getQuizStatsData();
+  const stats = await getAggregateQuizStatsData();
   if (!stats[quizSlug]) {
     stats[quizSlug] = { startedCount: 0, completedCount: 0 };
   }
   stats[quizSlug][statType]++;
-  await saveQuizStatsData(stats);
-  revalidatePath('/config/dashboard'); // Revalidate dashboard to show updated stats
+  await saveAggregateQuizStatsData(stats);
+  revalidatePath('/config/dashboard');
+  revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`);
 }
 
 export async function recordQuizStartedAction(quizSlug: string): Promise<void> {
@@ -70,15 +77,89 @@ export async function recordQuizStartedAction(quizSlug: string): Promise<void> {
   await updateQuizStat(quizSlug, 'startedCount');
 }
 
-
-async function ensureQuizzesDirectoryExists() {
+// Per-Question Stats Functions
+async function getQuizQuestionAnalyticsData(quizSlug: string): Promise<QuizQuestionAnalytics> {
+  const filePath = getQuestionStatsFilePath(quizSlug);
+  await ensureFileExists(filePath);
   try {
-    await fs.access(quizzesDirectory);
-  } catch {
-    await fs.mkdir(quizzesDirectory, { recursive: true });
+    const fileContents = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(fileContents) as QuizQuestionAnalytics;
+  } catch (error) {
+    console.error(`Failed to read or parse ${filePath}:`, error);
+    return {};
   }
 }
 
+async function saveQuizQuestionAnalyticsData(quizSlug: string, data: QuizQuestionAnalytics): Promise<void> {
+  const filePath = getQuestionStatsFilePath(quizSlug);
+  await ensureFileExists(filePath);
+  try {
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (error) {
+    console.error(`Failed to write ${filePath}:`, error);
+  }
+}
+
+export async function recordQuestionAnswerAction(
+  quizSlug: string, 
+  questionId: string, 
+  questionName: string,
+  answer: any, 
+  questionType: QuizQuestion['type']
+): Promise<{ success: boolean; message?: string }> {
+  if (!quizSlug || !questionId || !questionName) {
+    return { success: false, message: "Quiz slug, question ID, and question name are required." };
+  }
+
+  try {
+    const questionStats = await getQuizQuestionAnalyticsData(quizSlug);
+    
+    if (!questionStats[questionId]) {
+      questionStats[questionId] = {
+        id: questionId,
+        type: questionType,
+        totalAnswers: 0,
+        ...(questionType === 'radio' || questionType === 'checkbox' ? { options: {} } : {}),
+        ...(questionType === 'textFields' ? { fieldsHandled: false } : {}) 
+      };
+    }
+
+    const currentQStats = questionStats[questionId];
+    currentQStats.totalAnswers++;
+
+    if (questionType === 'radio' && typeof answer === 'string') {
+      if (!currentQStats.options) currentQStats.options = {};
+      currentQStats.options[answer] = (currentQStats.options[answer] || 0) + 1;
+    } else if (questionType === 'checkbox' && Array.isArray(answer)) {
+      if (!currentQStats.options) currentQStats.options = {};
+      answer.forEach(optValue => {
+        if (typeof optValue === 'string') {
+          currentQStats.options[optValue] = (currentQStats.options[optValue] || 0) + 1;
+        }
+      });
+    } else if (questionType === 'textFields') {
+      // For textFields, totalAnswers incremented above is enough to count submissions for the step.
+      // We don't store the actual text values here for simplicity with JSON.
+      currentQStats.fieldsHandled = true;
+    }
+
+    await saveQuizQuestionAnalyticsData(quizSlug, questionStats);
+    revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`); // Revalidate edit page for stats update
+    return { success: true };
+  } catch (error) {
+    console.error(`Error recording answer for q:${questionId} in quiz:${quizSlug}:`, error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, message: `Failed to record answer: ${errorMessage}` };
+  }
+}
+
+export async function getQuizQuestionAnalytics(quizSlug: string): Promise<QuizQuestionAnalytics | null> {
+  if (!quizSlug) return null;
+  return await getQuizQuestionAnalyticsData(quizSlug);
+}
+
+
+// Quiz Management Actions (CRUD)
 interface CreateQuizPayload {
   title: string;
   slug: string;
@@ -86,8 +167,8 @@ interface CreateQuizPayload {
 }
 
 export async function createQuizAction(payload: CreateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
-  await ensureQuizzesDirectoryExists();
-
+  await ensureDirectoryExists(quizzesDirectory);
+  // ... (rest of createQuizAction, no changes to its core logic here)
   const { title, slug, questions } = payload;
 
   if (!title || !slug ) { 
@@ -125,6 +206,10 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
 
   try {
     await fs.writeFile(filePath, JSON.stringify(quizConfig, null, 2));
+    // Initialize empty stats files for the new quiz
+    await saveAggregateQuizStatsData({ ...(await getAggregateQuizStatsData()), [slug]: { startedCount: 0, completedCount: 0 } });
+    await saveQuizQuestionAnalyticsData(slug, {});
+
     revalidatePath('/'); 
     revalidatePath(`/${slug}`); 
     revalidatePath('/config/dashboard'); 
@@ -143,7 +228,7 @@ export interface QuizEditData {
 }
 
 export async function getQuizForEdit(slug: string): Promise<QuizEditData | null> {
-  await ensureQuizzesDirectoryExists();
+  await ensureDirectoryExists(quizzesDirectory);
   const filePath = path.join(quizzesDirectory, `${slug}.json`);
   try {
     const fileContents = await fs.readFile(filePath, 'utf8');
@@ -169,7 +254,8 @@ interface UpdateQuizPayload {
 }
 
 export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
-  await ensureQuizzesDirectoryExists();
+  await ensureDirectoryExists(quizzesDirectory);
+  // ... (rest of updateQuizAction, no changes to its core logic here)
   const { title, slug, questions } = payload;
 
   if (!title || !slug) {
@@ -212,7 +298,7 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
 }
 
 export async function deleteQuizAction(slug: string): Promise<{ success: boolean; message?: string }> {
-  await ensureQuizzesDirectoryExists();
+  await ensureDirectoryExists(quizzesDirectory);
   if (!slug) {
     return { success: false, message: "Slug do quiz é obrigatório para apagar." };
   }
@@ -221,22 +307,34 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
     return { success: false, message: "O quiz padrão não pode ser apagado." };
   }
 
-  const filePath = path.join(quizzesDirectory, `${slug}.json`);
+  const quizFilePath = path.join(quizzesDirectory, `${slug}.json`);
+  const questionStatsFilePath = getQuestionStatsFilePath(slug);
 
   try {
-    await fs.access(filePath); 
+    await fs.access(quizFilePath); 
   } catch {
     return { success: false, message: `Quiz com o slug "${slug}" não encontrado.` };
   }
 
   try {
-    await fs.unlink(filePath); 
+    await fs.unlink(quizFilePath); 
     
-    // Also remove its stats
-    const stats = await getQuizStatsData();
-    if (stats[slug]) {
-      delete stats[slug];
-      await saveQuizStatsData(stats);
+    // Remove its aggregate stats
+    const aggStats = await getAggregateQuizStatsData();
+    if (aggStats[slug]) {
+      delete aggStats[slug];
+      await saveAggregateQuizStatsData(aggStats);
+    }
+
+    // Remove its per-question stats file
+    try {
+      await fs.access(questionStatsFilePath);
+      await fs.unlink(questionStatsFilePath);
+    } catch (questionStatsError) {
+      // Ignore if file doesn't exist, log other errors
+      if ((questionStatsError as NodeJS.ErrnoException).code !== 'ENOENT') {
+        console.warn(`Could not delete question stats file ${questionStatsFilePath}:`, questionStatsError);
+      }
     }
 
     revalidatePath('/'); 
@@ -244,7 +342,7 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
     revalidatePath(`/${slug}`); 
     revalidatePath(`/config/dashboard/quiz/edit/${slug}`); 
     
-    return { success: true, message: `Quiz "${slug}" apagado com sucesso e estatísticas removidas.` };
+    return { success: true, message: `Quiz "${slug}" e suas estatísticas foram apagados com sucesso.` };
   } catch (error) {
     console.error(`Failed to delete quiz file or stats for slug ${slug}:`, error);
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
@@ -254,8 +352,8 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
 
 
 export async function getQuizzesList(): Promise<QuizListItem[]> {
-  await ensureQuizzesDirectoryExists();
-  const statsData = await getQuizStatsData();
+  await ensureDirectoryExists(quizzesDirectory);
+  const aggStatsData = await getAggregateQuizStatsData();
   try {
     const filenames = await fs.readdir(quizzesDirectory);
     const quizFiles = filenames.filter(filename => filename.endsWith('.json'));
@@ -266,7 +364,7 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
       try {
         const fileContents = await fs.readFile(filePath, 'utf8');
         const quizData = JSON.parse(fileContents) as QuizConfig;
-        const analytics = statsData[slug] || { startedCount: 0, completedCount: 0 };
+        const analytics = aggStatsData[slug] || { startedCount: 0, completedCount: 0 };
         return { 
           title: quizData.title || `Quiz ${slug}`,
           slug: quizData.slug || slug,
@@ -276,7 +374,7 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
         };
       } catch (parseError) {
         console.error(`Failed to parse quiz file ${filename}:`, parseError);
-        const analytics = statsData[slug] || { startedCount: 0, completedCount: 0 };
+        const analytics = aggStatsData[slug] || { startedCount: 0, completedCount: 0 };
         return {
           title: `Erro ao carregar: ${filename}`,
           slug: slug,
@@ -295,17 +393,16 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
 }
 
 export async function getOverallQuizAnalytics(): Promise<OverallQuizStats> {
-  const statsData = await getQuizStatsData();
+  const aggStatsData = await getAggregateQuizStatsData();
   let totalStarted = 0;
   let totalCompleted = 0;
   let mostEngagingQuizData: (QuizListItem & { conversionRate?: number }) | undefined = undefined;
   let highestConversionRate = -1;
 
-  // To get quiz titles, we still need to read the quiz files
-  const quizzesList = await getQuizzesList(); // This already incorporates stats
+  const quizzesList = await getQuizzesList(); 
 
-  for (const quizSlug in statsData) {
-    const quizStats = statsData[quizSlug];
+  for (const quizSlug in aggStatsData) {
+    const quizStats = aggStatsData[quizSlug];
     totalStarted += quizStats.startedCount;
     totalCompleted += quizStats.completedCount;
 
@@ -315,7 +412,7 @@ export async function getOverallQuizAnalytics(): Promise<OverallQuizStats> {
       const quizDetails = quizzesList.find(q => q.slug === quizSlug);
       if (quizDetails) {
         mostEngagingQuizData = {
-          ...quizDetails, // contains title, slug, successIcon, and already correct started/completed counts
+          ...quizDetails,
           conversionRate: parseFloat(conversionRate.toFixed(1))
         };
       }
@@ -331,56 +428,54 @@ export async function getOverallQuizAnalytics(): Promise<OverallQuizStats> {
 
 
 export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalyticsData | null> {
-  await ensureQuizzesDirectoryExists();
-  const statsData = await getQuizStatsData();
-  const quizStats = statsData[slug];
+  await ensureDirectoryExists(quizzesDirectory);
+  const aggStatsData = await getAggregateQuizStatsData();
+  const quizAggStats = aggStatsData[slug];
 
-  if (!quizStats) {
-     // Try to read quiz file to at least return title and slug with 0 counts
-    const filePath = path.join(quizzesDirectory, `${slug}.json`);
-    try {
-      const fileContents = await fs.readFile(filePath, 'utf8');
-      const quizData = JSON.parse(fileContents) as QuizConfig;
-      return {
-        title: quizData.title,
-        slug: quizData.slug,
-        successIcon: quizData.successIcon,
-        startedCount: 0,
-        completedCount: 0,
-      };
-    } catch {
-      return null; // Quiz file also not found
-    }
-  }
-
-  // Quiz stats found, try to get title from quiz file
   const filePath = path.join(quizzesDirectory, `${slug}.json`);
-  let title = `Quiz ${slug}`;
-  let successIcon;
   try {
     const fileContents = await fs.readFile(filePath, 'utf8');
     const quizData = JSON.parse(fileContents) as QuizConfig;
-    title = quizData.title;
-    successIcon = quizData.successIcon;
-  } catch (e) {
-    console.warn(`Could not read quiz file for slug ${slug} to get title for analytics, using slug as title.`);
+    
+    return {
+      title: quizData.title,
+      slug: quizData.slug,
+      successIcon: quizData.successIcon,
+      startedCount: quizAggStats?.startedCount || 0,
+      completedCount: quizAggStats?.completedCount || 0,
+    };
+  } catch {
+    // If quiz file not found, but stats might exist (edge case)
+    if (quizAggStats) {
+        return {
+            title: `Quiz ${slug} (Arquivo não encontrado)`,
+            slug: slug,
+            successIcon: undefined,
+            startedCount: quizAggStats.startedCount,
+            completedCount: quizAggStats.completedCount,
+        }
+    }
+    return null; 
   }
-
-  return {
-    title: title,
-    slug: slug,
-    successIcon: successIcon,
-    startedCount: quizStats.startedCount,
-    completedCount: quizStats.completedCount,
-  };
 }
 
 export async function resetAllQuizAnalyticsAction(): Promise<{ success: boolean; message?: string }> {
   try {
-    await saveQuizStatsData({}); // Write empty object to reset stats
-    console.log("All quiz statistics have been reset.");
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
-    revalidatePath('/config/dashboard');
+    // Reset aggregate stats
+    await saveAggregateQuizStatsData({}); 
+    
+    // Reset per-question stats
+    await ensureDirectoryExists(analyticsDirectory);
+    const analyticsFiles = await fs.readdir(analyticsDirectory);
+    for (const file of analyticsFiles) {
+      if (file.endsWith('_question_stats.json')) {
+        await fs.unlink(path.join(analyticsDirectory, file));
+      }
+    }
+
+    console.log("All quiz statistics (aggregate and per-question) have been reset.");
+    await new Promise(resolve => setTimeout(resolve, 300)); 
+    revalidatePath('/config/dashboard', 'layout'); // Revalidate entire dashboard layout
     return { success: true, message: "Estatísticas de todos os quizzes foram resetadas." };
   } catch (error) {
     console.error("Error resetting quiz statistics:", error);
@@ -388,3 +483,4 @@ export async function resetAllQuizAnalyticsAction(): Promise<{ success: boolean;
     return { success: false, message: `Failed to reset statistics: ${errorMessage}` };
   }
 }
+

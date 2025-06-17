@@ -52,6 +52,7 @@ export interface WhitelabelConfig {
   footerCopyrightText?: string;
 }
 
+// Statistics types
 export interface QuizListItem extends Omit<QuizConfig, 'questions'> {
   startedCount?: number;
   completedCount?: number;
@@ -64,7 +65,28 @@ export interface OverallQuizStats {
 }
 
 export interface QuizAnalyticsData extends QuizListItem {
-  // Se precisarmos de estatísticas mais detalhadas por pergunta no futuro:
-  // questionStats?: Array<{ questionId: string; responseCount: number; answers: Record<string, number> }>;
+  // Detailed stats if needed in the future for the main list
+}
+
+// New types for per-question analytics
+export interface QuestionOptionStats {
+  [optionValue: string]: number; // count for each option value
+}
+
+export interface QuestionFieldStats {
+  totalSubmissions: number; // For textFields, just count submissions for the step
+}
+
+export interface QuestionSpecificAnalytics {
+  id: string; // questionId
+  type: QuizQuestion['type'];
+  totalAnswers: number; // Total times this question was answered/submitted
+  options?: QuestionOptionStats; // For radio/checkbox
+  fieldsHandled?: boolean; // For textFields, indicates submissions were counted
+}
+
+// Structure for the [quizSlug]_question_stats.json file
+export interface QuizQuestionAnalytics {
+  [questionId: string]: QuestionSpecificAnalytics;
 }
 
