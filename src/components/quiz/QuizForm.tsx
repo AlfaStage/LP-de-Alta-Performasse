@@ -418,7 +418,7 @@ export default function QuizForm({
                   data-ai-hint="company logo"
                   width={150}
                   height={50}
-                  className="object-contain max-h-[50px]" // Ensure it fits within 50px height, width adjusts
+                  className="object-contain"
                   priority={true}
                 />
             </div>
@@ -466,7 +466,7 @@ export default function QuizForm({
                   data-ai-hint="company logo"
                   width={150}
                   height={50}
-                  className="object-contain max-h-[50px]" // Ensure it fits within 50px height, width adjusts
+                  className="object-contain"
                   priority={true}
                 />
                 <div>
