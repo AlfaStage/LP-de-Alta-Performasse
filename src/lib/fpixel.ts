@@ -16,7 +16,9 @@ export function getActivePixelIds(primaryId?: string, secondaryId?: string): str
 // For SPA navigations after initial load. The initial PageView is handled by the script in TrackingScriptsWrapper.
 export const trackFbPageView = () => {
   if (typeof window !== 'undefined' && (window as any).fbq) {
-    (window as any).fbq('track', 'PageView');
+    (window as any).fbq('track', 'PageView'); // Global PageView for all initialized pixels
+  } else {
+    // console.warn('FB Pixel: fbq not found for PageView tracking.');
   }
 };
 
@@ -26,6 +28,8 @@ export const trackFbEvent = (eventName: string, eventData: Record<string, any> =
     pixelIdsToTrack.forEach(id => {
       (window as any).fbq('trackSingle', id, eventName, eventData);
     });
+  } else {
+    // console.warn(`FB Pixel: fbq not found or no pixel IDs to track standard event: ${eventName}`);
   }
 };
 
@@ -35,7 +39,8 @@ export const trackFbCustomEvent = (eventName: string, eventData: Record<string, 
     pixelIdsToTrack.forEach(id => {
       (window as any).fbq('trackSingleCustom', id, eventName, eventData);
     });
+  } else {
+    // console.warn(`FB Pixel: fbq not found or no pixel IDs to track custom event: ${eventName}`);
   }
 };
-
     

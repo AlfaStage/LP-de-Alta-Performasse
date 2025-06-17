@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getSuccessIcon } from '@/config/quizConfig';
 import QuizProgressBar from './QuizProgressBar';
-import { trackFbCustomEvent, trackFbEvent, getActivePixelIds } from '@/lib/fpixel';
+import { getActivePixelIds, trackFbCustomEvent, trackFbEvent } from '@/lib/fpixel';
 import { trackGaEvent } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
 import { recordQuizStartedAction, recordQuestionAnswerAction } from '@/app/config/dashboard/quiz/actions';
@@ -108,7 +108,7 @@ export default function QuizForm({
         trackGaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizSlug}_Start`, quiz_title: quizTitle }, googleAnalyticsId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizSlug, isPreview]); // Dependencies that trigger on quiz start
+  }, [quizSlug, isPreview, quizTitle]); // Added quizTitle
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -196,13 +196,13 @@ export default function QuizForm({
             };
 
             if (configuredFbPixelIds.length > 0) {
-              trackFbCustomEvent('QuestionAnswered', eventData, configuredFbPixelIds);
+              trackFbCustomEvent('QuestionAnswered', eventData, configuredFbPixelIds); // Using Custom Event for QuestionAnswered
             }
             if(isGaConfigured && googleAnalyticsId){
               trackGaEvent({ 
                 action: 'question_answered', 
                 category: 'Quiz', 
-                label: `Q: ${currentQuestion.id} - A: ${answerString.substring(0, 50)}`, // Limit label length
+                label: `Q: ${currentQuestion.id} - A: ${answerString.substring(0, 100)}`, // Limit label length
                 ...eventData 
               }, googleAnalyticsId);
             }
@@ -257,14 +257,8 @@ export default function QuizForm({
       clientInfo,
       submittedAt: new Date().toISOString()
     };
-
-    if (!isPreview && currentQuestion && currentQuestion.id === activeQuestions[activeQuestions.length -1].id) {
-        // This check is technically redundant for pixel firing QuestionAnswered, as it's done in handleNext.
-        // Keeping recordQuestionAnswerAction for backend stats of the last step.
-        const lastAnswerValue = currentQuestion.fields ? getValues(currentQuestion.fields.map(f => f.name)) : getValues(currentQuestion.name);
-        recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, lastAnswerValue, currentQuestion.type)
-            .catch(err => console.error("Failed to record final question answer for backend:", err));
-    }
+    
+    // The last "QuestionAnswered" event is handled by handleNext before this onSubmit is called.
 
     if (isPreview && onSubmitOverride) {
         await onSubmitOverride(finalData);
@@ -288,19 +282,24 @@ export default function QuizForm({
             setSubmissionStatus('success');
 
             const quizCompleteData = { quiz_slug: quizSlug, quiz_title: quizTitle };
-            const leadData = { 
+            const leadDataFb = { 
+                value: 1, // Example value
+                currency: 'BRL', // Example currency
+            };
+             const leadDataGa = { 
                 quiz_slug: quizSlug, 
                 value: 1, 
                 currency: 'BRL', 
             };
 
+
             if (configuredFbPixelIds.length > 0) {
                 trackFbCustomEvent('QuizComplete', quizCompleteData, configuredFbPixelIds);
-                trackFbEvent('Lead', leadData, configuredFbPixelIds);
+                trackFbEvent('Lead', leadDataFb, configuredFbPixelIds); // 'Lead' is a standard FB event
             }
             if(isGaConfigured && googleAnalyticsId){
                 trackGaEvent({action: 'quiz_complete', category: 'Quiz', label: `${quizSlug}_Complete`, ...quizCompleteData }, googleAnalyticsId);
-                trackGaEvent({action: 'generate_lead', category: 'Quiz', label: `${quizSlug}_Lead`, value: 1, ...leadData }, googleAnalyticsId);
+                trackGaEvent({action: 'generate_lead', category: 'Quiz', label: `${quizSlug}_Lead`, ...leadDataGa }, googleAnalyticsId);
             }
 
         } else if (result.status === 'invalid_number') {
@@ -383,7 +382,7 @@ export default function QuizForm({
                   data-ai-hint="company logo"
                   width={150}
                   height={50}
-                  className="object-contain"
+                  className="object-contain" 
                   priority={true}
                 />
             </div>
@@ -606,5 +605,4 @@ export default function QuizForm({
     </FormProvider>
   );
 }
-
     
