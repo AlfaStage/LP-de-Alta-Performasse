@@ -33,7 +33,7 @@ function StatDisplayCard({ title, value, icon: Icon, subtext }: { title: string,
 function getQuestionTypeIcon(type: QuizQuestion['type']) {
   switch (type) {
     case 'radio': return ListChecks;
-    case 'checkbox': return MessageSquare; // Corrected icon for checkbox
+    case 'checkbox': return MessageSquare;
     case 'textFields': return Edit3;
     default: return FileText;
   }
@@ -101,6 +101,7 @@ export default function QuizStatsPage() {
   const contentQuestions = quizConfig?.questions.filter(q => q.id !== defaultContactStep.id) || [];
   const contactStepConfig = quizConfig?.questions.find(q => q.id === defaultContactStep.id);
   const contactStepStats = contactStepConfig && questionStats ? questionStats[contactStepConfig.id] : null;
+  const ContactStepIcon = contactStepConfig ? getQuestionTypeIcon(contactStepConfig.type) : FileText;
 
 
   if (isLoading) {
@@ -249,7 +250,7 @@ export default function QuizStatsPage() {
          <Card className="shadow-md hover:shadow-lg transition-shadow mt-4 border-dashed border-primary/50">
             <CardHeader className="flex flex-row items-start justify-between gap-4">
                <div className="flex items-start gap-3 flex-grow">
-                 <getQuestionTypeIcon type={contactStepConfig.type} className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                 <ContactStepIcon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                  <div className="flex-grow">
                     <CardTitle className="text-lg">Etapa de Contato: {contactStepConfig.text.substring(0,60)}...</CardTitle>
                     <CardDescription>ID: {contactStepConfig.id}</CardDescription>
@@ -269,7 +270,7 @@ export default function QuizStatsPage() {
          <Card className="shadow-md hover:shadow-lg transition-shadow mt-4 border-dashed border-primary/50">
             <CardHeader className="flex flex-row items-start justify-between gap-4">
                <div className="flex items-start gap-3 flex-grow">
-                 <getQuestionTypeIcon type={contactStepConfig.type} className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                 <ContactStepIcon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                  <div className="flex-grow">
                     <CardTitle className="text-lg">Etapa de Contato: {contactStepConfig.text.substring(0,60)}...</CardTitle>
                     <CardDescription>ID: {contactStepConfig.id}</CardDescription>
@@ -290,6 +291,5 @@ export default function QuizStatsPage() {
     </div>
   );
 }
-
 
     
