@@ -52,7 +52,9 @@ export interface WhitelabelConfig {
   facebookPixelIdSecondary?: string;
   googleAnalyticsId?: string;
   footerCopyrightText?: string;
-  apiStatsAccessToken?: string; // Novo campo para o token da API
+  apiStatsAccessToken?: string;
+  websiteUrl?: string; // Novo campo
+  instagramUrl?: string; // Novo campo
 }
 
 // Statistics types

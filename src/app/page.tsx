@@ -94,9 +94,12 @@ export default async function HomePage() {
         quizDescription={defaultQuizConfig.description}
         logoUrl={logoUrlToUse}
         facebookPixelId={whitelabelConfig.facebookPixelId}
+        facebookPixelIdSecondary={whitelabelConfig.facebookPixelIdSecondary}
         googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
         clientAbandonmentWebhookUrl={clientAbandonmentWebhook}
         footerCopyrightText={footerText}
+        websiteUrl={whitelabelConfig.websiteUrl}
+        instagramUrl={whitelabelConfig.instagramUrl}
       />
       <div className="py-8 text-center bg-background">
         <Link href="/config/login">

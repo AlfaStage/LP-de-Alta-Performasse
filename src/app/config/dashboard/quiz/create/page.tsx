@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // Added missing import
+import Link from 'next/link'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react'; // Renamed Link from lucide-react
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react'; 
 import { createQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
@@ -543,6 +543,8 @@ export default function CreateQuizPage() {
                 quizDescription={description || DEFAULT_QUIZ_DESCRIPTION}
                 logoUrl={whitelabelSettings.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
                 footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview. Todos os direitos reservados.`}
+                websiteUrl={whitelabelSettings.websiteUrl}
+                instagramUrl={whitelabelSettings.instagramUrl}
                 facebookPixelId="" 
                 googleAnalyticsId="" 
                 onSubmitOverride={mockSubmitOverride}
@@ -562,5 +564,3 @@ export default function CreateQuizPage() {
     </div>
   );
 }
-
-    

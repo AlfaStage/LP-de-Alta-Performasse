@@ -1,3 +1,4 @@
+
 {
   "projectName": "Ice Lazer Quiz",
   "logoUrl": "https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png",
@@ -11,5 +12,7 @@
   "facebookPixelIdSecondary": "3949746165337932",
   "googleAnalyticsId": "G-YV9GYV3385",
   "footerCopyrightText": "© 2025 Ice Lazer. Todos os direitos reservados.",
-  "apiStatsAccessToken": ""
+  "apiStatsAccessToken": "",
+  "websiteUrl": "https://espacoicelaser.com",
+  "instagramUrl": "https://www.instagram.com/icelaseroficial/"
 }

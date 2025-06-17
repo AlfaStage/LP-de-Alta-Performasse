@@ -108,6 +108,8 @@ export default async function QuizPage({ params }: QuizPageProps) {
         googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
         clientAbandonmentWebhookUrl={clientAbandonmentWebhook}
         footerCopyrightText={footerText}
+        websiteUrl={whitelabelConfig.websiteUrl}
+        instagramUrl={whitelabelConfig.instagramUrl}
       />
     </main>
   );

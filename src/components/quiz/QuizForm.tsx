@@ -21,7 +21,7 @@ import * as LucideIcons from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
-import type { QuizQuestion, QuizOption } from '@/types/quiz';
+import type { QuizQuestion } from '@/types/quiz';
 
 type FormData = Record<string, any>;
 
@@ -41,6 +41,8 @@ interface QuizFormProps {
   googleAnalyticsId?: string;
   clientAbandonmentWebhookUrl?: string;
   footerCopyrightText?: string;
+  websiteUrl?: string;
+  instagramUrl?: string;
   onSubmitOverride?: (data: FormData) => Promise<void>;
   onAbandonmentOverride?: (data: FormData, quizSlug?: string) => Promise<void>;
   isPreview?: boolean;
@@ -62,6 +64,8 @@ export default function QuizForm({
   googleAnalyticsId,
   clientAbandonmentWebhookUrl,
   footerCopyrightText = `© ${new Date().getFullYear()} Quiz. Todos os direitos reservados.`,
+  websiteUrl,
+  instagramUrl,
   onSubmitOverride,
   onAbandonmentOverride,
   isPreview = false
@@ -108,7 +112,7 @@ export default function QuizForm({
         trackGaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizSlug}_Start`, quiz_title: quizTitle }, googleAnalyticsId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizSlug, isPreview, quizTitle]); // Added quizTitle
+  }, [quizSlug, isPreview, quizTitle]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -196,13 +200,13 @@ export default function QuizForm({
             };
 
             if (configuredFbPixelIds.length > 0) {
-              trackFbCustomEvent('QuestionAnswered', eventData, configuredFbPixelIds); // Using Custom Event for QuestionAnswered
+              trackFbCustomEvent('QuestionAnswered', eventData, configuredFbPixelIds);
             }
             if(isGaConfigured && googleAnalyticsId){
               trackGaEvent({ 
                 action: 'question_answered', 
                 category: 'Quiz', 
-                label: `Q: ${currentQuestion.id} - A: ${answerString.substring(0, 100)}`, // Limit label length
+                label: `Q: ${currentQuestion.id} - A: ${answerString.substring(0, 100)}`, 
                 ...eventData 
               }, googleAnalyticsId);
             }
@@ -258,7 +262,6 @@ export default function QuizForm({
       submittedAt: new Date().toISOString()
     };
     
-    // The last "QuestionAnswered" event is handled by handleNext before this onSubmit is called.
 
     if (isPreview && onSubmitOverride) {
         await onSubmitOverride(finalData);
@@ -283,8 +286,8 @@ export default function QuizForm({
 
             const quizCompleteData = { quiz_slug: quizSlug, quiz_title: quizTitle };
             const leadDataFb = { 
-                value: 1, // Example value
-                currency: 'BRL', // Example currency
+                value: 1, 
+                currency: 'BRL', 
             };
              const leadDataGa = { 
                 quiz_slug: quizSlug, 
@@ -295,7 +298,7 @@ export default function QuizForm({
 
             if (configuredFbPixelIds.length > 0) {
                 trackFbCustomEvent('QuizComplete', quizCompleteData, configuredFbPixelIds);
-                trackFbEvent('Lead', leadDataFb, configuredFbPixelIds); // 'Lead' is a standard FB event
+                trackFbEvent('Lead', leadDataFb, configuredFbPixelIds); 
             }
             if(isGaConfigured && googleAnalyticsId){
                 trackGaEvent({action: 'quiz_complete', category: 'Quiz', label: `${quizSlug}_Complete`, ...quizCompleteData }, googleAnalyticsId);
@@ -395,14 +398,18 @@ export default function QuizForm({
             {!isPreview && (
               <div className="pt-4 space-y-3">
                 <p className="text-sm text-card-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
-                <Link href="https://espacoicelaser.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                  <GlobeIcon className="mr-2 h-5 w-5" />
-                  Visite nosso site
-                </Link>
-                <Link href="https://www.instagram.com/icelaseroficial/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                  <InstagramIcon className="mr-2 h-5 w-5" />
-                  Siga-nos no Instagram
-                </Link>
+                {websiteUrl && websiteUrl.trim() !== "" && (
+                    <Link href={websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
+                    <GlobeIcon className="mr-2 h-5 w-5" />
+                    Visite nosso site
+                    </Link>
+                )}
+                {instagramUrl && instagramUrl.trim() !== "" && (
+                    <Link href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
+                    <InstagramIcon className="mr-2 h-5 w-5" />
+                    Siga-nos no Instagram
+                    </Link>
+                )}
               </div>
             )}
           </CardContent>
@@ -605,4 +612,3 @@ export default function QuizForm({
     </FormProvider>
   );
 }
-    

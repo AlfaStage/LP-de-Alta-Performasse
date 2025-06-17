@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Save, Loader2, AlertTriangle, Palette, Link2, Facebook, Settings2, TextQuote, ImageIcon, HelpCircle, CopyrightIcon } from 'lucide-react';
+import { Save, Loader2, Palette, Link2, Facebook, Settings2, TextQuote, ImageIcon, HelpCircle, CopyrightIcon, Globe, Instagram as InstagramIconLucide } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from './actions';
 import type { WhitelabelConfig } from '@/types/quiz';
@@ -33,6 +32,8 @@ const whitelabelSettingsSchema = z.object({
   facebookPixelIdSecondary: z.string().optional(),
   googleAnalyticsId: z.string().optional(),
   footerCopyrightText: z.string().min(1, "Texto do rodapé é obrigatório.").optional(),
+  websiteUrl: z.string().url({ message: "URL do site inválida." }).optional().or(z.literal('')),
+  instagramUrl: z.string().url({ message: "URL do Instagram inválida." }).optional().or(z.literal('')),
 });
 
 export default function WhitelabelSettingsPage() {
@@ -70,7 +71,6 @@ export default function WhitelabelSettingsPage() {
         variant: "default",
       });
       reset(data, { keepDirty: false }); 
-      // window.location.reload(); // Removido para observar o comportamento do estado
     } else {
       toast({
         title: "Erro ao Salvar",
@@ -137,6 +137,28 @@ export default function WhitelabelSettingsPage() {
                 render={({ field }) => <Input id="footerCopyrightText" {...field} placeholder={`© ${new Date().getFullYear()} Seu Projeto. Todos os direitos reservados.`} />}
               />
               {errors.footerCopyrightText && <p className="text-sm text-destructive">{errors.footerCopyrightText.message}</p>}
+            </div>
+
+             {/* Website URL */}
+             <div className="space-y-2">
+              <Label htmlFor="websiteUrl" className="flex items-center gap-1"><Globe className="h-4 w-4 text-muted-foreground" />URL do Site (para página de obrigado)</Label>
+              <Controller
+                name="websiteUrl"
+                control={control}
+                render={({ field }) => <Input id="websiteUrl" {...field} value={field.value || ""} placeholder="https://exemplo.com (opcional)" />}
+              />
+              {errors.websiteUrl && <p className="text-sm text-destructive">{errors.websiteUrl.message}</p>}
+            </div>
+
+            {/* Instagram URL */}
+            <div className="space-y-2">
+              <Label htmlFor="instagramUrl" className="flex items-center gap-1"><InstagramIconLucide className="h-4 w-4 text-muted-foreground" />URL do Instagram (para página de obrigado)</Label>
+              <Controller
+                name="instagramUrl"
+                control={control}
+                render={({ field }) => <Input id="instagramUrl" {...field} value={field.value || ""} placeholder="https://instagram.com/seu_perfil (opcional)" />}
+              />
+              {errors.instagramUrl && <p className="text-sm text-destructive">{errors.instagramUrl.message}</p>}
             </div>
 
 

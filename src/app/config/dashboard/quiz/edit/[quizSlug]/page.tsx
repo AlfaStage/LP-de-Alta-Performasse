@@ -58,7 +58,7 @@ export default function EditQuizPage() {
   const [dashboardName, setDashboardName] = useState('');
   const [questionsJson, setQuestionsJson] = useState('');
   const [interactiveQuestions, setInteractiveQuestions] = useState<QuizQuestion[]>([]);
-  const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive'); // Default to interactive
+  const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive'); 
   const [originalQuizData, setOriginalQuizData] = useState<QuizEditData | null>(null);
   const [quizAggregatedAnalytics, setQuizAggregatedAnalytics] = useState<QuizAnalyticsData | null>(null);
   
@@ -788,6 +788,8 @@ export default function EditQuizPage() {
                 quizDescription={description || DEFAULT_QUIZ_DESCRIPTION}
                 logoUrl={whitelabelSettings.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
                 footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview. Todos os direitos reservados.`}
+                websiteUrl={whitelabelSettings.websiteUrl}
+                instagramUrl={whitelabelSettings.instagramUrl}
                 facebookPixelId="" 
                 googleAnalyticsId="" 
                 onSubmitOverride={mockSubmitOverride}
@@ -807,5 +809,3 @@ export default function EditQuizPage() {
     </div>
   );
 }
-
-    
