@@ -3,8 +3,8 @@
 
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo } from 'react'; // Added useMemo
-import { trackPageView as fbTrackPageView, getActivePixelIds } from '@/lib/fpixel';
+import { useEffect, useMemo } from 'react';
+import { trackPageView as fbTrackPageViewInternal, getActivePixelIds } from '@/lib/fpixel'; // Renamed to avoid conflict
 import { pageview as gaTrackPageView } from '@/lib/gtag';
 
 interface FacebookPixelScriptProps {
@@ -14,7 +14,6 @@ interface FacebookPixelScriptProps {
 }
 
 const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
-
 
 export default function FacebookPixelScript({ 
   facebookPixelId, 
@@ -31,22 +30,19 @@ export default function FacebookPixelScript({
   const areAnyFbPixelsConfigured = configuredFbPixelIds.length > 0;
   const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== PLACEHOLDER_GA_ID;
 
-
   useEffect(() => {
-    // This component is only rendered on quiz pages due to TrackingScriptsWrapper
+    // For SPA navigations (route changes after initial load)
     if (areAnyFbPixelsConfigured && typeof window.fbq === 'function') {
-      // console.log("FB Pixel: PageView event triggered by route change.", pathname, "Pixels:", configuredFbPixelIds);
-      fbTrackPageView(configuredFbPixelIds); // Pass configuredFbPixelIds for subsequent page views
+      fbTrackPageViewInternal(); // Call the simplified PageView tracker from lib/fpixel.ts
     }
 
     if (isGaConfigured && typeof window.gtag === 'function') {
-      // console.log("GA: pageview event triggered by route change (from FacebookPixelScript).", pathname);
+      // GA pageview for SPA navigations
       gaTrackPageView(new URL(pathname, window.location.origin), googleAnalyticsId);
     }
-  }, [pathname, areAnyFbPixelsConfigured, isGaConfigured, googleAnalyticsId, configuredFbPixelIds]);
+  }, [pathname, areAnyFbPixelsConfigured, isGaConfigured, googleAnalyticsId]); // configuredFbPixelIds removed as fbTrackPageViewInternal is now global
 
   if (!areAnyFbPixelsConfigured) {
-    // console.warn("FB Pixel: No valid Facebook Pixel IDs configured. FB Pixel script not rendered by FacebookPixelScript component.");
     return null;
   }
   
@@ -67,7 +63,6 @@ export default function FacebookPixelScript({
     'https://connect.facebook.net/en_US/fbevents.js');
     ${fbPixelInits}
     fbq('track', 'PageView'); 
-    console.log("FB Pixel: Initial PageView event sent via script for IDs: ${configuredFbPixelIds.join(', ')}.");
   `;
 
   return (

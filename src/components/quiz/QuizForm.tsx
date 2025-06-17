@@ -48,8 +48,6 @@ interface QuizFormProps {
 
 const IconComponents = LucideIcons;
 
-const PLACEHOLDER_FB_PIXEL_ID = "YOUR_PRIMARY_FACEBOOK_PIXEL_ID";
-const PLACEHOLDER_SECONDARY_FB_PIXEL_ID = "YOUR_SECONDARY_FACEBOOK_PIXEL_ID";
 const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
 const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
 
@@ -104,11 +102,9 @@ export default function QuizForm({
     recordQuizStartedAction(quizSlug).catch(err => console.error("Failed to record quiz started:", err));
 
     if (isFbPixelConfigured) {
-      console.log("FB Pixel: QuizStart event triggered for", quizNameForTracking, "Pixels:", configuredFbPixelIds);
       fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking }, configuredFbPixelIds);
     }
     if(isGaConfigured) {
-        console.log("GA: quiz_start event triggered for", quizNameForTracking);
         gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,7 +112,7 @@ export default function QuizForm({
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (isPreview) { // Skip all abandonment logic in preview
+      if (isPreview) { 
         return;
       }
       if (!isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
@@ -146,17 +142,13 @@ export default function QuizForm({
                 try {
                   const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
                   navigator.sendBeacon(webhookUrl, blob);
-                  console.log("Quiz abandonment data sent to client-side webhook via sendBeacon:", dataToLog);
                 } catch (e) {
                    fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
-                   console.log("Quiz abandonment data sent to client-side webhook via fetch (fallback):", dataToLog);
                 }
               } else {
                 fetch(webhookUrl, { method: 'POST', body: JSON.stringify(dataToLog), headers: {'Content-Type': 'application/json'}, keepalive: true }).catch(()=>{});
-                console.log("Quiz abandonment data sent to client-side webhook via fetch:", dataToLog);
               }
             } else {
-               console.log("Quiz abandonment: No client-side webhook, attempting server-side log.", dataToLog);
                serverLogQuizAbandonment(dataToLog, quizSlug);
             }
         }
@@ -212,11 +204,9 @@ export default function QuizForm({
               .catch(err => console.error("Failed to record question answer:", err));
 
             if (isFbPixelConfigured) {
-              console.log("FB Pixel: QuestionAnswered event triggered.", answerDataFb, "Pixels:", configuredFbPixelIds);
               fbTrackEvent('QuestionAnswered', answerDataFb, configuredFbPixelIds);
             }
             if(isGaConfigured){
-              console.log("GA: question_answered event triggered.", gaAnswerData);
               gaEvent({ action: 'question_answered', ...gaAnswerData });
             }
         }
@@ -227,7 +217,7 @@ export default function QuizForm({
                 setCurrentStep(prev => prev + 1);
                 setAnimationClass('animate-slide-in');
             }, 300);
-        } else { // Last step, proceed to submit
+        } else { 
             await handleSubmit(onSubmit)();
         }
     }
@@ -287,7 +277,6 @@ export default function QuizForm({
     }
 
     if (isPreview && !onSubmitOverride) {
-        console.log("Preview mode: onSubmit called but no override provided.", finalData);
         toast({title: "Pré-visualização", description: "Submissão simulada. Nenhum dado enviado."})
         setSubmissionStatus('success');
         setIsQuizCompleted(true);
@@ -314,7 +303,7 @@ export default function QuizForm({
             const leadDataGa = {
                 category: 'Quiz',
                 label: `${quizNameForTracking}_Lead`,
-                value: 50,
+                value: 50, // GA4 value should be a number
                 lead_name: finalData.nomeCompleto,
             };
             const quizCompleteDataGa = {
@@ -325,15 +314,11 @@ export default function QuizForm({
             };
 
             if (isFbPixelConfigured) {
-                console.log("FB Pixel: QuizComplete event triggered.", quizCompleteDataFb, "Pixels:", configuredFbPixelIds);
                 fbTrackCustomEvent('QuizComplete', quizCompleteDataFb, configuredFbPixelIds);
-                console.log("FB Pixel: Lead event triggered.", leadDataFb, "Pixels:", configuredFbPixelIds);
                 fbTrackEvent('Lead', leadDataFb, configuredFbPixelIds);
             }
             if(isGaConfigured){
-                console.log("GA: quiz_complete event triggered.", quizCompleteDataGa);
                 gaEvent({action: 'quiz_complete', ...quizCompleteDataGa});
-                console.log("GA: generate_lead event triggered.", leadDataGa);
                 gaEvent({action: 'generate_lead', ...leadDataGa});
             }
 
@@ -364,7 +349,6 @@ export default function QuizForm({
             description: `Ocorreu um erro inesperado ao processar sua solicitação: ${errorMessage}. Tente novamente mais tarde.`,
             variant: "destructive",
         });
-        console.error("Client-side error during onSubmit:", error);
     }
   };
 

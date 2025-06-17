@@ -1,1 +1,10 @@
-{}
+{
+  "ba": {
+    "startedCount": 3,
+    "completedCount": 0
+  },
+  "bsb": {
+    "startedCount": 1,
+    "completedCount": 0
+  }
+}

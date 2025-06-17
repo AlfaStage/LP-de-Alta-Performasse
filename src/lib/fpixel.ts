@@ -15,55 +15,39 @@ export function getActivePixelIds(primaryId?: string, secondaryId?: string): str
   return ids;
 }
 
-// Track PageView for specific pixel IDs.
-// This is typically used for SPA navigations after the initial PageView.
-export const trackPageView = (pixelIdsToTrack?: string[]) => {
+// Track PageView. For SPAs, after the initial load, this should track subsequent views.
+// The initial PageView is handled by the script in FacebookPixelScript.tsx.
+export const trackPageView = () => {
   if (typeof window === 'undefined' || !(window as any).fbq) {
-    // console.warn("FB Pixel: fbq not found. PageView not sent.");
     return;
   }
-
-  if (pixelIdsToTrack && pixelIdsToTrack.length > 0) {
-    pixelIdsToTrack.forEach(id => {
-      (window as any).fbq('trackSingle', id, 'PageView');
-      // console.log(`FB Pixel: Subsequent PageView sent to ${id}`);
-    });
-  } else {
-    // console.warn("FB Pixel: trackPageView called without specific pixel IDs. No PageView sent by this function call.");
-    // Avoid global fbq('track', 'PageView') here as it might double-count if not managed carefully with initial script.
-  }
+  // For subsequent SPA page views, a global PageView event is often sufficient
+  // as all relevant pixels should have been initialized.
+  (window as any).fbq('track', 'PageView');
 };
 
 // Track standard events for specific pixel IDs
 export const trackEvent = (name: string, options = {}, pixelIdsToTrack?: string[]) => {
   if (typeof window === 'undefined' || !(window as any).fbq) {
-    // console.warn(`FB Pixel: fbq not found. Event "${name}" not sent.`);
     return;
   }
   
   if (pixelIdsToTrack && pixelIdsToTrack.length > 0) {
     pixelIdsToTrack.forEach(id => {
       (window as any).fbq('trackSingle', id, name, options);
-      // console.log(`FB Pixel: Event "${name}" sent to ${id} with options:`, options);
     });
-  } else {
-    // console.warn(`FB Pixel: trackEvent "${name}" called without specific pixel IDs. No event sent by this function call.`);
   }
 };
 
 // Track custom events for specific pixel IDs
 export const trackCustomEvent = (name: string, options = {}, pixelIdsToTrack?: string[]) => {
   if (typeof window === 'undefined' || !(window as any).fbq) {
-    // console.warn(`FB Pixel: fbq not found. Custom Event "${name}" not sent.`);
     return;
   }
 
   if (pixelIdsToTrack && pixelIdsToTrack.length > 0) {
     pixelIdsToTrack.forEach(id => {
       (window as any).fbq('trackSingleCustom', id, name, options);
-      // console.log(`FB Pixel: Custom Event "${name}" sent to ${id} with options:`, options);
     });
-  } else {
-    // console.warn(`FB Pixel: trackCustomEvent "${name}" called without specific pixel IDs. No custom event sent by this function call.`);
   }
 };
