@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw, ExternalLink, Copy } from 'lucide-react';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw, ExternalLink, Copy, BarChart3 } from 'lucide-react';
 import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, resetAllQuizAnalyticsAction, getQuizConfigForPreview } from './quiz/actions';
 import type { QuizListItem, OverallQuizStats, QuizConfig, WhitelabelConfig } from '@/types/quiz';
 import { useEffect, useState, useCallback } from 'react';
@@ -317,9 +317,12 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold">{overallStats.mostEngagingQuiz.conversionRate}%</p>
                 </div>
               </CardContent>
-              <CardFooter className="border-t pt-4">
+              <CardFooter className="border-t pt-4 flex gap-2">
                 <Link href={`/config/dashboard/quiz/edit/${overallStats.mostEngagingQuiz.slug}`}>
                   <Button variant="outline" size="sm"><Edit className="h-4 w-4 mr-2" /> Editar Quiz</Button>
+                </Link>
+                 <Link href={`/config/dashboard/quiz/stats/${overallStats.mostEngagingQuiz.slug}`}>
+                  <Button variant="outline" size="sm"><BarChart3 className="h-4 w-4 mr-2" /> Ver Estatísticas</Button>
                 </Link>
               </CardFooter>
             </Card>
@@ -371,7 +374,7 @@ export default function DashboardPage() {
                   <Progress value={conversionRate} className="h-2" />
                 </div>
               </CardContent>
-              <CardFooter className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-4 border-t">
+              <CardFooter className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-4 border-t">
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -385,6 +388,16 @@ export default function DashboardPage() {
                      <ExternalLink className="h-4 w-4" /> Abrir Quiz
                    </Button>
                 </Link>
+                <Link href={`/config/dashboard/quiz/stats/${quiz.slug}`} className="w-full">
+                   <Button variant="outline" size="sm" className="w-full flex items-center gap-1">
+                     <BarChart3 className="h-4 w-4" /> Estatísticas
+                   </Button>
+                </Link>
+                <Link href={`/config/dashboard/quiz/edit/${quiz.slug}`} className="w-full">
+                   <Button variant="outline" size="sm" className="w-full flex items-center gap-1">
+                     <Edit className="h-4 w-4" /> Editar
+                   </Button>
+                </Link>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -393,15 +406,10 @@ export default function DashboardPage() {
                 >
                   <Copy className="h-4 w-4" /> Copiar Link
                 </Button>
-                <Link href={`/config/dashboard/quiz/edit/${quiz.slug}`} className="w-full">
-                   <Button variant="outline" size="sm" className="w-full flex items-center gap-1">
-                     <Edit className="h-4 w-4" /> Editar
-                   </Button>
-                </Link>
                 <Button 
                   variant="destructive" 
                   size="sm" 
-                  className="w-full flex items-center gap-1 md:col-span-2 lg:col-span-1"
+                  className="w-full flex items-center gap-1"
                   onClick={() => setQuizToDelete(quiz)}
                   disabled={isDeleting || quiz.slug === DEFAULT_QUIZ_SLUG}
                 >
@@ -500,7 +508,7 @@ export default function DashboardPage() {
           <DialogHeader className="p-4 border-b bg-card rounded-t-lg">
             <DialogTitle>Pré-visualização: {isLoadingPreview ? "Carregando..." : previewQuizConfig?.title || 'Quiz'}</DialogTitle>
           </DialogHeader>
-          <div className="flex-grow overflow-y-auto bg-background"> {/* Use background here for scroll area */}
+          <div className="flex-grow overflow-y-auto bg-background">
             {isLoadingPreview ? (
               <div className="flex items-center justify-center h-full"><QuizFormLoading/></div>
             ) : previewQuizConfig && whitelabelSettingsForPreview ? (
@@ -535,12 +543,7 @@ export default function DashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <footer className="text-center text-xs text-muted-foreground py-4 border-t mt-auto">
-        Todos os direitos reservados FR Digital
-      </footer>
     </div>
   );
 }
-
     

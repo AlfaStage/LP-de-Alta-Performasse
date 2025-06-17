@@ -2,33 +2,33 @@
   "q1_default": {
     "id": "q1_default",
     "type": "radio",
-    "totalAnswers": 1,
+    "totalAnswers": 2,
     "options": {
-      "sim": 1
+      "sim": 2
     }
   },
   "q2_default": {
     "id": "q2_default",
     "type": "checkbox",
-    "totalAnswers": 1,
+    "totalAnswers": 2,
     "options": {
-      "virilha": 1
+      "virilha": 2
     }
   },
   "q3_default": {
     "id": "q3_default",
     "type": "radio",
-    "totalAnswers": 1,
+    "totalAnswers": 2,
     "options": {
-      "evitar_foliculite": 1
+      "evitar_foliculite": 2
     }
   },
   "q4_default": {
     "id": "q4_default",
     "type": "radio",
-    "totalAnswers": 1,
+    "totalAnswers": 2,
     "options": {
-      "lauro_de_freitas_ba": 1
+      "lauro_de_freitas_ba": 2
     }
   },
   "final_contact_step": {

@@ -11,9 +11,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BarChart3, Percent, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react';
-import { getQuizForEdit, updateQuizAction, type QuizEditData, getQuizAnalyticsBySlug, getQuizQuestionAnalytics } from '@/app/config/dashboard/quiz/actions';
-import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData, QuizQuestionAnalytics } from '@/types/quiz';
+import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react';
+import { getQuizForEdit, updateQuizAction, type QuizEditData, getQuizAnalyticsBySlug } from '@/app/config/dashboard/quiz/actions';
+import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
 import { APP_BASE_URL } from '@/config/appConfig';
 import Link from 'next/link';
@@ -58,10 +58,9 @@ export default function EditQuizPage() {
   const [dashboardName, setDashboardName] = useState('');
   const [questionsJson, setQuestionsJson] = useState('');
   const [interactiveQuestions, setInteractiveQuestions] = useState<QuizQuestion[]>([]);
-  const [currentTab, setCurrentTab] = useState<'interactive' | 'json' | 'stats'>('stats');
+  const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive'); // Default to interactive
   const [originalQuizData, setOriginalQuizData] = useState<QuizEditData | null>(null);
   const [quizAggregatedAnalytics, setQuizAggregatedAnalytics] = useState<QuizAnalyticsData | null>(null);
-  const [quizQuestionLevelAnalytics, setQuizQuestionLevelAnalytics] = useState<QuizQuestionAnalytics | null>(null);
   
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -98,10 +97,9 @@ export default function EditQuizPage() {
     setSuccess(null);
 
     try {
-      const [data, aggAnalyticsData, questionAnalyticsData] = await Promise.all([
+      const [data, aggAnalyticsData] = await Promise.all([
         getQuizForEdit(quizSlugFromParams),
         getQuizAnalyticsBySlug(quizSlugFromParams),
-        getQuizQuestionAnalytics(quizSlugFromParams)
       ]);
 
       if (data) {
@@ -132,13 +130,6 @@ export default function EditQuizPage() {
         console.warn(`Aggregate analytics data for quiz "${quizSlugFromParams}" not found.`);
       }
       
-      if (questionAnalyticsData) {
-        setQuizQuestionLevelAnalytics(questionAnalyticsData);
-      } else {
-        console.warn(`Question level analytics data for quiz "${quizSlugFromParams}" not found.`);
-      }
-
-
     } catch (err) {
       setError("Erro ao buscar dados do quiz para edição.");
       console.error(err);
@@ -232,7 +223,7 @@ export default function EditQuizPage() {
     }
   };
 
-  const handleTabChange = (newTab: 'interactive' | 'json' | 'stats') => {
+  const handleTabChange = (newTab: 'interactive' | 'json') => {
     if (newTab === 'json' && currentTab === 'interactive') {
       setQuestionsJson(JSON.stringify(interactiveQuestions, null, 2));
     } else if (newTab === 'interactive' && currentTab === 'json') {
@@ -441,11 +432,10 @@ export default function EditQuizPage() {
         </CardContent>
       </Card>
 
-      <Tabs value={currentTab} onValueChange={(value) => handleTabChange(value as 'interactive' | 'json' | 'stats')} className="mb-6">
-          <TabsList className="grid w-full grid-cols-3">
+      <Tabs value={currentTab} onValueChange={(value) => handleTabChange(value as 'interactive' | 'json')} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="interactive"><Wand2 className="mr-2 h-4 w-4" />Construtor</TabsTrigger>
               <TabsTrigger value="json"><FileJson className="mr-2 h-4 w-4" />JSON</TabsTrigger>
-              <TabsTrigger value="stats"><BarChart3 className="mr-2 h-4 w-4" />Estatísticas</TabsTrigger>
           </TabsList>
           
           <TabsContent value="interactive">
@@ -774,68 +764,6 @@ export default function EditQuizPage() {
                   </CardFooter>
               </Card>
             </form>
-          </TabsContent>
-          <TabsContent value="stats">
-             <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-xl">Estatísticas Detalhadas das Perguntas</CardTitle>
-                    <CardDescription>Veja como os usuários estão respondendo a cada pergunta deste quiz.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {isFetchingAnalytics && <div className="flex items-center justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="ml-2">Carregando estatísticas...</p></div>}
-                    {!isFetchingAnalytics && (!quizQuestionLevelAnalytics || Object.keys(quizQuestionLevelAnalytics).length === 0) && (
-                        <Alert variant="default">
-                            <Info className="h-4 w-4" />
-                            <AlertTitle>Sem dados de perguntas</AlertTitle>
-                            <AlertDescription>Ainda não há estatísticas detalhadas para as perguntas deste quiz ou elas não puderam ser carregadas.</AlertDescription>
-                        </Alert>
-                    )}
-                    {!isFetchingAnalytics && quizQuestionLevelAnalytics && originalQuizData && (
-                        (JSON.parse(originalQuizData.questionsJson) as QuizQuestion[]).map((quizQ, index) => {
-                            const qStats = quizQuestionLevelAnalytics[quizQ.id];
-                            return (
-                                <Card key={quizQ.id} className="bg-muted/30 p-4">
-                                    <CardHeader className="p-0 pb-3">
-                                        <CardTitle className="text-lg font-medium">Pergunta {index + 1}: {quizQ.text.substring(0, 50)}{quizQ.text.length > 50 ? "..." : ""}</CardTitle>
-                                        <CardDescription>ID: {quizQ.id} | Tipo: {quizQ.type} | Respostas Totais: {qStats?.totalAnswers || 0}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="p-0">
-                                        {!qStats && <p className="text-sm text-muted-foreground">Nenhuma resposta registrada para esta pergunta.</p>}
-                                        {qStats && (qStats.type === 'radio' || qStats.type === 'checkbox') && qStats.options && quizQ.options && (
-                                            <div className="space-y-2">
-                                                {quizQ.options.map(optionDef => {
-                                                    const count = qStats.options?.[optionDef.value] || 0;
-                                                    const displayPercentage = qStats.totalAnswers > 0 ? (count / qStats.totalAnswers) * 100 : 0;
-
-                                                    return (
-                                                        <div key={optionDef.value} className="text-sm">
-                                                            <div className="flex justify-between mb-0.5">
-                                                                <span>{optionDef.label} ({count} resps.)</span>
-                                                                <span className="font-semibold">{displayPercentage.toFixed(1)}%</span>
-                                                            </div>
-                                                            <Progress value={displayPercentage} className="h-2" />
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                        {qStats && qStats.type === 'textFields' && (
-                                            <p className="text-sm text-muted-foreground">Esta etapa de campos de texto foi submetida {qStats.totalAnswers} vezes.</p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            );
-                        })
-                    )}
-                     {!isFetchingAnalytics && quizQuestionLevelAnalytics && !originalQuizData && (
-                        <Alert variant="destructive">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Erro ao Carregar Definições do Quiz</AlertTitle>
-                            <AlertDescription>Não foi possível carregar as definições das perguntas para exibir os labels das estatísticas.</AlertDescription>
-                        </Alert>
-                     )}
-                </CardContent>
-             </Card>
           </TabsContent>
       </Tabs>
 
