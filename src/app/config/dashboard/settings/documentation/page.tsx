@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { API_STATS_ACCESS_TOKEN } from "@/config/appConfig";
-import { Code, Terminal, Key, Info, Database, ListChecks } from "lucide-react";
+import { Code, Terminal, Key, Info, Database, ListChecks, BookText } from "lucide-react"; // Adicionado BookText aqui
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const codeBlockClass = "block whitespace-pre-wrap bg-muted/50 p-4 rounded-md text-sm font-mono overflow-x-auto";
@@ -161,3 +161,4 @@ curl -X GET \\
     </div>
   );
 }
+
