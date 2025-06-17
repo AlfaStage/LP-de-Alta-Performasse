@@ -1,53 +1,39 @@
 
-// Constants for placeholder IDs to avoid magic strings
 const PLACEHOLDER_FB_PIXEL_ID = "YOUR_PRIMARY_FACEBOOK_PIXEL_ID";
 const PLACEHOLDER_SECONDARY_FB_PIXEL_ID = "YOUR_SECONDARY_FACEBOOK_PIXEL_ID";
 
-// Helper to get an array of active, valid pixel IDs
 export function getActivePixelIds(primaryId?: string, secondaryId?: string): string[] {
   const ids: string[] = [];
   if (primaryId && primaryId.trim() !== "" && primaryId !== PLACEHOLDER_FB_PIXEL_ID) {
-    ids.push(primaryId);
+    ids.push(primaryId.trim());
   }
   if (secondaryId && secondaryId.trim() !== "" && secondaryId !== PLACEHOLDER_SECONDARY_FB_PIXEL_ID) {
-    ids.push(secondaryId);
+    ids.push(secondaryId.trim());
   }
   return ids;
 }
 
-// Track PageView. For SPAs, after the initial load, this should track subsequent views.
-// The initial PageView is handled by the script in FacebookPixelScript.tsx.
-export const trackPageView = () => {
-  if (typeof window === 'undefined' || !(window as any).fbq) {
-    return;
+// For SPA navigations after initial load and init.
+export const trackFbPageView = () => {
+  if (typeof window !== 'undefined' && (window as any).fbq) {
+    (window as any).fbq('track', 'PageView');
   }
-  // For subsequent SPA page views, a global PageView event is often sufficient
-  // as all relevant pixels should have been initialized.
-  (window as any).fbq('track', 'PageView');
 };
 
-// Track standard events for specific pixel IDs
-export const trackEvent = (name: string, options = {}, pixelIdsToTrack?: string[]) => {
-  if (typeof window === 'undefined' || !(window as any).fbq) {
-    return;
-  }
-  
-  if (pixelIdsToTrack && pixelIdsToTrack.length > 0) {
+// Track standard FB events to specific (or all active) pixel IDs
+export const trackFbEvent = (eventName: string, eventData: Record<string, any> = {}, pixelIdsToTrack: string[]) => {
+  if (typeof window !== 'undefined' && (window as any).fbq && pixelIdsToTrack.length > 0) {
     pixelIdsToTrack.forEach(id => {
-      (window as any).fbq('trackSingle', id, name, options);
+      (window as any).fbq('trackSingle', id, eventName, eventData);
     });
   }
 };
 
-// Track custom events for specific pixel IDs
-export const trackCustomEvent = (name: string, options = {}, pixelIdsToTrack?: string[]) => {
-  if (typeof window === 'undefined' || !(window as any).fbq) {
-    return;
-  }
-
-  if (pixelIdsToTrack && pixelIdsToTrack.length > 0) {
+// Track custom FB events to specific (or all active) pixel IDs
+export const trackFbCustomEvent = (eventName: string, eventData: Record<string, any> = {}, pixelIdsToTrack: string[]) => {
+  if (typeof window !== 'undefined' && (window as any).fbq && pixelIdsToTrack.length > 0) {
     pixelIdsToTrack.forEach(id => {
-      (window as any).fbq('trackSingleCustom', id, name, options);
+      (window as any).fbq('trackSingleCustom', id, eventName, eventData);
     });
   }
 };

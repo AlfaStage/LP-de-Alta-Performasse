@@ -1,16 +1,19 @@
 
-// GA_TRACKING_ID will be passed from RootLayout (read from whitelabel config)
-// or directly used by RootLayout for gtag init.
+const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
 
-export const pageview = (url: URL, gaTrackingId?: string) => {
-  if (!gaTrackingId || gaTrackingId.trim() === "" || gaTrackingId === "YOUR_GA_ID") {
+// For SPA navigations after initial load. Initial pageview is handled by gtag config.
+export const trackGaPageView = (url: URL, gaTrackingId?: string) => {
+  if (!gaTrackingId || gaTrackingId.trim() === "" || gaTrackingId === PLACEHOLDER_GA_ID) {
     return;
   }
   if (typeof window.gtag !== "function") {
     return;
   }
-  window.gtag("config", gaTrackingId, {
+  window.gtag("event", "page_view", { // GA4 uses 'page_view' event for SPA
     page_path: url.pathname,
+    page_location: url.href,
+    page_title: document.title, // Optional: update page title if it changes dynamically
+    send_to: gaTrackingId,
   });
 };
 
@@ -22,14 +25,17 @@ type GTagEvent = {
   [key: string]: any; 
 };
 
-export const event = ({ action, category, label, value, ...rest }: GTagEvent) => {
+export const trackGaEvent = ({ action, category, label, value, ...rest }: GTagEvent, gaTrackingId?: string) => {
   if (typeof window.gtag !== "function") {
     return;
   }
-  window.gtag("event", action, {
-    event_category: category,
-    event_label: label,
-    value: value,
-    ...rest,
-  });
+  const eventParams: Record<string, any> = { ...rest };
+  if (category) eventParams.event_category = category;
+  if (label) eventParams.event_label = label;
+  if (value !== undefined) eventParams.value = value;
+  if (gaTrackingId && gaTrackingId.trim() !== "" && gaTrackingId !== PLACEHOLDER_GA_ID) {
+    eventParams.send_to = gaTrackingId;
+  }
+  
+  window.gtag("event", action, eventParams);
 };

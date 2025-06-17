@@ -13,8 +13,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getSuccessIcon } from '@/config/quizConfig';
 import QuizProgressBar from './QuizProgressBar';
-import { trackEvent as fbTrackEvent, trackCustomEvent as fbTrackCustomEvent, getActivePixelIds } from '@/lib/fpixel';
-import { event as gaEvent } from '@/lib/gtag';
+import { trackFbCustomEvent, trackFbEvent, getActivePixelIds } from '@/lib/fpixel';
+import { trackGaEvent } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
 import { recordQuizStartedAction, recordQuestionAnswerAction } from '@/app/config/dashboard/quiz/actions';
 import * as LucideIcons from 'lucide-react';
@@ -90,25 +90,26 @@ export default function QuizForm({
 
   const currentQuestion = activeQuestions[currentStep];
 
-  const configuredFbPixelIds = useMemo(() => getActivePixelIds(facebookPixelId, facebookPixelIdSecondary), [facebookPixelId, facebookPixelIdSecondary]);
-  const isFbPixelConfigured = configuredFbPixelIds.length > 0;
+  const configuredFbPixelIds = useMemo(
+    () => getActivePixelIds(facebookPixelId, facebookPixelIdSecondary),
+    [facebookPixelId, facebookPixelIdSecondary]
+  );
   const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== PLACEHOLDER_GA_ID;
 
 
   useEffect(() => {
     if (!quizQuestions || quizQuestions.length === 0 || isPreview) return;
-    const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
-
+    
     recordQuizStartedAction(quizSlug).catch(err => console.error("Failed to record quiz started:", err));
 
-    if (isFbPixelConfigured) {
-      fbTrackCustomEvent('QuizStart', { quiz_name: quizNameForTracking }, configuredFbPixelIds);
+    if (configuredFbPixelIds.length > 0) {
+      trackFbCustomEvent('QuizStart', { quiz_slug: quizSlug, quiz_title: quizTitle }, configuredFbPixelIds);
     }
-    if(isGaConfigured) {
-        gaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizNameForTracking}_Start` });
+    if(isGaConfigured && googleAnalyticsId) {
+        trackGaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizSlug}_Start`, quiz_title: quizTitle }, googleAnalyticsId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizSlug, isFbPixelConfigured, isGaConfigured, isPreview]);
+  }, [quizSlug, isPreview]); // Dependencies that trigger on quiz start
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -164,7 +165,6 @@ export default function QuizForm({
 
   const handleNext = async () => {
     if (submissionStatus === 'pending' || !currentQuestion) return;
-    const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
 
     let stepIsValid = true;
     if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
@@ -183,31 +183,29 @@ export default function QuizForm({
     const answerValue = getValues(currentQuestion.name);
     const answerString = Array.isArray(answerValue) ? answerValue.join(', ') : String(answerValue);
 
-    const answerDataFb = {
-      question_id: currentQuestion.id,
-      answer: answerString,
-      step: currentStep + 1,
-      quiz_name: quizNameForTracking
-    };
-    const gaAnswerData = {
-      category: 'Quiz',
-      label: `Question: ${currentQuestion.id}`,
-      question_id: currentQuestion.id,
-      answer: answerString,
-      step_number: currentStep + 1,
-      quiz_name: quizNameForTracking
-    };
-
     if (stepIsValid) {
         if (!isPreview) {
             recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, answerValue, currentQuestion.type)
               .catch(err => console.error("Failed to record question answer:", err));
 
-            if (isFbPixelConfigured) {
-              fbTrackEvent('QuestionAnswered', answerDataFb, configuredFbPixelIds);
+            const eventData = {
+              quiz_slug: quizSlug,
+              question_id: currentQuestion.id,
+              question_name: currentQuestion.name,
+              answer: answerString,
+              step_number: currentStep + 1,
+            };
+
+            if (configuredFbPixelIds.length > 0) {
+              trackFbCustomEvent('QuestionAnswered', eventData, configuredFbPixelIds);
             }
-            if(isGaConfigured){
-              gaEvent({ action: 'question_answered', ...gaAnswerData });
+            if(isGaConfigured && googleAnalyticsId){
+              trackGaEvent({ 
+                action: 'question_answered', 
+                category: 'Quiz', 
+                label: `Q: ${currentQuestion.id} - A: ${answerString.substring(0, 50)}`, // Limit label length
+                ...eventData 
+              }, googleAnalyticsId);
             }
         }
 
@@ -241,8 +239,6 @@ export default function QuizForm({
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     if (submissionStatus === 'pending') return;
-    const quizNameForTracking = `IceLazerLeadFilter_${quizSlug}`;
-
     setSubmissionStatus('pending');
 
     const clientInfo = {
@@ -283,7 +279,6 @@ export default function QuizForm({
         return;
     }
 
-
     try {
         const result = await serverSubmitQuizData(finalData);
 
@@ -291,35 +286,20 @@ export default function QuizForm({
             setIsQuizCompleted(true);
             setSubmissionStatus('success');
 
-            const leadDataFb = {
-                content_name: `${quizNameForTracking}_Submission`,
-                value: 50.00,
-                currency: 'BRL',
-                lead_name: finalData.nomeCompleto,
-                lead_whatsapp: finalData.whatsapp
-            };
-            const quizCompleteDataFb = { quiz_name: quizNameForTracking, ...finalData };
-
-            const leadDataGa = {
-                category: 'Quiz',
-                label: `${quizNameForTracking}_Lead`,
-                value: 50, // GA4 value should be a number
-                lead_name: finalData.nomeCompleto,
-            };
-            const quizCompleteDataGa = {
-                category: 'Quiz',
-                label: `${quizNameForTracking}_Complete`,
-                quiz_name: quizNameForTracking,
-                 ...finalData
+            const quizCompleteData = { quiz_slug: quizSlug, quiz_title: quizTitle };
+            const leadData = { 
+                quiz_slug: quizSlug, 
+                value: 1, // Example value for lead
+                currency: 'BRL', // Example currency 
             };
 
-            if (isFbPixelConfigured) {
-                fbTrackCustomEvent('QuizComplete', quizCompleteDataFb, configuredFbPixelIds);
-                fbTrackEvent('Lead', leadDataFb, configuredFbPixelIds);
+            if (configuredFbPixelIds.length > 0) {
+                trackFbCustomEvent('QuizComplete', quizCompleteData, configuredFbPixelIds);
+                trackFbEvent('Lead', leadData, configuredFbPixelIds);
             }
-            if(isGaConfigured){
-                gaEvent({action: 'quiz_complete', ...quizCompleteDataGa});
-                gaEvent({action: 'generate_lead', ...leadDataGa});
+            if(isGaConfigured && googleAnalyticsId){
+                trackGaEvent({action: 'quiz_complete', category: 'Quiz', label: `${quizSlug}_Complete`, ...quizCompleteData }, googleAnalyticsId);
+                trackGaEvent({action: 'generate_lead', category: 'Quiz', label: `${quizSlug}_Lead`, value: 1, ...leadData }, googleAnalyticsId);
             }
 
         } else if (result.status === 'invalid_number') {

@@ -1,11 +1,10 @@
 
 import type { Metadata, Viewport } from 'next';
-// import dynamic from 'next/dynamic'; // Remove dynamic import
 import './globals.css';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { hexToHslString } from '@/lib/whitelabel';
-import TrackingScriptsWrapper from '@/components/TrackingScriptsWrapper';
-import { ClientOnlyToaster } from '@/components/ClientOnlyToaster'; // Direct import
+import TrackingScriptsWrapper from '@/components/TrackingScriptsWrapper'; // Updated import
+import { ClientOnlyToaster } from '@/components/ClientOnlyToaster';
 
 export async function generateMetadata(): Promise<Metadata> {
   const whitelabelConfig = await getWhitelabelConfig();

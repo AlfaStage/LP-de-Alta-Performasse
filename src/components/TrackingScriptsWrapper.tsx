@@ -1,9 +1,11 @@
 
 'use client';
 
+import { useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
-import FacebookPixelScript from '@/components/FacebookPixelScript';
+import { getActivePixelIds, trackFbPageView } from '@/lib/fpixel';
+import { trackGaPageView } from '@/lib/gtag';
 
 interface TrackingScriptsWrapperProps {
   facebookPixelId?: string;
@@ -11,7 +13,7 @@ interface TrackingScriptsWrapperProps {
   googleAnalyticsId?: string;
 }
 
-const PLACEHOLDER_GA_ID = "YOUR_GA_ID"; 
+const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
 
 export default function TrackingScriptsWrapper({
   facebookPixelId,
@@ -19,25 +21,62 @@ export default function TrackingScriptsWrapper({
   googleAnalyticsId,
 }: TrackingScriptsWrapperProps) {
   const pathname = usePathname();
-
   const isQuizPage = !pathname.startsWith('/config');
+
+  const activeFbPixelIds = useMemo(
+    () => getActivePixelIds(facebookPixelId, facebookPixelIdSecondary),
+    [facebookPixelId, facebookPixelIdSecondary]
+  );
+  
+  const isAnyFbPixelConfigured = activeFbPixelIds.length > 0;
+  const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== PLACEHOLDER_GA_ID;
+
+  // Effect for handling SPA navigations after initial load
+  useEffect(() => {
+    if (!isQuizPage) return;
+
+    if (isAnyFbPixelConfigured && typeof window.fbq === 'function') {
+      trackFbPageView(); // Tracks PageView for all initialized FB pixels
+    }
+
+    if (isGaConfigured && typeof window.gtag === 'function' && googleAnalyticsId) {
+      // GA pageview for SPA navigations (initial one is handled by config)
+      trackGaPageView(new URL(pathname, window.location.origin), googleAnalyticsId);
+    }
+  }, [pathname, isQuizPage, isAnyFbPixelConfigured, isGaConfigured, googleAnalyticsId]);
+
 
   if (!isQuizPage) {
     return null; 
   }
 
-  const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== PLACEHOLDER_GA_ID;
-
+  // Construct FB Pixel initialization script
+  let fbPixelInitScript = "";
+  if (isAnyFbPixelConfigured) {
+    const initCalls = activeFbPixelIds.map(id => `fbq('init', '${id}');`).join('\n');
+    fbPixelInitScript = `
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      ${initCalls}
+      fbq('track', 'PageView'); // Initial PageView for all initialized pixels
+    `;
+  }
+  
   return (
     <>
-      {isGaConfigured && (
+      {/* Google Analytics Initialization */}
+      {isGaConfigured && googleAnalyticsId && (
         <>
           <Script
             strategy="afterInteractive"
             src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId.trim()}`}
-            onLoad={() => {
-              // gtag.js loaded
-            }}
+            id="gtag-js"
           />
           <Script
             id="gtag-init"
@@ -55,11 +94,15 @@ export default function TrackingScriptsWrapper({
           />
         </>
       )}
-      <FacebookPixelScript
-        facebookPixelId={facebookPixelId}
-        facebookPixelIdSecondary={facebookPixelIdSecondary}
-        googleAnalyticsId={googleAnalyticsId} 
-      />
+
+      {/* Facebook Pixel Initialization */}
+      {isAnyFbPixelConfigured && (
+        <Script 
+          id="fb-pixel-init" 
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{ __html: fbPixelInitScript }}
+        />
+      )}
     </>
   );
 }
