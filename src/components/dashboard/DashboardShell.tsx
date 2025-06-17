@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Home, ListPlus, Settings2, LogOut, PanelLeftClose, PanelRightOpen, Briefcase } from 'lucide-react';
+import { Menu, Home, ListPlus, Settings2, LogOut, PanelLeftClose, PanelRightOpen, Briefcase, BookText } from 'lucide-react';
 
 interface DashboardShellProps {
   children: ReactNode;
@@ -16,7 +16,8 @@ interface DashboardShellProps {
 const navItems = [
   { href: "/config/dashboard", label: "Quizzes (Início)", icon: Home, exactMatch: true },
   { href: "/config/dashboard/quiz/create", label: "Criar Novo Quiz", icon: ListPlus },
-  { href: "/config/dashboard/settings", label: "Configurações", icon: Settings2 },
+  { href: "/config/dashboard/settings", label: "Configurações App", icon: Settings2 },
+  { href: "/config/dashboard/settings/documentation", label: "Documentação API", icon: BookText },
 ];
 
 export default function DashboardShell({ children, logoutAction }: DashboardShellProps) {
@@ -27,10 +28,9 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
   
-  // Efeito para fechar a sidebar mobile quando a rota muda
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   useEffect(() => {
-    setIsMobileSheetOpen(false);
+    setIsMobileSheetOpen(false); // Close mobile sheet on route change
   }, [pathname]);
 
 
@@ -62,15 +62,6 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
                 <Briefcase className="h-7 w-7 text-sky-600" />
             </Link>
           )}
-          <Button
-            onClick={toggleSidebar}
-            variant="ghost"
-            size="icon"
-            className="hidden md:flex text-muted-foreground hover:text-primary"
-            aria-label={isSidebarCollapsed ? "Expandir menu" : "Recolher menu"}
-          >
-            {isSidebarCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4">
@@ -93,7 +84,20 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
             ))}
           </nav>
         </div>
-        <div className="mt-auto p-4 border-t">
+
+        <div className="mt-auto p-4 border-t space-y-2">
+           <Button
+            onClick={toggleSidebar}
+            variant="ghost"
+            size="icon"
+            className={`w-full text-muted-foreground hover:text-primary hover:bg-primary/10
+                        ${isSidebarCollapsed ? 'justify-center h-11' : 'justify-start h-11 px-3.5'}`}
+            aria-label={isSidebarCollapsed ? "Expandir menu" : "Recolher menu"}
+            title={isSidebarCollapsed ? "Expandir menu" : "Recolher menu"}
+          >
+            {isSidebarCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+            {!isSidebarCollapsed && (isSidebarCollapsed ? "" : "Recolher Menu")}
+          </Button>
           <form action={logoutAction}>
             <Button variant="ghost" 
               className={`w-full py-2.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive group
@@ -132,7 +136,7 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
                   <Link
                     key={item.label}
                     href={item.href}
-                    onClick={() => setIsMobileSheetOpen(false)}
+                    onClick={() => setIsMobileSheetOpen(false)} // Close sheet on click
                     className={`flex items-center gap-4 rounded-lg px-3.5 py-3 transition-all duration-200 ease-in-out group
                                 ${isActive(item.href, item.exactMatch) 
                                     ? 'bg-primary/15 text-primary font-semibold' 
@@ -166,4 +170,3 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
     </div>
   );
 }
-

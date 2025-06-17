@@ -27,14 +27,8 @@ export const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || "app-auth-token"
 // App Base URL (Environment Specific - NOT part of whitelabel UI)
 export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_BASE_URL || "http://localhost:9002";
 
-// Google Analytics ID - This specific constant is deprecated here.
-// Use whitelabelConfig.googleAnalyticsId from getWhitelabelConfig() or props.
-// export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_TRACKING_ID || ""; // Ex: "G-XXXXXXXXXX"
-
-// Facebook Pixel IDs - These specific constants are deprecated here.
-// Use whitelabelConfig.facebookPixelId etc.
-// export const FACEBOOK_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "YOUR_PRIMARY_FACEBOOK_PIXEL_ID";
-// export const FACEBOOK_PIXEL_ID_SECONDARY = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID_SECONDARY || "YOUR_SECONDARY_FACEBOOK_PIXEL_ID";
+// API Stats Access Token (Hardcoded for prototype - NOT FOR PRODUCTION)
+export const API_STATS_ACCESS_TOKEN = process.env.API_STATS_ACCESS_TOKEN || "REPLACE_THIS_WITH_A_REAL_SECURE_TOKEN_IN_PRODUCTION";
 
 // Validações importantes (mantidas para auth settings)
 if (process.env.NODE_ENV === 'production' && AUTH_COOKIE_SECRET === "your-super-secret-auth-cookie-secret-key-must-be-at-least-32-characters") {
@@ -43,7 +37,6 @@ if (process.env.NODE_ENV === 'production' && AUTH_COOKIE_SECRET === "your-super-
 if (AUTH_COOKIE_SECRET.length < 32) {
     console.warn("SECURITY WARNING: AUTH_COOKIE_SECRET should be at least 32 characters long for security.");
 }
-
-// Note: The functions like isPrimaryPixelConfigured, areAnyPixelsConfigured that were here
-// are now effectively handled within FacebookPixelScript.tsx based on the props it receives,
-// or by checking the whitelabelConfig directly.
+if (process.env.NODE_ENV === 'production' && API_STATS_ACCESS_TOKEN === "REPLACE_THIS_WITH_A_REAL_SECURE_TOKEN_IN_PRODUCTION") {
+  console.warn("CRITICAL SECURITY WARNING: API_STATS_ACCESS_TOKEN is not set to a secure, unique value in production!");
+}
