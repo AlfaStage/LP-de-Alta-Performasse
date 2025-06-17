@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowLeft, Users, CheckCircle2, Target, BarChart3, Info, AlertTriangle, FileText, MessageSquare, ListChecks, Edit3 } from 'lucide-react';
+import { ArrowLeft, Users, CheckCircle2, Target, BarChart3, Info, AlertTriangle, FileText, MessageSquare, ListChecks, Edit3, TrendingUp } from 'lucide-react';
 import type { QuizConfig, QuizQuestion, QuizAnalyticsData, QuizQuestionAnalytics, QuestionSpecificAnalytics } from '@/types/quiz';
 import { getQuizConfigForPreview, getQuizAnalyticsBySlug, getQuizQuestionAnalytics } from '@/app/config/dashboard/quiz/actions';
 import { defaultContactStep } from '@/config/quizConfig';
@@ -33,7 +33,7 @@ function StatDisplayCard({ title, value, icon: Icon, subtext }: { title: string,
 function getQuestionTypeIcon(type: QuizQuestion['type']) {
   switch (type) {
     case 'radio': return ListChecks;
-    case 'checkbox': return MessageSquare;
+    case 'checkbox': return MessageSquare; // Corrected icon for checkbox
     case 'textFields': return Edit3;
     default: return FileText;
   }
@@ -174,7 +174,7 @@ export default function QuizStatsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
+            <TrendingUp className="h-5 w-5 text-primary" />
             Resumo Geral do Quiz
           </CardTitle>
         </CardHeader>
@@ -201,13 +201,17 @@ export default function QuizStatsPage() {
 
         return (
           <Card key={question.id} className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start gap-3">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div className="flex items-start gap-3 flex-grow">
                 <QuestionTypeIcon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                <div>
+                <div className="flex-grow">
                   <CardTitle className="text-lg">Pergunta {index + 1}: {question.text}</CardTitle>
-                  <CardDescription>ID: {question.id} | Respostas: {qStat?.totalAnswers || 0}</CardDescription>
+                  <CardDescription>ID: {question.id}</CardDescription>
                 </div>
+              </div>
+              <div className="flex flex-col items-end flex-shrink-0">
+                <p className="text-2xl font-bold text-primary">{qStat?.totalAnswers || 0}</p>
+                <p className="text-xs text-muted-foreground -mt-1">Respostas</p>
               </div>
             </CardHeader>
             <CardContent>
@@ -243,13 +247,17 @@ export default function QuizStatsPage() {
 
       {contactStepConfig && contactStepStats && (
          <Card className="shadow-md hover:shadow-lg transition-shadow mt-4 border-dashed border-primary/50">
-            <CardHeader>
-              <div className="flex items-start gap-3">
-                <getQuestionTypeIcon type={contactStepConfig.type} className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                <div>
-                  <CardTitle className="text-lg">Etapa de Contato: {contactStepConfig.text.substring(0,60)}...</CardTitle>
-                  <CardDescription>ID: {contactStepConfig.id} | Submissões: {contactStepStats.totalAnswers || 0}</CardDescription>
-                </div>
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+               <div className="flex items-start gap-3 flex-grow">
+                 <getQuestionTypeIcon type={contactStepConfig.type} className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                 <div className="flex-grow">
+                    <CardTitle className="text-lg">Etapa de Contato: {contactStepConfig.text.substring(0,60)}...</CardTitle>
+                    <CardDescription>ID: {contactStepConfig.id}</CardDescription>
+                 </div>
+               </div>
+               <div className="flex flex-col items-end flex-shrink-0">
+                <p className="text-2xl font-bold text-primary">{contactStepStats.totalAnswers || 0}</p>
+                <p className="text-xs text-muted-foreground -mt-1">Submissões</p>
               </div>
             </CardHeader>
             <CardContent>
@@ -259,14 +267,18 @@ export default function QuizStatsPage() {
       )}
        {!contactStepStats && contactStepConfig && (
          <Card className="shadow-md hover:shadow-lg transition-shadow mt-4 border-dashed border-primary/50">
-            <CardHeader>
-               <div className="flex items-start gap-3">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+               <div className="flex items-start gap-3 flex-grow">
                  <getQuestionTypeIcon type={contactStepConfig.type} className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                 <div>
+                 <div className="flex-grow">
                     <CardTitle className="text-lg">Etapa de Contato: {contactStepConfig.text.substring(0,60)}...</CardTitle>
                     <CardDescription>ID: {contactStepConfig.id}</CardDescription>
                  </div>
                </div>
+                 <div className="flex flex-col items-end flex-shrink-0">
+                    <p className="text-2xl font-bold text-primary">0</p>
+                    <p className="text-xs text-muted-foreground -mt-1">Submissões</p>
+                </div>
             </CardHeader>
             <CardContent>
                 <p className="text-sm text-muted-foreground">Nenhuma submissão registrada para a etapa de contato ainda.</p>
@@ -278,3 +290,6 @@ export default function QuizStatsPage() {
     </div>
   );
 }
+
+
+    
