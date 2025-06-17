@@ -1,7 +1,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { decrypt } from '@/lib/authService'; 
-import { AUTH_COOKIE_NAME, APP_BASE_URL } from '@/config/appConfig';
+import { AUTH_COOKIE_NAME } from '@/config/appConfig'; // Removed APP_BASE_URL import
 
 async function isUserAuthenticated(request: NextRequest): Promise<boolean> {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
     const isAuthenticated = await isUserAuthenticated(request);
     // console.log(`[Middleware] Accessing ${pathname}, IsAuthenticated: ${isAuthenticated}`);
     if (!isAuthenticated) {
-      const loginUrl = new URL('/config/login', APP_BASE_URL || request.url);
+      const loginUrl = new URL('/config/login', request.url); // Use request.url as base
       loginUrl.searchParams.set('redirectedFrom', pathname);
       // console.log(`[Middleware] Not authenticated, redirecting to: ${loginUrl.toString()}`);
       return NextResponse.redirect(loginUrl);
@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
       // console.log(`[Middleware] Accessing /config/login, IsAuthenticated: ${isAuthenticated}`);
       if (isAuthenticated) {
           // console.log('[Middleware] Authenticated user accessing /config/login, redirecting to dashboard.');
-          return NextResponse.redirect(new URL('/config/dashboard', APP_BASE_URL || request.url));
+          return NextResponse.redirect(new URL('/config/dashboard', request.url)); // Use request.url as base
       }
   }
 

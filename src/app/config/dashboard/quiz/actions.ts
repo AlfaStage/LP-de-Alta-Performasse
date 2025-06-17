@@ -6,6 +6,14 @@ import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnal
 import { defaultContactStep } from '@/config/quizConfig'; 
 import { revalidatePath } from 'next/cache';
 
+// IMPORTANT PRODUCTION NOTE:
+// Writing to the local filesystem (JSON files in src/data/) at runtime for quizzes and analytics
+// is NOT SUITABLE for most PaaS/serverless hosting environments (e.g., Firebase App Hosting, Vercel)
+// as their filesystems are often ephemeral or read-only after deployment.
+// For production, dynamic data like quizzes and analytics should be stored in a
+// persistent database (e.g., Firestore, PostgreSQL, MySQL).
+// This implementation is suitable for local development or environments with persistent writable storage.
+
 const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
 const analyticsDirectory = path.join(process.cwd(), 'src', 'data', 'analytics');
 const AGGREGATE_STATS_FILE_PATH = path.join(analyticsDirectory, 'quiz_stats.json');
@@ -138,13 +146,11 @@ export async function recordQuestionAnswerAction(
         }
       });
     } else if (questionType === 'textFields') {
-      // For textFields, totalAnswers incremented above is enough to count submissions for the step.
-      // We don't store the actual text values here for simplicity with JSON.
       currentQStats.fieldsHandled = true;
     }
 
     await saveQuizQuestionAnalyticsData(quizSlug, questionStats);
-    revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`); // Revalidate edit page for stats update
+    revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`); 
     return { success: true };
   } catch (error) {
     console.error(`Error recording answer for q:${questionId} in quiz:${quizSlug}:`, error);
@@ -168,7 +174,6 @@ interface CreateQuizPayload {
 
 export async function createQuizAction(payload: CreateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  // ... (rest of createQuizAction, no changes to its core logic here)
   const { title, slug, questions } = payload;
 
   if (!title || !slug ) { 
@@ -181,7 +186,7 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
   if (!/^[a-z0-9-]+$/.test(slug)) {
       return { success: false, message: "Slug inválido. Use apenas letras minúsculas, números e hífens."};
   }
-  if (slug === 'config' || slug === 'api' || slug === 'public' || slug === 'assets' || slug === 'images' || slug === '_next') {
+  if (slug === 'config' || slug === 'api' || slug === 'public' || slug === 'assets' || slug === 'images' || slug === '_next' || slug === 'analytics' || slug === 'whitelabel-config') {
       return { success: false, message: "Este slug é reservado e não pode ser usado."};
   }
 
@@ -206,7 +211,6 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
 
   try {
     await fs.writeFile(filePath, JSON.stringify(quizConfig, null, 2));
-    // Initialize empty stats files for the new quiz
     await saveAggregateQuizStatsData({ ...(await getAggregateQuizStatsData()), [slug]: { startedCount: 0, completedCount: 0 } });
     await saveQuizQuestionAnalyticsData(slug, {});
 
@@ -255,7 +259,6 @@ interface UpdateQuizPayload {
 
 export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  // ... (rest of updateQuizAction, no changes to its core logic here)
   const { title, slug, questions } = payload;
 
   if (!title || !slug) {
@@ -319,19 +322,16 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
   try {
     await fs.unlink(quizFilePath); 
     
-    // Remove its aggregate stats
     const aggStats = await getAggregateQuizStatsData();
     if (aggStats[slug]) {
       delete aggStats[slug];
       await saveAggregateQuizStatsData(aggStats);
     }
 
-    // Remove its per-question stats file
     try {
       await fs.access(questionStatsFilePath);
       await fs.unlink(questionStatsFilePath);
     } catch (questionStatsError) {
-      // Ignore if file doesn't exist, log other errors
       if ((questionStatsError as NodeJS.ErrnoException).code !== 'ENOENT') {
         console.warn(`Could not delete question stats file ${questionStatsFilePath}:`, questionStatsError);
       }
@@ -445,7 +445,6 @@ export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalytic
       completedCount: quizAggStats?.completedCount || 0,
     };
   } catch {
-    // If quiz file not found, but stats might exist (edge case)
     if (quizAggStats) {
         return {
             title: `Quiz ${slug} (Arquivo não encontrado)`,
@@ -461,10 +460,8 @@ export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalytic
 
 export async function resetAllQuizAnalyticsAction(): Promise<{ success: boolean; message?: string }> {
   try {
-    // Reset aggregate stats
     await saveAggregateQuizStatsData({}); 
     
-    // Reset per-question stats
     await ensureDirectoryExists(analyticsDirectory);
     const analyticsFiles = await fs.readdir(analyticsDirectory);
     for (const file of analyticsFiles) {
@@ -475,7 +472,7 @@ export async function resetAllQuizAnalyticsAction(): Promise<{ success: boolean;
 
     console.log("All quiz statistics (aggregate and per-question) have been reset.");
     await new Promise(resolve => setTimeout(resolve, 300)); 
-    revalidatePath('/config/dashboard', 'layout'); // Revalidate entire dashboard layout
+    revalidatePath('/config/dashboard', 'layout'); 
     return { success: true, message: "Estatísticas de todos os quizzes foram resetadas." };
   } catch (error) {
     console.error("Error resetting quiz statistics:", error);
@@ -483,4 +480,3 @@ export async function resetAllQuizAnalyticsAction(): Promise<{ success: boolean;
     return { success: false, message: `Failed to reset statistics: ${errorMessage}` };
   }
 }
-
