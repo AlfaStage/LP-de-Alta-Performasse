@@ -1,17 +1,18 @@
 {
   "projectName": "Sistema de Quiz Whitelabel",
-  "logoUrl": "https://placehold.co/150x50.png?text=Sua+Logo",
+  "logoUrl": "https://fragenciamarketingdigital.com.br/wp-content/uploads/2023/12/fr.png",
   "primaryColorHex": "#3B82F6",
   "secondaryColorHex": "#BFDBFE",
   "buttonPrimaryBgColorHex": "#2563EB",
   "pageBackgroundColorHex": "#F3F4F6",
   "quizBackgroundColorHex": "#FFFFFF",
-  "quizSubmissionWebhookUrl": "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
+  "quizSubmissionWebhookUrl": "https://webhook.workflow.alfastage.com.br/webhook/icelazerquiz-mensagem",
   "facebookPixelId": "",
   "facebookPixelIdSecondary": "",
   "googleAnalyticsId": "",
-  "footerCopyrightText": "© 2025 Seu Nome/Empresa. Todos os direitos reservados.",
+  "footerCopyrightText": "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   "apiStatsAccessToken": "",
   "websiteUrl": "",
-  "instagramUrl": ""
+  "instagramUrl": "",
+  "facebookDomainVerification": ""
 }
