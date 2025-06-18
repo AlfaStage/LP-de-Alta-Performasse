@@ -1,1 +1,6 @@
-{}
+{
+  "default": {
+    "startedCount": 1,
+    "completedCount": 0
+  }
+}
