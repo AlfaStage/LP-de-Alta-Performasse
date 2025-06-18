@@ -7,21 +7,21 @@ import crypto from 'crypto';
 const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-config.json');
 
 export const defaultConfig: WhitelabelConfig = {
-  projectName: "LP de Alta Performasse",
-  logoUrl: "/logo-lp-alta-performasse.png",
-  primaryColorHex: "#E09677", 
-  secondaryColorHex: "#F5D4C6", 
-  buttonPrimaryBgColorHex: "#FEC3A9", 
-  pageBackgroundColorHex: "#FCEFEA", 
-  quizBackgroundColorHex: "#FFFFFF", 
-  quizSubmissionWebhookUrl: "https://webhook.workflow.alfastage.com.br/webhook/icelazerquiz-mensagem",
-  facebookPixelId: "724967076682767",
-  facebookPixelIdSecondary: "3949746165337932",
-  googleAnalyticsId: "G-YV9GYV3385",
-  footerCopyrightText: `© ${new Date().getFullYear()} LP de Alta Performasse. Todos os direitos reservados. Desenvolvido por FR Digital.`,
+  projectName: "Sistema de Quiz Whitelabel",
+  logoUrl: "https://placehold.co/150x50.png?text=Sua+Logo",
+  primaryColorHex: "#3B82F6", // Azul Padrão
+  secondaryColorHex: "#BFDBFE", // Azul Claro Padrão
+  buttonPrimaryBgColorHex: "#2563EB", // Azul Escuro Padrão para Botão
+  pageBackgroundColorHex: "#F3F4F6", // Cinza Claro para Fundo da Página
+  quizBackgroundColorHex: "#FFFFFF", // Branco para Fundo do Quiz
+  quizSubmissionWebhookUrl: "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
+  facebookPixelId: "",
+  facebookPixelIdSecondary: "",
+  googleAnalyticsId: "",
+  footerCopyrightText: `© ${new Date().getFullYear()} Seu Nome/Empresa. Todos os direitos reservados.`,
   apiStatsAccessToken: "",
-  websiteUrl: "https://espacoicelaser.com", // Valor Padrão
-  instagramUrl: "https://www.instagram.com/icelaseroficial/", // Valor Padrão
+  websiteUrl: "", 
+  instagramUrl: "", 
 };
 
 async function ensureConfigFileExists() {
@@ -31,6 +31,8 @@ async function ensureConfigFileExists() {
     try {
       await fs.mkdir(path.dirname(configFilePath), { recursive: true });
       const initialConfig = { ...defaultConfig };
+      // Replace {YEAR} placeholder in footerCopyrightText
+      initialConfig.footerCopyrightText = initialConfig.footerCopyrightText.replace('{YEAR}', new Date().getFullYear().toString());
       await fs.writeFile(configFilePath, JSON.stringify(initialConfig, null, 2), 'utf8');
       console.log('Created default whitelabel-config.json at:', configFilePath);
     } catch (writeError) {
@@ -51,7 +53,14 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
     };
     
     mergedConfig.buttonPrimaryBgColorHex = typeof savedConfig.buttonPrimaryBgColorHex === 'string' ? savedConfig.buttonPrimaryBgColorHex : defaultConfig.buttonPrimaryBgColorHex;
-    mergedConfig.footerCopyrightText = (typeof savedConfig.footerCopyrightText === 'string' && savedConfig.footerCopyrightText.trim() !== "") ? savedConfig.footerCopyrightText : defaultConfig.footerCopyrightText;
+    
+    // Ensure footerCopyrightText is dynamic if it contains {YEAR}
+    let footerTextToUse = (typeof savedConfig.footerCopyrightText === 'string' && savedConfig.footerCopyrightText.trim() !== "") ? savedConfig.footerCopyrightText : defaultConfig.footerCopyrightText;
+    if (footerTextToUse.includes('{YEAR}')) {
+        footerTextToUse = footerTextToUse.replace('{YEAR}', new Date().getFullYear().toString());
+    }
+    mergedConfig.footerCopyrightText = footerTextToUse;
+
     mergedConfig.facebookPixelId = typeof savedConfig.facebookPixelId === 'string' ? savedConfig.facebookPixelId : defaultConfig.facebookPixelId;
     mergedConfig.facebookPixelIdSecondary = typeof savedConfig.facebookPixelIdSecondary === 'string' ? savedConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary;
     mergedConfig.googleAnalyticsId = typeof savedConfig.googleAnalyticsId === 'string' ? savedConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId;
@@ -63,12 +72,25 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
 
   } catch (error) {
     console.warn('Failed to read or parse whitelabel-config.json, returning default config:', error);
-    return { ...defaultConfig }; 
+    const dynamicDefaultConfig = {...defaultConfig};
+    dynamicDefaultConfig.footerCopyrightText = dynamicDefaultConfig.footerCopyrightText.replace('{YEAR}', new Date().getFullYear().toString());
+    return dynamicDefaultConfig; 
   }
 }
 
 export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise<{ success: boolean; message?: string }> {
   try {
+    // Ensure {YEAR} is persisted as a placeholder if present, or use the dynamic year if not.
+    let footerTextToSave = newConfig.footerCopyrightText || defaultConfig.footerCopyrightText;
+    if (!footerTextToSave.includes('{YEAR}')) {
+        // If user manually removed {YEAR}, we respect that. If they entered a static year, that's fine too.
+        // If it's empty or default, ensure default placeholder is used.
+        if (!newConfig.footerCopyrightText || newConfig.footerCopyrightText === defaultConfig.footerCopyrightText.replace('{YEAR}', new Date().getFullYear().toString())) {
+            footerTextToSave = defaultConfig.footerCopyrightText; // Persist with {YEAR}
+        }
+    }
+
+
     const dataToSave: WhitelabelConfig = {
         projectName: newConfig.projectName,
         logoUrl: newConfig.logoUrl,
@@ -81,7 +103,7 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
         facebookPixelId: typeof newConfig.facebookPixelId === 'string' ? newConfig.facebookPixelId : defaultConfig.facebookPixelId,
         facebookPixelIdSecondary: typeof newConfig.facebookPixelIdSecondary === 'string' ? newConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary,
         googleAnalyticsId: typeof newConfig.googleAnalyticsId === 'string' ? newConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId,
-        footerCopyrightText: (typeof newConfig.footerCopyrightText === 'string' && newConfig.footerCopyrightText.trim() !== "") ? newConfig.footerCopyrightText : defaultConfig.footerCopyrightText,
+        footerCopyrightText: footerTextToSave,
         apiStatsAccessToken: typeof newConfig.apiStatsAccessToken === 'string' ? newConfig.apiStatsAccessToken : defaultConfig.apiStatsAccessToken,
         websiteUrl: typeof newConfig.websiteUrl === 'string' ? newConfig.websiteUrl : defaultConfig.websiteUrl,
         instagramUrl: typeof newConfig.instagramUrl === 'string' ? newConfig.instagramUrl : defaultConfig.instagramUrl,
@@ -99,3 +121,4 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
 export async function generateNewApiToken(): Promise<string> {
   return crypto.randomBytes(32).toString('hex');
 }
+

@@ -91,7 +91,7 @@ export default function DashboardPage() {
         getQuizzesList(),
         getOverallQuizAnalytics()
       ]);
-      setQuizzes(quizList);
+      setQuizzes(quizList.filter(q => q.slug !== 'ba' && q.slug !== 'be' && q.slug !== 'bsb' && q.slug !== 'cam')); // Filter out deleted example quizzes
       setOverallStats(stats);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
@@ -206,7 +206,7 @@ export default function DashboardPage() {
   };
 
   const handleCopyLink = (slug: string) => {
-    const url = `${APP_BASE_URL}/${slug}`;
+    const url = `${APP_BASE_URL}/${slug}`; // Ensure APP_BASE_URL is used
     navigator.clipboard.writeText(url)
       .then(() => {
         toast({
@@ -233,7 +233,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <span className="font-display text-3xl font-bold text-sky-600">LP de Alta Performasse</span>
+            <span className="font-display text-3xl font-bold text-primary">Painel de Controle</span>
             <p className="text-muted-foreground">Gerencie seus quizzes e acompanhe o desempenho.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -426,7 +426,7 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-semibold text-card-foreground">Nenhum quiz personalizado encontrado.</h2>
               <p className="max-w-md">
                 Você ainda não criou nenhum quiz. Que tal começar agora e engajar seus leads?
-                O quiz padrão já está ativo na sua página inicial.
+                O quiz padrão já está ativo na sua página inicial, se configurado.
               </p>
               <Link href="/config/dashboard/quiz/create">
                 <Button size="lg" className="mt-4 shadow-sm">
@@ -519,6 +519,8 @@ export default function DashboardPage() {
                 quizDescription={previewQuizConfig.description}
                 logoUrl={whitelabelSettingsForPreview.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
                 footerCopyrightText={whitelabelSettingsForPreview.footerCopyrightText || `© ${new Date().getFullYear()} Preview`}
+                websiteUrl={whitelabelSettingsForPreview.websiteUrl}
+                instagramUrl={whitelabelSettingsForPreview.instagramUrl}
                 facebookPixelId="" 
                 googleAnalyticsId="" 
                 onSubmitOverride={async (data) => {

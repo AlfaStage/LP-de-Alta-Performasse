@@ -30,7 +30,7 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   loading: () => <div className="p-4"><QuizFormLoading/></div>,
 });
 
-const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas para nos ajudar a entender suas preferências.";
 
 const exampleQuestion: QuizQuestion = {
   id: "q_example_edit",
@@ -455,7 +455,7 @@ export default function EditQuizPage() {
                           id="title"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          placeholder="Ex: Quiz de Qualificação Capilar"
+                          placeholder="Ex: Quiz de Avaliação de Produto"
                           required
                       />
                       </div>
@@ -465,7 +465,7 @@ export default function EditQuizPage() {
                             id="dashboardName"
                             value={dashboardName}
                             onChange={(e) => setDashboardName(e.target.value)}
-                            placeholder="Ex: Quiz Capilar Clientes VIP (opcional)"
+                            placeholder="Ex: Quiz Produto X - Campanha Y (opcional)"
                         />
                          <p className="text-xs text-muted-foreground">
                             Este nome aparecerá apenas no seu painel de controle. Se deixado em branco, o título público será usado.
@@ -477,7 +477,7 @@ export default function EditQuizPage() {
                             id="description"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Ex: Responda algumas perguntas e descubra o tratamento ideal para você!"
+                            placeholder="Ex: Responda algumas perguntas e nos ajude a entender suas preferências!"
                             rows={3}
                         />
                         <p className="text-xs text-muted-foreground">
@@ -560,8 +560,8 @@ export default function EditQuizPage() {
                                       </div>
                                       <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-icon`} className="text-xs">Ícone (Lucide)</Label><Input id={`q-${qIndex}-opt-${oIndex}-icon`} placeholder="Ex: Smile (Opcional)" value={opt.icon || ''} onChange={(e) => updateOption(qIndex, oIndex, 'icon', e.target.value)} /></div>
                                       <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-explanation`} className="text-xs">Explicação (Opcional)</Label><Textarea id={`q-${qIndex}-opt-${oIndex}-explanation`} placeholder="Detalhe esta opção" value={opt.explanation || ''} onChange={(e) => updateOption(qIndex, oIndex, 'explanation', e.target.value)} rows={2}/></div>
-                                      <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-imageUrl`} className="text-xs">URL da Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-imageUrl`} placeholder="https://exemplo.com/imagem.png" value={opt.imageUrl || ''} onChange={(e) => updateOption(qIndex, oIndex, 'imageUrl', e.target.value)} /></div>
-                                      <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-dataAiHint`} className="text-xs">Dica IA Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-dataAiHint`} placeholder="Ex: pele clara" value={opt.dataAiHint || ''} onChange={(e) => updateOption(qIndex, oIndex, 'dataAiHint', e.target.value)} /></div>
+                                      <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-imageUrl`} className="text-xs">URL da Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-imageUrl`} placeholder="https://placehold.co/300x200.png" value={opt.imageUrl || ''} onChange={(e) => updateOption(qIndex, oIndex, 'imageUrl', e.target.value)} /></div>
+                                      <div><Label htmlFor={`q-${qIndex}-opt-${oIndex}-dataAiHint`} className="text-xs">Dica IA Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-dataAiHint`} placeholder="Ex: abstract shape" value={opt.dataAiHint || ''} onChange={(e) => updateOption(qIndex, oIndex, 'dataAiHint', e.target.value)} /></div>
                                   </Card>
                                   ))}
                                   <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)} className="mt-2 w-full">
@@ -664,7 +664,7 @@ export default function EditQuizPage() {
                             id="title-json"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Ex: Quiz de Qualificação Capilar"
+                            placeholder="Ex: Quiz de Avaliação de Produto"
                             required
                         />
                         </div>
@@ -674,7 +674,7 @@ export default function EditQuizPage() {
                                 id="dashboardName-json"
                                 value={dashboardName}
                                 onChange={(e) => setDashboardName(e.target.value)}
-                                placeholder="Ex: Quiz Capilar Clientes VIP (opcional)"
+                                placeholder="Ex: Quiz Produto X - Campanha Y (opcional)"
                             />
                         </div>
                         <div className="space-y-2">
@@ -683,7 +683,7 @@ export default function EditQuizPage() {
                                 id="description-json"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Ex: Responda algumas perguntas e descubra o tratamento ideal para você!"
+                                placeholder="Ex: Responda algumas perguntas e nos ajude a entender suas preferências!"
                                 rows={3}
                             />
                         </div>
@@ -809,3 +809,4 @@ export default function EditQuizPage() {
     </div>
   );
 }
+

@@ -1,19 +1,19 @@
 
-# Quiz Interativo Ice Lazer para Qualificação de Leads
+# Sistema de Quiz Interativo Whitelabel
 
-Este projeto é uma aplicação web construída com Next.js, projetada para qualificar leads para tratamentos de depilação a laser da Ice Lazer através de um quiz interativo. Ele coleta respostas, informações de contato e integra-se com o Facebook Pixel e Google Analytics para rastreamento de eventos e otimização de campanhas.
+Este projeto é uma aplicação web construída com Next.js, projetada para criar e gerenciar quizzes interativos para qualificação de leads ou coleta de informações diversas. Ele é totalmente personalizável (whitelabel) para diferentes clientes.
 
 ## Funcionalidades Principais
 
-*   **Quiz Interativo:** Múltiplas etapas com diferentes tipos de perguntas (escolha única, múltipla escolha, campos de texto).
-*   **Criação e Edição de Quizzes:** Interface administrativa para criar, editar e gerenciar múltiplos quizzes.
-*   **Configurações Whitelabel:** Painel para personalizar nome do projeto, logo, cores do tema, webhooks e IDs de rastreamento.
+*   **Quiz Interativo Dinâmico:** Múltiplas etapas com diferentes tipos de perguntas (escolha única, múltipla escolha, campos de texto).
+*   **Criação e Edição de Quizzes:** Interface administrativa para criar, editar e gerenciar múltiplos quizzes através de um construtor visual ou JSON.
+*   **Configurações Whitelabel:** Painel para personalizar nome do projeto, logo, cores do tema, webhooks, links de rodapé e IDs de rastreamento (Facebook Pixel, Google Analytics, Token da API de Estatísticas).
 *   **Estatísticas de Quiz:** Dashboard para visualizar quizzes iniciados, finalizados e taxas de conversão (agregado e por quiz). **Página de estatísticas dedicada por quiz** com detalhes por pergunta.
-*   **Lógica Condicional:** (Suporte básico, mais complexidade via JSON) Algumas perguntas aparecem com base nas respostas anteriores.
-*   **Coleta de Leads:** Coleta nome completo e WhatsApp ao final do quiz.
+*   **Lógica Condicional (Básica):** (Suporte básico, mais complexidade via JSON) Algumas perguntas podem ser configuradas para aparecer com base nas respostas anteriores (funcionalidade a ser explorada/expandida).
+*   **Coleta de Leads:** Coleta nome completo e WhatsApp/Email ao final do quiz (configurável).
 *   **Integração com Webhooks:**
     *   Envia os dados completos do quiz para um webhook após a submissão (configurável via Whitelabel).
-    *   Envia dados de abandono do quiz para um webhook (usando `navigator.sendBeacon` e Server Action).
+    *   Envia dados de abandono do quiz para um webhook (usando `navigator.sendBeacon` e Server Action) - URL configurável via `.env.local`.
 *   **Rastreamento com Facebook Pixel e Google Analytics:**
     *   Suporte para múltiplos IDs de Pixel do Facebook e ID do Google Analytics (configurável via Whitelabel).
     *   Rastreia eventos chave: `PageView`, `QuizStart`, `QuestionAnswered` (para cada etapa), `QuizComplete` e `Lead`.
@@ -32,7 +32,7 @@ Este projeto é uma aplicação web construída com Next.js, projetada para qual
 *   **Gerenciamento de Formulário:** React Hook Form
 *   **Validação de Schema:** Zod
 *   **Ícones:** Lucide React
-*   **GenAI (Futuro):** Configurado com Genkit (atualmente não utilizado ativamente no quiz).
+*   **GenAI (Configuração):** Configurado com Genkit (atualmente não utilizado ativamente no quiz).
 
 ## Pré-requisitos (para Desenvolvimento Local)
 
@@ -43,17 +43,13 @@ Este projeto é uma aplicação web construída com Next.js, projetada para qual
 
 1.  **Clone o repositório:**
     ```bash
-    git clone <URL_DO_SEU_REPOSITORIO_GIT> ice-lazer-quiz
-    cd ice-lazer-quiz
+    git clone <URL_DO_SEU_REPOSITORIO_GIT> whitelabel-quiz-system
+    cd whitelabel-quiz-system
     ```
 
 2.  **Instale as dependências:**
     ```bash
     npm install
-    ```
-    ou
-    ```bash
-    yarn install
     ```
 
 3.  **Configure as Variáveis de Ambiente:**
@@ -61,10 +57,10 @@ Este projeto é uma aplicação web construída com Next.js, projetada para qual
 
     ```env
     # Senha para acessar o dashboard de configuração (/config/dashboard)
-    DASHBOARD_PASSWORD="SUA_SENHA_SEGURA_AQUI"
+    DASHBOARD_PASSWORD="SUA_SENHA_SEGURA_AQUI" # Ex: admin123 para dev, MUDE EM PRODUÇÃO!
 
     # Chave secreta para assinar os cookies de autenticação (mínimo 32 caracteres)
-    AUTH_COOKIE_SECRET="SUA_CHAVE_SECRETA_SUPER_LONGA_E_SEGURA_AQUI"
+    AUTH_COOKIE_SECRET="SUA_CHAVE_SECRETA_SUPER_LONGA_E_SEGURA_AQUI_COM_MAIS_DE_32_CHARS"
 
     # (Opcional) Nome do cookie de autenticação
     # AUTH_COOKIE_NAME="meu-app-auth"
@@ -75,18 +71,18 @@ Este projeto é uma aplicação web construída com Next.js, projetada para qual
 
     # Webhook para ser usado pelo navigator.sendBeacon no QuizForm.tsx (client-side)
     # Deve ser prefixado com NEXT_PUBLIC_ para ser acessível no browser.
-    NEXT_PUBLIC_QUIZ_ABANDONMENT_WEBHOOK_URL_CLIENT="SUA_URL_DE_WEBHOOK_PARA_ABANDONO_CLIENT_SIDE"
+    NEXT_PUBLIC_QUIZ_ABANDONMENT_WEBHOOK_URL_CLIENT="YOUR_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL_PLACEHOLDER"
 
     # Webhook para ser usado pela Server Action logQuizAbandonment (server-side)
     # Não precisa do prefixo NEXT_PUBLIC_ se for usado apenas no servidor.
-    QUIZ_ABANDONMENT_WEBHOOK_URL_SERVER="SUA_URL_DE_WEBHOOK_PARA_ABANDONO_SERVER_SIDE"
+    QUIZ_ABANDONMENT_WEBHOOK_URL_SERVER="YOUR_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL_PLACEHOLDER"
 
     # (Opcional) Chave de API do Google para Genkit, se for usar funcionalidades de IA.
     # GOOGLE_API_KEY="SUA_CHAVE_API_GOOGLE_PARA_GENKIT"
     ```
 
     **Importante sobre Configurações Whitelabel:**
-    As configurações de Whitelabel (como IDs de Pixel do Facebook, Google Analytics ID, Webhook de Submissão de Quiz, cores, logo, Token da API de Estatísticas) são gerenciadas através do dashboard em `/config/dashboard/settings`. Os valores iniciais são carregados de `src/data/whitelabel-config.json`.
+    As configurações de Whitelabel (como IDs de Pixel do Facebook, Google Analytics ID, Webhook de Submissão de Quiz, cores, logo, Token da API de Estatísticas, links de rodapé) são gerenciadas através do dashboard em `/config/dashboard/settings`. Os valores iniciais são carregados de `src/data/whitelabel-config.json`. Certifique-se de que este arquivo existe e está configurado com placeholders genéricos ou seus próprios valores padrão.
 
 4.  **Execute o servidor de desenvolvimento:**
     ```bash
@@ -99,93 +95,61 @@ Este projeto é uma aplicação web construída com Next.js, projetada para qual
 Este guia detalha como implantar esta aplicação Next.js em um servidor Ubuntu utilizando Nginx como reverse proxy e PM2 para gerenciamento de processos.
 
 ### Pré-requisitos do Servidor
-
-*   Um servidor Ubuntu (e.g., 20.04, 22.04 LTS).
-*   Acesso SSH ao servidor com privilégios `sudo`.
-*   Node.js (v18 ou superior) e npm instalados no servidor.
-*   Nginx instalado no servidor.
-*   PM2 instalado globalmente no servidor.
-*   Um nome de domínio configurado para apontar para o IP do seu servidor (recomendado para SSL).
+(Conforme descrito anteriormente)
 
 ### 1. Configuração Inicial do Servidor
-
-(Siga as etapas para instalar Node.js, Nginx, PM2 conforme detalhado anteriormente no README)
+(Siga as etapas para instalar Node.js, Nginx, PM2 conforme detalhado no README original ou guias online)
 
 ### 2. Deploy da Aplicação
 
-1.  **Clone o repositório no servidor:**
-    (Conforme detalhado anteriormente)
-
-2.  **Instale as dependências do projeto:**
-    ```bash
-    npm install
-    ```
-
-3.  **Configure as Variáveis de Ambiente para Produção:**
-    Crie e edite o arquivo `.env.local` no diretório raiz da aplicação (ex: `/var/www/ice-lazer-quiz/.env.local`):
-    ```bash
-    nano .env.local
-    ```
-    Adicione as variáveis necessárias, **substituindo pelos seus valores de produção**:
+1.  **Clone o repositório no servidor.**
+2.  **Instale as dependências do projeto:** `npm install`
+3.  **Configure as Variáveis de Ambiente para Produção (`.env.local`):**
     ```env
     NODE_ENV=production
-
-    # !! IMPORTANTE PARA PRODUÇÃO !!
     DASHBOARD_PASSWORD="UMA_SENHA_MUITO_FORTE_E_UNICA_PARA_O_DASHBOARD"
     AUTH_COOKIE_SECRET="UMA_CHAVE_SECRETA_ALEATORIA_COM_MAIS_DE_32_CARACTERES_PARA_OS_COOKIES"
     NEXT_PUBLIC_APP_BASE_URL="https://seudominio.com" # URL pública da sua aplicação
-
-    # Configure seus webhooks de produção
     NEXT_PUBLIC_QUIZ_ABANDONMENT_WEBHOOK_URL_CLIENT="SUA_URL_DE_WEBHOOK_PRODUCAO_ABANDONO_CLIENT"
     QUIZ_ABANDONMENT_WEBHOOK_URL_SERVER="SUA_URL_DE_WEBHOOK_PRODUCAO_ABANDONO_SERVER"
-
     # GOOGLE_API_KEY="SUA_CHAVE_API_GOOGLE_PRODUCAO" # Se aplicável
     ```
-
-4.  **Configurações Whitelabel Iniciais (Opcional, mas recomendado):**
+4.  **Configurações Whitelabel Iniciais (`src/data/whitelabel-config.json`):**
     Antes do primeiro build em produção, você pode querer pré-configurar o arquivo `src/data/whitelabel-config.json` com os valores de produção desejados (Logo, Pixels, Webhook de Submissão, etc.). Caso contrário, você precisará acessar o dashboard após o deploy para configurá-los.
-
-5.  **Faça o build da aplicação Next.js:**
-    ```bash
-    npm run build
-    ```
-    Isso criará a pasta `.next` com os arquivos otimizados para produção.
+5.  **Faça o build da aplicação Next.js:** `npm run build`
 
 ### 3. Configurar Nginx como Reverse Proxy
-
-(Siga as etapas de configuração do Nginx conforme detalhado anteriormente, certificando-se de que `proxy_pass` aponte para a porta correta que o PM2 usará - padrão `next start` é 3000).
+(Siga as etapas de configuração do Nginx, garantindo que `proxy_pass` aponte para a porta correta - padrão `next start` é 3000).
 
 ### 4. Gerenciar a Aplicação com PM2
-
-1.  **Inicie sua aplicação Next.js com PM2:**
-    Navegue até o diretório da sua aplicação (`/var/www/ice-lazer-quiz`).
-    ```bash
-    # O comando 'npm run start' será executado.
-    # 'next start' por padrão usa a porta 3000.
-    pm2 start npm --name "ice-lazer-quiz" -- run start
-    ```
-    (Siga as etapas para `pm2 startup` e `pm2 save` conforme detalhado anteriormente).
+```bash
+pm2 start npm --name "whitelabel-quiz" -- run start # 'whitelabel-quiz' é um nome de exemplo
+pm2 startup # Para iniciar o PM2 no boot do sistema
+pm2 save    # Salva a lista de processos atuais
+```
 
 ### 5. (Opcional mas Recomendado) Configurar SSL com Let's Encrypt
-
-(Siga as etapas do Certbot conforme detalhado anteriormente).
+(Siga as etapas do Certbot).
 
 ### **ALERTA IMPORTANTE SOBRE PERSISTÊNCIA DE DADOS EM PRODUÇÃO:**
 
-*   **Quizzes, Configurações Whitelabel e Analytics:** Este protótipo armazena dados de quizzes, configurações Whitelabel e estatísticas de analytics em arquivos JSON dentro do diretório `src/data/`.
-*   **Limitação em Ambientes PaaS/Serverless:** Muitos ambientes de hospedagem modernos (como Firebase App Hosting, Vercel, Netlify, etc.) possuem sistemas de arquivos efêmeros ou read-only para o código da aplicação após o deploy. **Isso significa que quaisquer alterações feitas nesses arquivos JSON através do dashboard (novos quizzes, mudança de configurações, coleta de analytics) podem ser perdidas** em reinicializações de instâncias ou novos deploys.
-*   **Recomendação para Produção:** Para um ambiente de produção robusto e escalável, é **altamente recomendado** migrar o armazenamento desses dados dinâmicos para uma solução de banco de dados persistente (ex: Firestore, PostgreSQL, MySQL, MongoDB) ou um serviço de configuração/armazenamento dedicado. O código das Server Actions em `src/lib/whitelabel.server.ts` e `src/app/config/dashboard/quiz/actions.ts` precisaria ser adaptado para interagir com o banco de dados escolhido.
+*   **Quizzes, Configurações Whitelabel e Analytics:** Este sistema armazena dados de quizzes, configurações Whitelabel e estatísticas de analytics em arquivos JSON dentro do diretório `src/data/`.
+*   **Limitação em Ambientes PaaS/Serverless:** Muitos ambientes de hospedagem modernos (como Firebase App Hosting, Vercel, Netlify, etc.) possuem sistemas de arquivos efêmeros ou read-only. **Isso significa que quaisquer alterações feitas nesses arquivos JSON através do dashboard podem ser perdidas** em reinicializações de instâncias ou novos deploys.
+*   **Recomendação para Produção:** Para um ambiente de produção robusto e escalável, é **altamente recomendado** migrar o armazenamento desses dados dinâmicos para uma solução de banco de dados persistente (ex: Firestore, PostgreSQL, MySQL, MongoDB) ou um serviço de configuração/armazenamento dedicado.
 *   A abordagem atual com arquivos JSON é adequada para desenvolvimento local ou para servidores onde você tem controle total sobre um sistema de arquivos persistente e gravável para o diretório da aplicação.
 
 ### Manutenção e Atualizações da Aplicação
-
-(Siga as etapas conforme detalhado anteriormente, lembrando de reiniciar com `pm2 restart ice-lazer-quiz`).
+1.  Navegue até o diretório da aplicação.
+2.  `git pull origin main` (ou sua branch).
+3.  `npm install` (se houver novas dependências).
+4.  `npm run build`.
+5.  `pm2 restart whitelabel-quiz` (ou o nome que você deu ao processo PM2).
 
 ## Estrutura de Pastas (Principais)
 
 ```
 .
-├── public/                  # Arquivos estáticos
+├── public/                  # Arquivos estáticos (ex: sua logo se não usar URL externa)
 ├── src/
 │   ├── app/                 # Rotas do App Router, layouts, Server Actions globais
 │   │   ├── [quizSlug]/page.tsx # Página dinâmica para renderizar cada quiz
@@ -237,16 +201,3 @@ Este guia detalha como implantar esta aplicação Next.js em um servidor Ubuntu 
 ├── tailwind.config.ts
 └── tsconfig.json
 ```
-
-## Contribuição
-
-Se desejar contribuir com o projeto, por favor, siga estas etapas:
-1.  Faça um fork do repositório.
-2.  Crie uma nova branch (`git checkout -b feature/sua-feature`).
-3.  Faça commit das suas alterações (`git commit -am 'Adiciona nova feature'`).
-4.  Envie para a branch (`git push origin feature/sua-feature`).
-5.  Crie um novo Pull Request.
-
-Por favor, certifique-se de que seu código segue os padrões de linting e que os testes (se aplicável) passam.
-
-    

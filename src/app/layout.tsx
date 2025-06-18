@@ -10,8 +10,8 @@ import { ClientOnlyToaster } from '@/components/ClientOnlyToaster';
 export async function generateMetadata(): Promise<Metadata> {
   const whitelabelConfig = await getWhitelabelConfig();
   return {
-    title: whitelabelConfig.projectName || 'Ice Lazer Lead Filter',
-    description: `Quiz interativo para qualificação de leads para ${whitelabelConfig.projectName || 'Ice Lazer'}.`,
+    title: whitelabelConfig.projectName || 'Sistema de Quiz Interativo',
+    description: `Quiz interativo para qualificação de leads para ${whitelabelConfig.projectName || 'seu projeto'}.`,
   };
 }
 
@@ -41,7 +41,7 @@ export default async function RootLayout({
 
   const finalPrimaryInteractiveHsl = buttonSpecificPrimaryHslString || themePrimaryColorHslString;
 
-  const accentColorHslString = secondaryColorHslString; // --accent will follow --secondary
+  const accentColorHslString = secondaryColorHslString; 
 
   const dynamicStyles = `
     :root {
@@ -51,7 +51,6 @@ export default async function RootLayout({
       ${secondaryColorHslString ? `--secondary: ${secondaryColorHslString};` : ''}
       ${accentColorHslString ? `--accent: ${accentColorHslString};` : ''}
 
-      /* --ring and --chart-1 will consistently use the theme's primary color (not button color) */
       ${themePrimaryColorHslString ? `--ring: ${themePrimaryColorHslString};` : ''}
       ${themePrimaryColorHslString ? `--chart-1: ${themePrimaryColorHslString};` : ''}
     }
@@ -63,8 +62,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
-        <meta name="facebook-domain-verification" content="7dowgwz24hni45q2fjdp19cp0ztgzn" />
-
+        
         <style dangerouslySetInnerHTML={{ __html: dynamicStyles }} />
       </head>
       <body className="font-body antialiased">

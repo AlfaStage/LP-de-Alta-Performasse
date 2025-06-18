@@ -1,18 +1,19 @@
 
 {
-  "projectName": "Ice Lazer Quiz",
-  "logoUrl": "https://espacoicelaser.com/wp-content/themes/icelaser/images/logo-ice-laser.png",
-  "primaryColorHex": "#E09677",
-  "secondaryColorHex": "#F5D4C6",
-  "buttonPrimaryBgColorHex": "#FEC3A9",
-  "pageBackgroundColorHex": "#FCEFEA",
+  "projectName": "Seu Sistema de Quiz",
+  "logoUrl": "https://placehold.co/150x50.png?text=Sua+Logo",
+  "primaryColorHex": "#3B82F6",
+  "secondaryColorHex": "#BFDBFE",
+  "buttonPrimaryBgColorHex": "#2563EB",
+  "pageBackgroundColorHex": "#F3F4F6",
   "quizBackgroundColorHex": "#FFFFFF",
-  "quizSubmissionWebhookUrl": "https://webhook.workflow.alfastage.com.br/webhook/icelazerquiz-mensagem",
-  "facebookPixelId": "724967076682767",
-  "facebookPixelIdSecondary": "3949746165337932",
-  "googleAnalyticsId": "G-YV9GYV3385",
-  "footerCopyrightText": "© 2025 Ice Lazer. Todos os direitos reservados.",
+  "quizSubmissionWebhookUrl": "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
+  "facebookPixelId": "",
+  "facebookPixelIdSecondary": "",
+  "googleAnalyticsId": "",
+  "footerCopyrightText": "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   "apiStatsAccessToken": "",
-  "websiteUrl": "https://espacoicelaser.com",
-  "instagramUrl": "https://www.instagram.com/icelaseroficial/"
+  "websiteUrl": "",
+  "instagramUrl": ""
 }
+

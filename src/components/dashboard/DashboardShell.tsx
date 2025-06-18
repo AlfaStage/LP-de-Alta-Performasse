@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Home, ListPlus, Settings2, LogOut, PanelLeftClose, PanelRightOpen, Briefcase, BookText } from 'lucide-react';
+import { Menu, Home, ListPlus, Settings2, LogOut, PanelLeftClose, PanelRightOpen, Briefcase, BookText, BarChartHorizontalBig } from 'lucide-react';
 
 interface DashboardShellProps {
   children: ReactNode;
@@ -15,9 +15,9 @@ interface DashboardShellProps {
 
 const navItems = [
   { href: "/config/dashboard", label: "Quizzes (Início)", icon: Home, exactMatch: true },
-  { href: "/config/dashboard/quiz/create", label: "Criar Novo Quiz", icon: ListPlus, exactMatch: true }, // Ensure exact match for create
-  { href: "/config/dashboard/settings", label: "Configurações App", icon: Settings2, exactMatch: true }, // Changed to exactMatch: true
-  { href: "/config/dashboard/settings/documentation", label: "Documentação API", icon: BookText, exactMatch: true }, // Ensure exact match
+  { href: "/config/dashboard/quiz/create", label: "Criar Novo Quiz", icon: ListPlus, exactMatch: true }, 
+  { href: "/config/dashboard/settings", label: "Config. Whitelabel", icon: Settings2, exactMatch: true }, 
+  { href: "/config/dashboard/settings/documentation", label: "Documentação API", icon: BookText, exactMatch: true }, 
 ];
 
 export default function DashboardShell({ children, logoutAction }: DashboardShellProps) {
@@ -38,8 +38,6 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
     if (exactMatch) {
       return pathname === href;
     }
-    // For non-exact matches, ensure it's a true parent and not just a prefix of a sibling
-    // This logic might need refinement if more complex nested routes are added that require parent highlighting
     return pathname.startsWith(href) && (pathname === href || pathname.startsWith(`${href}/`));
   };
 
@@ -56,12 +54,13 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
         <div className={`flex h-20 items-center border-b shrink-0 ${isSidebarCollapsed ? 'px-3 justify-center' : 'px-6 justify-between'}`}>
           {!isSidebarCollapsed && (
             <Link href="/config/dashboard" className="flex items-center gap-2.5" aria-label="Página Inicial do Dashboard">
-               <span className="font-display text-2xl font-bold text-sky-600">LP de Alta Performasse</span>
+               <BarChartHorizontalBig className="h-7 w-7 text-primary" />
+               <span className="font-display text-xl font-bold text-primary">Sistema de Quiz</span>
             </Link>
           )}
            {isSidebarCollapsed && (
             <Link href="/config/dashboard" aria-label="Página Inicial do Dashboard">
-                <Briefcase className="h-7 w-7 text-sky-600" />
+                <BarChartHorizontalBig className="h-7 w-7 text-primary" />
             </Link>
           )}
         </div>
@@ -130,7 +129,8 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
             <SheetContent side="left" className="flex flex-col bg-card p-0 w-[280px] shadow-xl">
               <div className="flex h-20 items-center border-b px-6">
                 <Link href="/config/dashboard" className="flex items-center gap-3" aria-label="Página Inicial do Dashboard">
-                   <span className="font-display text-2xl font-bold text-sky-600">LP de Alta Performasse</span>
+                    <BarChartHorizontalBig className="h-7 w-7 text-primary" />
+                   <span className="font-display text-xl font-bold text-primary">Sistema de Quiz</span>
                 </Link>
               </div>
               <nav className="grid gap-2 text-base font-medium p-4">
@@ -165,10 +165,11 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
             {children}
           </div>
           <footer className="text-center text-xs text-muted-foreground py-4 border-t mt-auto">
-            Todos os direitos reservados FR Digital
+             Plataforma de Quiz Interativo
           </footer>
         </main>
       </div>
     </div>
   );
 }
+

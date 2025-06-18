@@ -17,7 +17,7 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
 });
 
 const DEFAULT_QUIZ_SLUG = "default";
-const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas para nos ajudar a entender suas preferências.";
 
 
 async function getDefaultQuizConfig(): Promise<QuizConfig | null> {
@@ -25,6 +25,11 @@ async function getDefaultQuizConfig(): Promise<QuizConfig | null> {
   const filePath = path.join(quizzesDirectory, `${DEFAULT_QUIZ_SLUG}.json`);
   try {
     const fileContents = await fs.readFile(filePath, 'utf8');
+    // Handle case where default.json might have been deleted or is empty
+    if (!fileContents.trim()) {
+        console.warn(`Default quiz config file (${DEFAULT_QUIZ_SLUG}.json) is empty. A quiz might not render.`);
+        return null;
+    }
     const quizData = JSON.parse(fileContents) as QuizConfig;
     
     quizData.title = quizData.title || "Quiz Interativo";
@@ -40,8 +45,12 @@ async function getDefaultQuizConfig(): Promise<QuizConfig | null> {
       quizData.questions = [defaultContactStep];
     }
     return quizData;
-  } catch (error) {
-    console.error(`Failed to read default quiz config (slug: ${DEFAULT_QUIZ_SLUG}):`, error);
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+        console.warn(`Default quiz config file (${DEFAULT_QUIZ_SLUG}.json) not found. Quiz will not render.`);
+    } else {
+        console.error(`Failed to read or parse default quiz config (slug: ${DEFAULT_QUIZ_SLUG}):`, error);
+    }
     return null;
   }
 }
@@ -49,9 +58,9 @@ async function getDefaultQuizConfig(): Promise<QuizConfig | null> {
 export default async function HomePage() {
   const defaultQuizConfig = await getDefaultQuizConfig();
   const whitelabelConfig = await getWhitelabelConfig();
-  const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Logo+Empresa";
+  const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Sua+Logo";
   const clientAbandonmentWebhook = ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
-  const footerText = whitelabelConfig.footerCopyrightText || `© ${new Date().getFullYear()} ${whitelabelConfig.projectName || 'Quiz System'}. Todos os direitos reservados.`;
+  const footerText = whitelabelConfig.footerCopyrightText || `© ${new Date().getFullYear()} ${whitelabelConfig.projectName || 'Seu Projeto'}. Todos os direitos reservados.`;
 
 
   if (!defaultQuizConfig || !defaultQuizConfig.questions || defaultQuizConfig.questions.length === 0 ) {
@@ -62,9 +71,8 @@ export default async function HomePage() {
             <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
             <CardTitle className="text-2xl font-bold text-destructive">Erro ao Carregar Quiz Padrão</CardTitle>
             <CardDescription className="text-muted-foreground">
-              O arquivo do quiz padrão (default.json) não foi encontrado ou está mal configurado.
-              Por favor, crie o arquivo <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">src/data/quizzes/default.json</code>
-              ou verifique seu conteúdo.
+              O arquivo do quiz padrão (<code className="bg-muted px-1 py-0.5 rounded-sm text-xs">default.json</code>) não foi encontrado, está vazio ou mal configurado.
+              Por favor, crie ou verifique o arquivo <code className="bg-muted px-1 py-0.5 rounded-sm text-xs">src/data/quizzes/default.json</code>.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
@@ -112,3 +120,4 @@ export default async function HomePage() {
     </main>
   );
 }
+

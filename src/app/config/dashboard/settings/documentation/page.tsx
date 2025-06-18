@@ -121,8 +121,8 @@ curl -X GET \\
     "totalStarted": 150,
     "totalCompleted": 75,
     "mostEngagingQuiz": {
-      "title": "Quiz de Engajamento Top",
-      "slug": "top-quiz",
+      "title": "Quiz Mais Engajador",
+      "slug": "quiz-engajador",
       // ... outros campos do quiz
       "startedCount": 50,
       "completedCount": 40,
@@ -132,8 +132,8 @@ curl -X GET \\
   "quizzes": [
     {
       "slug": "default",
-      "title": "Quiz Padrão Ice Lazer",
-      "dashboardName": "Quiz Padrão (Homepage)",
+      "title": "Quiz Padrão (Modelo)",
+      "dashboardName": "Quiz Padrão (Modelo)",
       "aggregateStats": {
         // ... campos do QuizAnalyticsData
         "startedCount": 100,
@@ -141,13 +141,13 @@ curl -X GET \\
         // ...
       },
       "questionLevelStats": {
-        "q1_default": {
-          "id": "q1_default",
+        "q1_generic_experience": {
+          "id": "q1_generic_experience",
           "type": "radio",
           "totalAnswers": 90,
           "options": {
-            "sim": 60,
-            "nao": 30
+            "yes": 60,
+            "no": 30
           }
         },
         // ... outras perguntas
@@ -181,12 +181,12 @@ curl -X GET \\
           <section>
             <h2 className="text-xl font-semibold mb-2 flex items-center gap-2"><Info className="h-5 w-5 text-muted-foreground"/>Visão Geral do Sistema</h2>
             <p className="text-muted-foreground">
-              Este sistema ("LP de Alta Performasse") permite a criação e gerenciamento de quizzes interativos para qualificação de leads.
+              Este sistema permite a criação e gerenciamento de quizzes interativos para qualificação de leads ou coleta de informações.
               As principais funcionalidades incluem:
             </p>
             <ul className="list-disc list-inside space-y-1 mt-2 text-muted-foreground pl-4">
               <li>Criação e edição de múltiplos quizzes com diferentes tipos de perguntas.</li>
-              <li>Coleta de informações de contato (nome, WhatsApp).</li>
+              <li>Coleta de informações de contato (nome, WhatsApp/Email).</li>
               <li>Configurações Whitelabel para personalização (logo, cores, webhooks, IDs de rastreamento, token de API).</li>
               <li>Acompanhamento de estatísticas de quizzes iniciados, finalizados e por pergunta.</li>
               <li>Integração com Facebook Pixel e Google Analytics.</li>
@@ -233,7 +233,7 @@ curl -X GET \\
                       <ShieldAlert className="h-5 w-5 text-amber-600"/>
                       <AlertTitle className="text-amber-700">Nenhum Token de API Configurado</AlertTitle>
                       <AlertDescription className="text-amber-600">
-                          Nenhum token de acesso à API de estatísticas foi gerado ou configurado. Clique no botão abaixo para gerar um, ou configure um manualmente se necessário.
+                          Nenhum token de acesso à API de estatísticas foi gerado ou configurado. Clique no botão abaixo para gerar um.
                       </AlertDescription>
                   </Alert>
                 )}
@@ -306,4 +306,3 @@ curl -X GET \\
     </div>
   );
 }
-

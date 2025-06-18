@@ -15,7 +15,7 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   loading: () => <QuizFormLoading />,
 });
 
-const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas para nos ajudar a entender suas preferências.";
 
 interface QuizPageProps {
   params: {
@@ -28,6 +28,11 @@ async function getQuizConfigFromFile(slug: string): Promise<QuizConfig | null> {
   const filePath = path.join(quizzesDirectory, `${slug}.json`);
   try {
     const fileContents = await fs.readFile(filePath, 'utf8');
+    // Handle case where a quiz file might be empty (e.g., after deletion if placeholders are empty files)
+    if (!fileContents.trim()) {
+        console.warn(`Quiz config file for slug ${slug} is empty.`);
+        return null;
+    }
     const quizData = JSON.parse(fileContents) as QuizConfig;
     
     quizData.title = quizData.title || "Quiz Interativo";
@@ -44,8 +49,13 @@ async function getQuizConfigFromFile(slug: string): Promise<QuizConfig | null> {
     }
     
     return quizData;
-  } catch (error) {
-    console.error(`Failed to read quiz config for slug ${slug}:`, error);
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+        // This is expected if a quiz slug that doesn't exist is accessed.
+        // console.log(`Quiz config for slug ${slug} not found.`); 
+    } else {
+        console.error(`Failed to read quiz config for slug ${slug}:`, error);
+    }
     return null;
   }
 }
@@ -55,7 +65,7 @@ export async function generateStaticParams() {
   try {
     const filenames = await fs.readdir(quizzesDirectory);
     return filenames
-      .filter(filename => filename.endsWith('.json'))
+      .filter(filename => filename.endsWith('.json') && filename !== 'ba.json' && filename !== 'be.json' && filename !== 'bsb.json' && filename !== 'cam.json') // Exclude deleted files explicitly
       .map(filename => ({
         quizSlug: filename.replace('.json', ''),
       }));
@@ -78,7 +88,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
           <AlertTriangle className="h-8 w-8" />
           <AlertTitle className="text-xl">Quiz não encontrado ou mal configurado</AlertTitle>
           <AlertDescription>
-            O quiz com o identificador "{quizSlug}" não pôde ser carregado ou está vazio.
+            O quiz com o identificador "{quizSlug}" não pôde ser carregado, está vazio ou não existe.
             Por favor, verifique o URL ou <Link href="/" className="underline hover:text-primary font-semibold">volte para a página inicial</Link>.
           </AlertDescription>
         </Alert>
@@ -90,9 +100,9 @@ export default async function QuizPage({ params }: QuizPageProps) {
      // Permite quiz com apenas a etapa de contato.
    }
 
-  const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Logo+Empresa";
+  const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Sua+Logo";
   const clientAbandonmentWebhook = ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
-  const footerText = whitelabelConfig.footerCopyrightText || `© ${new Date().getFullYear()} ${whitelabelConfig.projectName || 'Quiz System'}. Todos os direitos reservados.`;
+  const footerText = whitelabelConfig.footerCopyrightText || `© ${new Date().getFullYear()} ${whitelabelConfig.projectName || 'Seu Projeto'}. Todos os direitos reservados.`;
 
 
   return (
@@ -114,3 +124,4 @@ export default async function QuizPage({ params }: QuizPageProps) {
     </main>
   );
 }
+
