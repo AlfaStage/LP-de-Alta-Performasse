@@ -6,13 +6,21 @@ import { hexToHslString } from '@/lib/whitelabel';
 import TrackingScriptsWrapper from '@/components/TrackingScriptsWrapper'; 
 import { ClientOnlyToaster } from '@/components/ClientOnlyToaster';
 
-
 export async function generateMetadata(): Promise<Metadata> {
   const whitelabelConfig = await getWhitelabelConfig();
-  return {
+  const metadataResult: Metadata = {
     title: whitelabelConfig.projectName || 'Sistema de Quiz Interativo',
     description: `Quiz interativo para qualificação de leads para ${whitelabelConfig.projectName || 'seu projeto'}.`,
   };
+
+  if (whitelabelConfig.facebookDomainVerification && whitelabelConfig.facebookDomainVerification.trim() !== "") {
+    metadataResult.other = {
+      ...(metadataResult.other || {}),
+      'facebook-domain-verification': whitelabelConfig.facebookDomainVerification.trim(),
+    };
+  }
+
+  return metadataResult;
 }
 
 export const viewport: Viewport = {
@@ -77,5 +85,3 @@ export default async function RootLayout({
     </html>
   );
 }
-
-    

@@ -53,8 +53,9 @@ export interface WhitelabelConfig {
   googleAnalyticsId?: string;
   footerCopyrightText?: string;
   apiStatsAccessToken?: string;
-  websiteUrl?: string; // Novo campo
-  instagramUrl?: string; // Novo campo
+  websiteUrl?: string;
+  instagramUrl?: string;
+  facebookDomainVerification?: string; // Novo campo
 }
 
 // Statistics types

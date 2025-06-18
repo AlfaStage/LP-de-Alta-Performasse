@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Save, Loader2, Palette, Link2, Facebook, Settings2, TextQuote, ImageIcon, HelpCircle, CopyrightIcon, Globe, Instagram as InstagramIconLucide } from 'lucide-react';
+import { Save, Loader2, Palette, Link2, Facebook, Settings2, TextQuote, ImageIcon, HelpCircle, CopyrightIcon, Globe, Instagram as InstagramIconLucide, CheckSquare } from 'lucide-react'; // Adicionado CheckSquare
 import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from './actions';
 import type { WhitelabelConfig } from '@/types/quiz';
@@ -34,6 +34,7 @@ const whitelabelSettingsSchema = z.object({
   footerCopyrightText: z.string().min(1, "Texto do rodapé é obrigatório.").optional(),
   websiteUrl: z.string().url({ message: "URL do site inválida." }).optional().or(z.literal('')),
   instagramUrl: z.string().url({ message: "URL do Instagram inválida." }).optional().or(z.literal('')),
+  facebookDomainVerification: z.string().optional(),
 });
 
 export default function WhitelabelSettingsPage() {
@@ -112,7 +113,7 @@ export default function WhitelabelSettingsPage() {
               <Controller
                 name="projectName"
                 control={control}
-                render={({ field }) => <Input id="projectName" {...field} placeholder="Ex: Ice Lazer Lead Quiz" />}
+                render={({ field }) => <Input id="projectName" {...field} placeholder="Ex: Sistema de Quiz XPTO" />}
               />
               {errors.projectName && <p className="text-sm text-destructive">{errors.projectName.message}</p>}
             </div>
@@ -134,7 +135,7 @@ export default function WhitelabelSettingsPage() {
               <Controller
                 name="footerCopyrightText"
                 control={control}
-                render={({ field }) => <Input id="footerCopyrightText" {...field} placeholder={`© ${new Date().getFullYear()} Seu Projeto. Todos os direitos reservados.`} />}
+                render={({ field }) => <Input id="footerCopyrightText" {...field} placeholder={`© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.`} />}
               />
               {errors.footerCopyrightText && <p className="text-sm text-destructive">{errors.footerCopyrightText.message}</p>}
             </div>
@@ -161,7 +162,6 @@ export default function WhitelabelSettingsPage() {
               {errors.instagramUrl && <p className="text-sm text-destructive">{errors.instagramUrl.message}</p>}
             </div>
 
-
             {/* Primary Theme Color HEX */}
             <div className="space-y-2">
               <Label htmlFor="primaryColorHex" className="flex items-center gap-1">
@@ -181,7 +181,7 @@ export default function WhitelabelSettingsPage() {
                     <Input 
                       id="primaryColorHexText" 
                       {...field} 
-                      placeholder="#E09677" 
+                      placeholder="#3B82F6" 
                       className="flex-grow"
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     />
@@ -194,7 +194,7 @@ export default function WhitelabelSettingsPage() {
                     <Input 
                       id="primaryColorHexPicker"
                       type="color"
-                      value={field.value || "#E09677"}
+                      value={field.value || "#3B82F6"}
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                       className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
                     />
@@ -223,7 +223,7 @@ export default function WhitelabelSettingsPage() {
                     <Input 
                       id="secondaryColorHexText" 
                       {...field} 
-                      placeholder="#F5D4C6" 
+                      placeholder="#BFDBFE" 
                       className="flex-grow"
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     />
@@ -236,7 +236,7 @@ export default function WhitelabelSettingsPage() {
                     <Input 
                       id="secondaryColorHexPicker"
                       type="color"
-                      value={field.value || "#F5D4C6"}
+                      value={field.value || "#BFDBFE"}
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                       className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
                     />
@@ -266,7 +266,7 @@ export default function WhitelabelSettingsPage() {
                       id="buttonPrimaryBgColorHexText"
                       {...field}
                       value={field.value || ""}
-                      placeholder="#FF5733 (Opcional, fallback para Cor Primária Tema)"
+                      placeholder="#2563EB (Opcional, fallback para Cor Primária Tema)"
                       className="flex-grow"
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     />
@@ -279,7 +279,7 @@ export default function WhitelabelSettingsPage() {
                     <Input
                       id="buttonPrimaryBgColorHexPicker"
                       type="color"
-                      value={field.value || watch("primaryColorHex") || "#E09677"} 
+                      value={field.value || watch("primaryColorHex") || "#2563EB"} 
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                       className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
                     />
@@ -288,7 +288,6 @@ export default function WhitelabelSettingsPage() {
               </div>
               {errors.buttonPrimaryBgColorHex && <p className="text-sm text-destructive">{errors.buttonPrimaryBgColorHex.message}</p>}
             </div>
-
 
             {/* Page Background Color HEX */}
             <div className="space-y-2">
@@ -301,7 +300,7 @@ export default function WhitelabelSettingsPage() {
                     <Input 
                       id="pageBackgroundColorHexText" 
                       {...field} 
-                      placeholder="#FCEFEA" 
+                      placeholder="#F3F4F6" 
                       className="flex-grow"
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                     />
@@ -314,7 +313,7 @@ export default function WhitelabelSettingsPage() {
                     <Input 
                       id="pageBackgroundColorHexPicker"
                       type="color"
-                      value={field.value || "#FCEFEA"}
+                      value={field.value || "#F3F4F6"}
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                       className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
                     />
@@ -375,7 +374,7 @@ export default function WhitelabelSettingsPage() {
               <Controller
                 name="facebookPixelId"
                 control={control}
-                render={({ field }) => <Input id="facebookPixelId" {...field} value={field.value || ""} placeholder="Seu ID do Pixel do Facebook" />}
+                render={({ field }) => <Input id="facebookPixelId" {...field} value={field.value || ""} placeholder="Seu ID do Pixel do Facebook (opcional)" />}
               />
               {errors.facebookPixelId && <p className="text-sm text-destructive">{errors.facebookPixelId.message}</p>}
             </div>
@@ -394,15 +393,35 @@ export default function WhitelabelSettingsPage() {
             {/* Google Analytics ID */}
             <div className="space-y-2">
               <Label htmlFor="googleAnalyticsId" className="flex items-center gap-1">
-                Google Analytics ID (Tag do Google)
+                <CheckSquare className="h-4 w-4 text-muted-foreground" />Google Analytics ID (Tag do Google)
               </Label>
               <Controller
                 name="googleAnalyticsId"
                 control={control}
-                render={({ field }) => <Input id="googleAnalyticsId" {...field} value={field.value || ""} placeholder="Ex: G-XXXXXXXXXX" />}
+                render={({ field }) => <Input id="googleAnalyticsId" {...field} value={field.value || ""} placeholder="Ex: G-XXXXXXXXXX (opcional)" />}
               />
               {errors.googleAnalyticsId && <p className="text-sm text-destructive">{errors.googleAnalyticsId.message}</p>}
             </div>
+
+            {/* Facebook Domain Verification Code */}
+            <div className="space-y-2">
+              <Label htmlFor="facebookDomainVerification" className="flex items-center gap-1">
+                <Facebook className="h-4 w-4 text-muted-foreground" />Código de Verificação de Domínio do Facebook
+                <Tooltip>
+                    <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                        <p>Insira o conteúdo da meta tag de verificação de domínio do Facebook. Ex: "abcdef123456xyz". (opcional)</p>
+                    </TooltipContent>
+                </Tooltip>
+              </Label>
+              <Controller
+                name="facebookDomainVerification"
+                control={control}
+                render={({ field }) => <Input id="facebookDomainVerification" {...field} value={field.value || ""} placeholder="Conteúdo da meta tag (opcional)" />}
+              />
+              {errors.facebookDomainVerification && <p className="text-sm text-destructive">{errors.facebookDomainVerification.message}</p>}
+            </div>
+
 
           </CardContent>
           <CardFooter>

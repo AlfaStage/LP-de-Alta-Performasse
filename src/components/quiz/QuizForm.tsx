@@ -11,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getSuccessIcon } from '@/config/quizConfig';
+import { getSuccessIcon, defaultContactStep } from '@/config/quizConfig';
 import QuizProgressBar from './QuizProgressBar';
-import { getActivePixelIds, trackFbCustomEvent, trackFbEvent } from '@/lib/fpixel';
-import { trackGaEvent } from '@/lib/gtag';
+import { getActivePixelIds, trackFbCustomEvent, trackFbEvent, trackFbPageView } from '@/lib/fpixel';
+import { trackGaEvent, trackGaPageView } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
 import { recordQuizStartedAction, recordQuestionAnswerAction } from '@/app/config/dashboard/quiz/actions';
 import * as LucideIcons from 'lucide-react';
@@ -25,6 +25,7 @@ import type { QuizQuestion } from '@/types/quiz';
 
 type FormData = Record<string, any>;
 
+// This schema is specifically for the contact step
 const contactSchema = z.object({
   nomeCompleto: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres." }),
   whatsapp: z.string().min(10, { message: "WhatsApp inválido. Inclua o DDD." }).regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, { message: "Formato de WhatsApp inválido. Use (XX) XXXXX-XXXX ou XXXXXXXXXXX." }),
@@ -50,20 +51,20 @@ interface QuizFormProps {
 
 const IconComponents = LucideIcons;
 
-const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
+const DEFAULT_GENERIC_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas para nos ajudar a entender suas preferências.";
 
 
 export default function QuizForm({
   quizQuestions,
   quizSlug,
   quizTitle = "Quiz",
-  quizDescription = DEFAULT_QUIZ_DESCRIPTION,
+  quizDescription = DEFAULT_GENERIC_QUIZ_DESCRIPTION,
   logoUrl,
   facebookPixelId,
   facebookPixelIdSecondary,
   googleAnalyticsId,
   clientAbandonmentWebhookUrl,
-  footerCopyrightText = `© ${new Date().getFullYear()} Quiz. Todos os direitos reservados.`,
+  footerCopyrightText = `© ${new Date().getFullYear()} Seu Projeto. Todos os direitos reservados.`,
   websiteUrl,
   instagramUrl,
   onSubmitOverride,
@@ -80,7 +81,9 @@ export default function QuizForm({
   const SuccessIcon = getSuccessIcon();
 
   const methods = useForm<FormData>({
-    resolver: quizQuestions && quizQuestions.length > 0 && currentStep === quizQuestions.length -1 && quizQuestions[currentStep]?.type === 'textFields' ? zodResolver(contactSchema) : undefined,
+    resolver: (quizQuestions && quizQuestions.length > 0 && currentStep === quizQuestions.length -1 && quizQuestions[currentStep]?.id === defaultContactStep.id) 
+                ? zodResolver(contactSchema) 
+                : undefined,
     mode: 'onChange',
   });
 
@@ -131,7 +134,7 @@ export default function QuizForm({
         const dataToLog = {
           ...getValues(),
           abandonedAtStep: currentQuestion?.id || currentStep,
-          quizType: `IceLazerLeadFilter_Abandonment_${quizSlug}`,
+          quizType: `QuizSystemLeadFilter_Abandonment_${quizSlug}`, // Generalizado
           quizSlug,
           clientInfo,
           abandonedAt: new Date().toISOString()
@@ -141,7 +144,7 @@ export default function QuizForm({
           onAbandonmentOverride(dataToLog, quizSlug);
         } else {
             const webhookUrl = clientAbandonmentWebhookUrl;
-            if (webhookUrl && webhookUrl !== "YOUR_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL") {
+            if (webhookUrl && webhookUrl !== "YOUR_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL_PLACEHOLDER") { // Usar placeholder correto
               if (navigator.sendBeacon) {
                 try {
                   const blob = new Blob([JSON.stringify(dataToLog)], { type: 'application/json' });
@@ -170,7 +173,9 @@ export default function QuizForm({
     if (submissionStatus === 'pending' || !currentQuestion) return;
 
     let stepIsValid = true;
-    if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
+    if (currentQuestion.id === defaultContactStep.id) { // Specific validation for contact step
+        stepIsValid = await trigger(['nomeCompleto', 'whatsapp']);
+    } else if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
         const fieldNamesToValidate = currentQuestion.fields.map(f => f.name);
         stepIsValid = await trigger(fieldNamesToValidate);
     } else if (currentQuestion.type === 'radio' || currentQuestion.type === 'checkbox') {
@@ -191,24 +196,29 @@ export default function QuizForm({
             recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, answerValue, currentQuestion.type)
               .catch(err => console.error("Failed to record question answer:", err));
 
-            const eventData = {
+            const eventDataFb = {
               quiz_slug: quizSlug,
               question_id: currentQuestion.id,
               question_name: currentQuestion.name,
               answer: answerString,
               step_number: currentStep + 1,
             };
-
-            if (configuredFbPixelIds.length > 0) {
-              trackFbCustomEvent('QuestionAnswered', eventData, configuredFbPixelIds);
-            }
-            if(isGaConfigured && googleAnalyticsId){
-              trackGaEvent({ 
+             const eventDataGa = { 
                 action: 'question_answered', 
                 category: 'Quiz', 
                 label: `Q: ${currentQuestion.id} - A: ${answerString.substring(0, 100)}`, 
-                ...eventData 
-              }, googleAnalyticsId);
+                quiz_slug: quizSlug,
+                question_id: currentQuestion.id,
+                question_name: currentQuestion.name,
+                answer: answerString,
+                step_number: currentStep + 1,
+            };
+
+            if (configuredFbPixelIds.length > 0) {
+              trackFbCustomEvent('QuestionAnswered', eventDataFb, configuredFbPixelIds);
+            }
+            if(isGaConfigured && googleAnalyticsId){
+              trackGaEvent(eventDataGa, googleAnalyticsId);
             }
         }
 
@@ -255,7 +265,7 @@ export default function QuizForm({
 
     const finalData = {
       ...formData,
-      ...data,
+      ...data, // This includes validated data from the last step (e.g., nomeCompleto, whatsapp)
       quizSlug,
       quizTitle,
       clientInfo,
@@ -284,25 +294,37 @@ export default function QuizForm({
             setIsQuizCompleted(true);
             setSubmissionStatus('success');
 
-            const quizCompleteData = { quiz_slug: quizSlug, quiz_title: quizTitle };
+            const quizCompleteDataFb = { quiz_slug: quizSlug, quiz_title: quizTitle };
             const leadDataFb = { 
                 value: 1, 
                 currency: 'BRL', 
+                content_name: quizTitle,
+                content_category: 'Quiz',
+            };
+             const quizCompleteDataGa = { 
+                action: 'quiz_complete', 
+                category: 'Quiz', 
+                label: `${quizSlug}_Complete`, 
+                quiz_slug: quizSlug, 
+                quiz_title: quizTitle 
             };
              const leadDataGa = { 
+                action: 'generate_lead', 
+                category: 'Quiz', 
+                label: `${quizSlug}_Lead`, 
                 quiz_slug: quizSlug, 
                 value: 1, 
-                currency: 'BRL', 
+                currency: 'BRL',
             };
 
 
             if (configuredFbPixelIds.length > 0) {
-                trackFbCustomEvent('QuizComplete', quizCompleteData, configuredFbPixelIds);
+                trackFbCustomEvent('QuizComplete', quizCompleteDataFb, configuredFbPixelIds);
                 trackFbEvent('Lead', leadDataFb, configuredFbPixelIds); 
             }
             if(isGaConfigured && googleAnalyticsId){
-                trackGaEvent({action: 'quiz_complete', category: 'Quiz', label: `${quizSlug}_Complete`, ...quizCompleteData }, googleAnalyticsId);
-                trackGaEvent({action: 'generate_lead', category: 'Quiz', label: `${quizSlug}_Lead`, ...leadDataGa }, googleAnalyticsId);
+                trackGaEvent(quizCompleteDataGa, googleAnalyticsId);
+                trackGaEvent(leadDataGa, googleAnalyticsId);
             }
 
         } else if (result.status === 'invalid_number') {
@@ -523,11 +545,10 @@ export default function QuizForm({
                                 >
                                   {option.imageUrl && (
                                     <div className="relative w-full h-24 mb-2 rounded-md overflow-hidden">
-                                      <Image src={option.imageUrl} alt={option.label} data-ai-hint={option.dataAiHint || 'body area'} layout="fill" objectFit="cover" className="transition-transform group-hover:scale-105" />
+                                      <Image src={option.imageUrl} alt={option.label} data-ai-hint={option.dataAiHint || 'quiz option'} layout="fill" objectFit="cover" className="transition-transform group-hover:scale-105" />
                                     </div>
                                   )}
                                   <div className="text-center">
-                                    <p className={`text-xs font-medium ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>Depilação a laser</p>
                                     <Label htmlFor={`${currentQuestion.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-primary font-bold' : 'text-card-foreground'}`}>
                                       {option.label}
                                     </Label>
@@ -593,11 +614,12 @@ export default function QuizForm({
                     disabled={
                         submissionStatus === 'pending' ||
                         (currentQuestion.type !== 'textFields' && (!getValues(currentQuestion.name) || (Array.isArray(getValues(currentQuestion.name)) && getValues(currentQuestion.name).length === 0))) ||
-                        (currentQuestion.type === 'textFields' && !formIsValid && Object.keys(errors).length > 0)
+                        (currentQuestion.id === defaultContactStep.id && !formIsValid) || // Stricter validation for contact step
+                        (currentQuestion.type === 'textFields' && currentQuestion.id !== defaultContactStep.id && !formIsValid && Object.keys(errors).length > 0) // For other textFields steps if any
                     }
                 >
                     {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                    {submissionStatus === 'pending' ? 'Enviando...' : (currentStep === activeQuestions.length - 1 ? 'Finalizar e Contato' : 'Próximo')}
+                    {submissionStatus === 'pending' ? 'Enviando...' : (currentStep === activeQuestions.length - 1 ? 'Finalizar e Enviar' : 'Próximo')}
                     {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? (IconComponents.Send && <IconComponents.Send className="ml-2 h-5 w-5" />) : (IconComponents.ChevronRight && <IconComponents.ChevronRight className="ml-2 h-5 w-5" />))}
                 </Button>
             </CardFooter>

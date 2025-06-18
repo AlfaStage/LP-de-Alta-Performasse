@@ -1,6 +1,6 @@
 
 {
-  "projectName": "Seu Sistema de Quiz",
+  "projectName": "Sistema de Quiz Whitelabel",
   "logoUrl": "https://placehold.co/150x50.png?text=Sua+Logo",
   "primaryColorHex": "#3B82F6",
   "secondaryColorHex": "#BFDBFE",
@@ -14,6 +14,6 @@
   "footerCopyrightText": "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   "apiStatsAccessToken": "",
   "websiteUrl": "",
-  "instagramUrl": ""
+  "instagramUrl": "",
+  "facebookDomainVerification": ""
 }
-
