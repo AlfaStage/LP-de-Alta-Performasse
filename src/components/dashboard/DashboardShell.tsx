@@ -55,7 +55,7 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
           {!isSidebarCollapsed && (
             <Link href="/config/dashboard" className="flex items-center gap-2.5" aria-label="Página Inicial do Dashboard">
                <BarChartHorizontalBig className="h-7 w-7 text-primary" />
-               <span className="font-display text-xl font-bold text-primary">Sistema de Quiz</span>
+               <span className="font-display text-xl font-bold text-primary">LP de Alta Performasse</span>
             </Link>
           )}
            {isSidebarCollapsed && (
@@ -130,7 +130,7 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
               <div className="flex h-20 items-center border-b px-6">
                 <Link href="/config/dashboard" className="flex items-center gap-3" aria-label="Página Inicial do Dashboard">
                     <BarChartHorizontalBig className="h-7 w-7 text-primary" />
-                   <span className="font-display text-xl font-bold text-primary">Sistema de Quiz</span>
+                   <span className="font-display text-xl font-bold text-primary">LP de Alta Performasse</span>
                 </Link>
               </div>
               <nav className="grid gap-2 text-base font-medium p-4">
@@ -165,11 +165,10 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
             {children}
           </div>
           <footer className="text-center text-xs text-muted-foreground py-4 border-t mt-auto">
-             Plataforma de Quiz Interativo
+             LP de Alta Performasse
           </footer>
         </main>
       </div>
     </div>
   );
 }
-

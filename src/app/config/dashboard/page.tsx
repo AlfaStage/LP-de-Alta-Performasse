@@ -91,7 +91,7 @@ export default function DashboardPage() {
         getQuizzesList(),
         getOverallQuizAnalytics()
       ]);
-      setQuizzes(quizList.filter(q => q.slug !== 'ba' && q.slug !== 'be' && q.slug !== 'bsb' && q.slug !== 'cam')); // Filter out deleted example quizzes
+      setQuizzes(quizList);
       setOverallStats(stats);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
@@ -233,7 +233,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <span className="font-display text-3xl font-bold text-primary">Painel de Controle</span>
+            <span className="font-display text-3xl font-bold text-primary">LP de Alta Performasse</span>
             <p className="text-muted-foreground">Gerencie seus quizzes e acompanhe o desempenho.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">

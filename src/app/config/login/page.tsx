@@ -18,7 +18,7 @@ function LoginLoadingSkeleton() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <div className="font-display text-4xl font-bold text-sky-600 mb-8">
-            Sistema de Quiz
+            LP de Alta Performasse
           </div>
           <h1 className="text-3xl font-bold text-foreground">Acessar Painel</h1>
           <p className="text-muted-foreground mt-2">Carregando...</p>
@@ -36,7 +36,7 @@ function LoginLoadingSkeleton() {
           </CardContent>
         </Card>
          <p className="text-xs text-muted-foreground text-center mt-8">
-            Plataforma de Quiz Interativo
+            LP de Alta Performasse
           </p>
       </div>
     </div>
@@ -80,7 +80,7 @@ function LoginClientContent() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
             <div className="font-display text-4xl font-bold text-sky-600 mb-8">
-              Sistema de Quiz
+              LP de Alta Performasse
             </div>
           <h1 className="text-3xl font-bold text-foreground tracking-tight">Acesso ao Painel de Controle</h1>
           <p className="text-muted-foreground mt-2">Gerencie seus quizzes e configurações.</p>
@@ -130,7 +130,7 @@ function LoginClientContent() {
             Utilize a senha mestra configurada para o sistema.
           </p>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Plataforma de Quiz Interativo
+            LP de Alta Performasse
           </p>
       </div>
     </div>
