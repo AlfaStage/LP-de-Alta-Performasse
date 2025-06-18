@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Save, Loader2, Palette, Link2, Facebook, Settings2, TextQuote, ImageIcon, HelpCircle, CopyrightIcon, Globe, Instagram as InstagramIconLucide, CheckSquare } from 'lucide-react'; // Adicionado CheckSquare
+import { Save, Loader2, Palette, Link2, Facebook, Settings2, TextQuote, ImageIcon, HelpCircle, CopyrightIcon, Globe, Instagram as InstagramIconLucide, CheckSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from './actions';
 import type { WhitelabelConfig } from '@/types/quiz';
@@ -135,7 +135,7 @@ export default function WhitelabelSettingsPage() {
               <Controller
                 name="footerCopyrightText"
                 control={control}
-                render={({ field }) => <Input id="footerCopyrightText" {...field} placeholder={`© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.`} />}
+                render={({ field }) => <Input id="footerCopyrightText" {...field} placeholder="© {YEAR} Seu Nome/Empresa. Todos os direitos reservados." />}
               />
               {errors.footerCopyrightText && <p className="text-sm text-destructive">{errors.footerCopyrightText.message}</p>}
             </div>
@@ -445,3 +445,5 @@ export default function WhitelabelSettingsPage() {
     </TooltipProvider>
   );
 }
+
+    
