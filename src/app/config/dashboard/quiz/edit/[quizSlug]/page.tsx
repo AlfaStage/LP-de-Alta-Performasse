@@ -15,7 +15,6 @@ import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, Me
 import { getQuizForEdit, updateQuizAction, type QuizEditData, getQuizAnalyticsBySlug } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
-import { APP_BASE_URL } from '@/config/appConfig';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
@@ -72,9 +71,11 @@ export default function EditQuizPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [whitelabelSettings, setWhitelabelSettings] = useState<Partial<WhitelabelConfig>>({});
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('');
 
 
   useEffect(() => {
+    setBaseUrl(window.location.origin);
     async function fetchPreviewConfig() {
       setIsLoadingPreview(true);
       const config = await fetchWhitelabelSettings();
@@ -494,7 +495,7 @@ export default function EditQuizPage() {
                           className="bg-muted/50 cursor-not-allowed"
                       />
                       <p className="text-xs text-muted-foreground">
-                          Acessível em: {APP_BASE_URL}/{slug || "seu-slug"} (Slug não é editável)
+                          Acessível em: {baseUrl}/{slug || "seu-slug"} (Slug não é editável)
                       </p>
                       </div>
                   </CardContent>
@@ -643,7 +644,7 @@ export default function EditQuizPage() {
                           Salvar Alterações
                           </>
                       )}
-                      </Button>
+                  </Button>
                   </CardFooter>
               </Card>
             </form>
@@ -697,7 +698,7 @@ export default function EditQuizPage() {
                             className="bg-muted/50 cursor-not-allowed"
                         />
                         <p className="text-xs text-muted-foreground">
-                            Acessível em: {APP_BASE_URL}/{slug || "seu-slug"} (Slug não é editável)
+                            Acessível em: {baseUrl}/{slug || "seu-slug"} (Slug não é editável)
                         </p>
                         </div>
                     </CardContent>
@@ -760,7 +761,7 @@ export default function EditQuizPage() {
                           Salvar Alterações (JSON)
                           </>
                       )}
-                      </Button>
+                  </Button>
                   </CardFooter>
               </Card>
             </form>
@@ -810,3 +811,4 @@ export default function EditQuizPage() {
   );
 }
 
+    

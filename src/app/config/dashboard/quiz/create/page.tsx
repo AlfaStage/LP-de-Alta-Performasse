@@ -16,7 +16,6 @@ import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson
 import { createQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
 import { defaultContactStep } from '@/config/quizConfig';
-import { APP_BASE_URL } from '@/config/appConfig';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
@@ -61,8 +60,10 @@ export default function CreateQuizPage() {
   const [previewQuizData, setPreviewQuizData] = useState<QuizQuestion[] | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [whitelabelSettings, setWhitelabelSettings] = useState<Partial<WhitelabelConfig>>({});
+  const [baseUrl, setBaseUrl] = useState('');
 
   useEffect(() => {
+    setBaseUrl(window.location.origin);
     async function fetchPreviewConfig() {
       const config = await fetchWhitelabelSettings();
       setWhitelabelSettings(config);
@@ -330,7 +331,7 @@ export default function CreateQuizPage() {
                     required
                 />
                 <p className="text-xs text-muted-foreground">
-                    Será acessível em: {APP_BASE_URL}/{slug || "seu-slug"}
+                    Será acessível em: {baseUrl}/{slug || "seu-slug"}
                 </p>
                 </div>
             </CardContent>
@@ -565,3 +566,4 @@ export default function CreateQuizPage() {
   );
 }
 
+    

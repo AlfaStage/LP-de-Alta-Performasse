@@ -30,7 +30,6 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { APP_BASE_URL } from '@/config/appConfig'; 
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from './settings/actions';
@@ -206,7 +205,7 @@ export default function DashboardPage() {
   };
 
   const handleCopyLink = (slug: string) => {
-    const url = `${APP_BASE_URL}/${slug}`; // Ensure APP_BASE_URL is used
+    const url = `${window.location.origin}/${slug}`;
     navigator.clipboard.writeText(url)
       .then(() => {
         toast({
@@ -383,11 +382,14 @@ export default function DashboardPage() {
                 >
                   <Eye className="h-4 w-4" /> Pré-visualizar
                 </Button>
-                <Link href={`${APP_BASE_URL}/${quiz.slug}`} target="_blank" rel="noopener noreferrer" className="w-full">
-                   <Button variant="outline" size="sm" className="w-full flex items-center gap-1">
-                     <ExternalLink className="h-4 w-4" /> Abrir Quiz
-                   </Button>
-                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full flex items-center gap-1"
+                  onClick={() => window.open(`/${quiz.slug}`, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4" /> Abrir Quiz
+                </Button>
                 <Link href={`/config/dashboard/quiz/stats/${quiz.slug}`} className="w-full">
                    <Button variant="outline" size="sm" className="w-full flex items-center gap-1">
                      <BarChart3 className="h-4 w-4" /> Estatísticas
@@ -548,4 +550,6 @@ export default function DashboardPage() {
     </div>
   );
 }
+    
+
     
