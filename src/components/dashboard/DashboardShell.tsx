@@ -16,7 +16,7 @@ interface DashboardShellProps {
 const navItems = [
   { href: "/config/dashboard", label: "Quizzes (Início)", icon: Home, exactMatch: true },
   { href: "/config/dashboard/quiz/create", label: "Criar Novo Quiz", icon: ListPlus, exactMatch: true }, 
-  { href: "/config/dashboard/settings", label: "Config. Whitelabel", icon: Settings2, exactMatch: true }, 
+  { href: "/config/dashboard/settings", label: "Configurações", icon: Settings2, exactMatch: false }, 
   { href: "/config/dashboard/settings/documentation", label: "Documentação API", icon: BookText, exactMatch: true }, 
 ];
 
