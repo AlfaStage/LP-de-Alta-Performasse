@@ -9,12 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Save, Loader2, Palette, HelpCircle, Image as ImageIcon, Wind } from 'lucide-react';
+import { Save, Loader2, Palette, HelpCircle, Image as ImageIcon, Wind, Paintbrush } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from '../actions';
 import type { WhitelabelConfig } from '@/types/quiz';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 const optionalHexColorRegex = /^$|^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
@@ -23,8 +24,10 @@ const appearanceSettingsSchema = z.object({
   primaryColorHex: z.string().regex(hexColorRegex, { message: "Cor primária do tema: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   secondaryColorHex: z.string().regex(hexColorRegex, { message: "Cor secundária: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   buttonPrimaryBgColorHex: z.string().regex(optionalHexColorRegex, { message: "Cor de fundo do botão: Formato HEX inválido ou deixe vazio." }).optional(),
-  pageBackgroundColorHex: z.string().regex(hexColorRegex, { message: "Cor fundo página: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   quizBackgroundColorHex: z.string().regex(hexColorRegex, { message: "Cor fundo quiz: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
+  
+  pageBackgroundType: z.enum(['color', 'image', 'gradient']),
+  pageBackgroundColorHex: z.string().regex(hexColorRegex, { message: "Cor fundo página: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   pageBackgroundImageUrl: z.string().url({ message: "URL da imagem de fundo inválida." }).optional().or(z.literal('')),
   pageBackgroundGradient: z.string().optional(),
 });
@@ -48,6 +51,8 @@ export default function AppearanceSettingsPage() {
       return settings;
     }
   });
+  
+  const pageBackgroundType = watch('pageBackgroundType');
 
   useEffect(() => {
     async function loadSettings() {
@@ -108,6 +113,8 @@ export default function AppearanceSettingsPage() {
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-6">
+            <h3 className="text-lg font-medium text-foreground pt-4 border-t">Paleta de Cores do Tema</h3>
+
             <div className="space-y-2">
               <Label htmlFor="primaryColorHex" className="flex items-center gap-1">
                 <Palette className="h-4 w-4 text-muted-foreground" />Cor Primária do Tema (HEX)
@@ -265,92 +272,120 @@ export default function AppearanceSettingsPage() {
               {errors.quizBackgroundColorHex && <p className="text-sm text-destructive">{errors.quizBackgroundColorHex.message}</p>}
             </div>
             
-            <h3 className="text-lg font-medium text-foreground pt-4 border-t">Fundo da Página</h3>
-            <p className="text-sm text-muted-foreground -mt-4">Personalize o fundo da página do quiz. A prioridade é: Degradê &gt; Imagem &gt; Cor Sólida.</p>
-
-            <div className="space-y-2">
-              <Label htmlFor="pageBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4 text-muted-foreground" />Cor Sólida de Fundo da Página (HEX)</Label>
-              <div className="flex items-center gap-2">
-                <Controller
-                  name="pageBackgroundColorHex"
-                  control={control}
-                  render={({ field }) => (
-                    <Input 
-                      id="pageBackgroundColorHexText" 
-                      {...field} 
-                      placeholder="#F3F4F6" 
-                      className="flex-grow"
-                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                    />
-                  )}
-                />
-                <Controller
-                  name="pageBackgroundColorHex"
-                  control={control}
-                  render={({ field }) => (
-                    <Input 
-                      id="pageBackgroundColorHexPicker"
-                      type="color"
-                      value={field.value || "#F3F4F6"}
-                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                      className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
-                    />
-                  )}
-                />
-              </div>
-              {errors.pageBackgroundColorHex && <p className="text-sm text-destructive">{errors.pageBackgroundColorHex.message}</p>}
-            </div>
+            <h3 className="text-lg font-medium text-foreground pt-4 border-t">Fundo da Página do Quiz</h3>
             
             <div className="space-y-2">
-              <Label htmlFor="pageBackgroundImageUrl" className="flex items-center gap-1">
-                <ImageIcon className="h-4 w-4 text-muted-foreground" />URL da Imagem de Fundo (Opcional)
-                <Tooltip>
-                    <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
-                    <TooltipContent><p>Sobrescreve a cor sólida.</p></TooltipContent>
-                </Tooltip>
-              </Label>
-              <Controller
-                name="pageBackgroundImageUrl"
+              <Label>Tipo de Fundo</Label>
+               <Controller
+                name="pageBackgroundType"
                 control={control}
                 render={({ field }) => (
-                  <Input 
-                    id="pageBackgroundImageUrl"
-                    {...field}
-                    value={field.value || ""}
-                    placeholder="https://exemplo.com/fundo.jpg"
-                  />
+                  <RadioGroup
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className="flex flex-col sm:flex-row gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="color" id="bg-color" />
+                      <Label htmlFor="bg-color" className="font-normal flex items-center gap-1.5"><Paintbrush className="h-4 w-4" /> Cor Sólida</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="image" id="bg-image" />
+                      <Label htmlFor="bg-image" className="font-normal flex items-center gap-1.5"><ImageIcon className="h-4 w-4" /> Imagem</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="gradient" id="bg-gradient" />
+                      <Label htmlFor="bg-gradient" className="font-normal flex items-center gap-1.5"><Wind className="h-4 w-4" /> Degradê</Label>
+                    </div>
+                  </RadioGroup>
                 )}
               />
-              {errors.pageBackgroundImageUrl && <p className="text-sm text-destructive">{errors.pageBackgroundImageUrl.message}</p>}
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pageBackgroundGradient" className="flex items-center gap-1">
-                <Wind className="h-4 w-4 text-muted-foreground" />Degradê de Fundo (CSS - Opcional)
-                <Tooltip>
-                    <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                        <p>Sobrescreve a imagem e a cor sólida. Cole o valor CSS completo.</p>
-                        <p className="font-mono text-xs mt-1">Ex: linear-gradient(to right, #ff7e5f, #feb47b)</p>
-                    </TooltipContent>
-                </Tooltip>
-              </Label>
-              <Controller
-                name="pageBackgroundGradient"
-                control={control}
-                render={({ field }) => (
-                  <Textarea 
-                    id="pageBackgroundGradient"
-                    {...field}
-                    value={field.value || ""}
-                    placeholder="Ex: linear-gradient(to right, #8e2de2, #4a00e0)"
-                    rows={2}
+            
+            {pageBackgroundType === 'color' && (
+              <div className="space-y-2">
+                <Label htmlFor="pageBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4 text-muted-foreground" />Cor Sólida de Fundo da Página (HEX)</Label>
+                <div className="flex items-center gap-2">
+                  <Controller
+                    name="pageBackgroundColorHex"
+                    control={control}
+                    render={({ field }) => (
+                      <Input 
+                        id="pageBackgroundColorHexText" 
+                        {...field} 
+                        placeholder="#F3F4F6" 
+                        className="flex-grow"
+                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      />
+                    )}
                   />
-                )}
-              />
-              {errors.pageBackgroundGradient && <p className="text-sm text-destructive">{errors.pageBackgroundGradient.message}</p>}
-            </div>
+                  <Controller
+                    name="pageBackgroundColorHex"
+                    control={control}
+                    render={({ field }) => (
+                      <Input 
+                        id="pageBackgroundColorHexPicker"
+                        type="color"
+                        value={field.value || "#F3F4F6"}
+                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                        className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
+                      />
+                    )}
+                  />
+                </div>
+                {errors.pageBackgroundColorHex && <p className="text-sm text-destructive">{errors.pageBackgroundColorHex.message}</p>}
+              </div>
+            )}
+            
+            {pageBackgroundType === 'image' && (
+              <div className="space-y-2">
+                <Label htmlFor="pageBackgroundImageUrl" className="flex items-center gap-1">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />URL da Imagem de Fundo (Opcional)
+                </Label>
+                <Controller
+                  name="pageBackgroundImageUrl"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="pageBackgroundImageUrl"
+                      {...field}
+                      value={field.value || ""}
+                      placeholder="https://exemplo.com/fundo.jpg"
+                    />
+                  )}
+                />
+                {errors.pageBackgroundImageUrl && <p className="text-sm text-destructive">{errors.pageBackgroundImageUrl.message}</p>}
+              </div>
+            )}
 
+            {pageBackgroundType === 'gradient' && (
+              <div className="space-y-2">
+                <Label htmlFor="pageBackgroundGradient" className="flex items-center gap-1">
+                  <Wind className="h-4 w-4 text-muted-foreground" />Degradê de Fundo (CSS - Opcional)
+                  <Tooltip>
+                      <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                          <p>Cole o valor CSS completo.</p>
+                          <p className="font-mono text-xs mt-1">Ex: linear-gradient(to right, #ff7e5f, #feb47b)</p>
+                      </TooltipContent>
+                  </Tooltip>
+                </Label>
+                <Controller
+                  name="pageBackgroundGradient"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea 
+                      id="pageBackgroundGradient"
+                      {...field}
+                      value={field.value || ""}
+                      placeholder="Ex: linear-gradient(to right, #8e2de2, #4a00e0)"
+                      rows={2}
+                    />
+                  )}
+                />
+                {errors.pageBackgroundGradient && <p className="text-sm text-destructive">{errors.pageBackgroundGradient.message}</p>}
+              </div>
+            )}
           </CardContent>
           <CardFooter>
             <Button type="submit" disabled={isLoading || isFetching || !isDirty} className="text-base py-3">

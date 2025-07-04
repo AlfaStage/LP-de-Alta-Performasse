@@ -9,6 +9,7 @@
   "quizBackgroundColorHex": "#FFFFFF",
   "pageBackgroundImageUrl": "",
   "pageBackgroundGradient": "",
+  "pageBackgroundType": "color",
   "quizSubmissionWebhookUrl": "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
   "facebookPixelId": "",
   "facebookPixelIdSecondary": "",

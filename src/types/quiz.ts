@@ -47,8 +47,9 @@ export interface WhitelabelConfig {
   buttonPrimaryBgColorHex?: string; 
   pageBackgroundColorHex: string; 
   quizBackgroundColorHex: string; 
-  pageBackgroundImageUrl?: string; // Novo campo
-  pageBackgroundGradient?: string; // Novo campo
+  pageBackgroundImageUrl?: string;
+  pageBackgroundGradient?: string;
+  pageBackgroundType: 'color' | 'image' | 'gradient';
   quizSubmissionWebhookUrl: string;
   facebookPixelId?: string;
   facebookPixelIdSecondary?: string;

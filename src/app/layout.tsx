@@ -44,7 +44,8 @@ export default async function RootLayout({
     quizBackgroundColorHex,
     buttonPrimaryBgColorHex,
     pageBackgroundImageUrl,
-    pageBackgroundGradient
+    pageBackgroundGradient,
+    pageBackgroundType,
   } = whitelabelConfig;
 
   const themePrimaryColorHslString = primaryColorHex ? hexToHslString(primaryColorHex) : null;
@@ -74,9 +75,10 @@ export default async function RootLayout({
   `;
 
   let bodyBackgroundStyles = '';
-  if (pageBackgroundGradient?.trim()) {
+  // Apply background based on explicit type selection
+  if (pageBackgroundType === 'gradient' && pageBackgroundGradient?.trim()) {
     bodyBackgroundStyles = `body { background: ${pageBackgroundGradient.trim()}; }`;
-  } else if (pageBackgroundImageUrl?.trim()) {
+  } else if (pageBackgroundType === 'image' && pageBackgroundImageUrl?.trim()) {
     bodyBackgroundStyles = `
       body {
         background-image: url('${pageBackgroundImageUrl.trim()}');
@@ -86,6 +88,7 @@ export default async function RootLayout({
       }
     `;
   }
+  // If type is 'color', the --background variable set above will be used by default.
   
   if (bodyBackgroundStyles) {
     dynamicStyles += bodyBackgroundStyles;

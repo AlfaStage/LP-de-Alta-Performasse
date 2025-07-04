@@ -16,6 +16,7 @@ export const defaultConfig: WhitelabelConfig = {
   quizBackgroundColorHex: "#FFFFFF",
   pageBackgroundImageUrl: "",
   pageBackgroundGradient: "",
+  pageBackgroundType: "color",
   quizSubmissionWebhookUrl: "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
   facebookPixelId: "",
   facebookPixelIdSecondary: "",
@@ -72,6 +73,7 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
     mergedConfig.facebookDomainVerification = typeof savedConfig.facebookDomainVerification === 'string' ? savedConfig.facebookDomainVerification : defaultConfig.facebookDomainVerification;
     mergedConfig.pageBackgroundImageUrl = typeof savedConfig.pageBackgroundImageUrl === 'string' ? savedConfig.pageBackgroundImageUrl : defaultConfig.pageBackgroundImageUrl;
     mergedConfig.pageBackgroundGradient = typeof savedConfig.pageBackgroundGradient === 'string' ? savedConfig.pageBackgroundGradient : defaultConfig.pageBackgroundGradient;
+    mergedConfig.pageBackgroundType = savedConfig.pageBackgroundType || defaultConfig.pageBackgroundType;
 
 
     return mergedConfig as WhitelabelConfig;
@@ -103,6 +105,7 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
         quizBackgroundColorHex: newConfig.quizBackgroundColorHex,
         pageBackgroundImageUrl: typeof newConfig.pageBackgroundImageUrl === 'string' ? newConfig.pageBackgroundImageUrl : defaultConfig.pageBackgroundImageUrl,
         pageBackgroundGradient: typeof newConfig.pageBackgroundGradient === 'string' ? newConfig.pageBackgroundGradient : defaultConfig.pageBackgroundGradient,
+        pageBackgroundType: newConfig.pageBackgroundType || defaultConfig.pageBackgroundType,
         quizSubmissionWebhookUrl: newConfig.quizSubmissionWebhookUrl,
         facebookPixelId: typeof newConfig.facebookPixelId === 'string' ? newConfig.facebookPixelId : defaultConfig.facebookPixelId,
         facebookPixelIdSecondary: typeof newConfig.facebookPixelIdSecondary === 'string' ? newConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary,
