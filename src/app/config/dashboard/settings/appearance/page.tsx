@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -8,25 +9,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Save, Loader2, Palette, HelpCircle } from 'lucide-react';
+import { Save, Loader2, Palette, HelpCircle, Image as ImageIcon, Wind } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from '../actions';
 import type { WhitelabelConfig } from '@/types/quiz';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Textarea } from '@/components/ui/textarea';
 
 const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 const optionalHexColorRegex = /^$|^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 
-// Schema para os campos desta página
 const appearanceSettingsSchema = z.object({
   primaryColorHex: z.string().regex(hexColorRegex, { message: "Cor primária do tema: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   secondaryColorHex: z.string().regex(hexColorRegex, { message: "Cor secundária: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   buttonPrimaryBgColorHex: z.string().regex(optionalHexColorRegex, { message: "Cor de fundo do botão: Formato HEX inválido ou deixe vazio." }).optional(),
   pageBackgroundColorHex: z.string().regex(hexColorRegex, { message: "Cor fundo página: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
   quizBackgroundColorHex: z.string().regex(hexColorRegex, { message: "Cor fundo quiz: Formato HEX inválido. Use #RRGGBB ou #RGB." }),
+  pageBackgroundImageUrl: z.string().url({ message: "URL da imagem de fundo inválida." }).optional().or(z.literal('')),
+  pageBackgroundGradient: z.string().optional(),
 });
 
-// Schema completo para manter a estrutura de dados ao salvar
 const fullWhitelabelSchema = z.object({}).passthrough();
 
 
@@ -67,13 +69,11 @@ export default function AppearanceSettingsPage() {
     if (result.success) {
       toast({
         title: "Sucesso!",
-        description: "Configurações de aparência salvas.",
+        description: "Configurações de aparência salvas. As alterações podem precisar de um recarregamento da página para serem totalmente aplicadas.",
         variant: "default",
       });
       reset(validatedConfig, { keepDirty: false });
       setFullConfig(validatedConfig);
-      // Forçar recarregamento para aplicar as novas variáveis CSS
-      window.location.reload();
     } else {
       toast({
         title: "Erro ao Salvar",
@@ -102,8 +102,8 @@ export default function AppearanceSettingsPage() {
             Aparência
           </CardTitle>
           <CardDescription>
-            Personalize a paleta de cores dos quizzes. Para cores, use o formato HEX (Ex: #FF5733).
-            As alterações serão aplicadas após salvar e recarregar a página.
+            Personalize a paleta de cores e o fundo dos quizzes. Para cores, use o formato HEX (Ex: #FF5733).
+            As alterações visuais no fundo podem exigir que a página seja recarregada.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -233,39 +233,6 @@ export default function AppearanceSettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pageBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4 text-muted-foreground" />Cor Fundo da Página (HEX)</Label>
-              <div className="flex items-center gap-2">
-                <Controller
-                  name="pageBackgroundColorHex"
-                  control={control}
-                  render={({ field }) => (
-                    <Input 
-                      id="pageBackgroundColorHexText" 
-                      {...field} 
-                      placeholder="#F3F4F6" 
-                      className="flex-grow"
-                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                    />
-                  )}
-                />
-                <Controller
-                  name="pageBackgroundColorHex"
-                  control={control}
-                  render={({ field }) => (
-                    <Input 
-                      id="pageBackgroundColorHexPicker"
-                      type="color"
-                      value={field.value || "#F3F4F6"}
-                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                      className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
-                    />
-                  )}
-                />
-              </div>
-              {errors.pageBackgroundColorHex && <p className="text-sm text-destructive">{errors.pageBackgroundColorHex.message}</p>}
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="quizBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4 text-muted-foreground" />Cor Fundo do Quiz (Card) (HEX)</Label>
               <div className="flex items-center gap-2">
                 <Controller
@@ -298,7 +265,92 @@ export default function AppearanceSettingsPage() {
               {errors.quizBackgroundColorHex && <p className="text-sm text-destructive">{errors.quizBackgroundColorHex.message}</p>}
             </div>
             
-             <p className="text-sm text-muted-foreground">Em breve: Opção para configurar um background com imagem (URL) ou um degradê de cores.</p>
+            <h3 className="text-lg font-medium text-foreground pt-4 border-t">Fundo da Página</h3>
+            <p className="text-sm text-muted-foreground -mt-4">Personalize o fundo da página do quiz. A prioridade é: Degradê &gt; Imagem &gt; Cor Sólida.</p>
+
+            <div className="space-y-2">
+              <Label htmlFor="pageBackgroundColorHex" className="flex items-center gap-1"><Palette className="h-4 w-4 text-muted-foreground" />Cor Sólida de Fundo da Página (HEX)</Label>
+              <div className="flex items-center gap-2">
+                <Controller
+                  name="pageBackgroundColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="pageBackgroundColorHexText" 
+                      {...field} 
+                      placeholder="#F3F4F6" 
+                      className="flex-grow"
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                    />
+                  )}
+                />
+                <Controller
+                  name="pageBackgroundColorHex"
+                  control={control}
+                  render={({ field }) => (
+                    <Input 
+                      id="pageBackgroundColorHexPicker"
+                      type="color"
+                      value={field.value || "#F3F4F6"}
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"
+                    />
+                  )}
+                />
+              </div>
+              {errors.pageBackgroundColorHex && <p className="text-sm text-destructive">{errors.pageBackgroundColorHex.message}</p>}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="pageBackgroundImageUrl" className="flex items-center gap-1">
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />URL da Imagem de Fundo (Opcional)
+                <Tooltip>
+                    <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
+                    <TooltipContent><p>Sobrescreve a cor sólida.</p></TooltipContent>
+                </Tooltip>
+              </Label>
+              <Controller
+                name="pageBackgroundImageUrl"
+                control={control}
+                render={({ field }) => (
+                  <Input 
+                    id="pageBackgroundImageUrl"
+                    {...field}
+                    value={field.value || ""}
+                    placeholder="https://exemplo.com/fundo.jpg"
+                  />
+                )}
+              />
+              {errors.pageBackgroundImageUrl && <p className="text-sm text-destructive">{errors.pageBackgroundImageUrl.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pageBackgroundGradient" className="flex items-center gap-1">
+                <Wind className="h-4 w-4 text-muted-foreground" />Degradê de Fundo (CSS - Opcional)
+                <Tooltip>
+                    <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                        <p>Sobrescreve a imagem e a cor sólida. Cole o valor CSS completo.</p>
+                        <p className="font-mono text-xs mt-1">Ex: linear-gradient(to right, #ff7e5f, #feb47b)</p>
+                    </TooltipContent>
+                </Tooltip>
+              </Label>
+              <Controller
+                name="pageBackgroundGradient"
+                control={control}
+                render={({ field }) => (
+                  <Textarea 
+                    id="pageBackgroundGradient"
+                    {...field}
+                    value={field.value || ""}
+                    placeholder="Ex: linear-gradient(to right, #8e2de2, #4a00e0)"
+                    rows={2}
+                  />
+                )}
+              />
+              {errors.pageBackgroundGradient && <p className="text-sm text-destructive">{errors.pageBackgroundGradient.message}</p>}
+            </div>
+
           </CardContent>
           <CardFooter>
             <Button type="submit" disabled={isLoading || isFetching || !isDirty} className="text-base py-3">

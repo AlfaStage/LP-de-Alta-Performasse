@@ -47,6 +47,8 @@ export interface WhitelabelConfig {
   buttonPrimaryBgColorHex?: string; 
   pageBackgroundColorHex: string; 
   quizBackgroundColorHex: string; 
+  pageBackgroundImageUrl?: string; // Novo campo
+  pageBackgroundGradient?: string; // Novo campo
   quizSubmissionWebhookUrl: string;
   facebookPixelId?: string;
   facebookPixelIdSecondary?: string;
@@ -55,7 +57,7 @@ export interface WhitelabelConfig {
   apiStatsAccessToken?: string;
   websiteUrl?: string;
   instagramUrl?: string;
-  facebookDomainVerification?: string; // Novo campo
+  facebookDomainVerification?: string;
 }
 
 // Statistics types
@@ -108,4 +110,3 @@ export interface QuizEditData {
   dashboardName?: string;
   questionsJson: string; 
 }
-

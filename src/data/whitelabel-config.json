@@ -1,12 +1,15 @@
+
 {
-  "projectName": "Sistema de Quiz Whitelabel",
-  "logoUrl": "https://placehold.co/150x150.png?text=Sua+Logo",
+  "projectName": "Sistema de Quiz Interativo",
+  "logoUrl": "https://placehold.co/150x50.png?text=Sua+Logo",
   "primaryColorHex": "#3B82F6",
   "secondaryColorHex": "#BFDBFE",
   "buttonPrimaryBgColorHex": "#2563EB",
   "pageBackgroundColorHex": "#F3F4F6",
   "quizBackgroundColorHex": "#FFFFFF",
-  "quizSubmissionWebhookUrl": "https://webhook.com.br",
+  "pageBackgroundImageUrl": "",
+  "pageBackgroundGradient": "",
+  "quizSubmissionWebhookUrl": "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
   "facebookPixelId": "",
   "facebookPixelIdSecondary": "",
   "googleAnalyticsId": "",

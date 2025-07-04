@@ -37,21 +37,30 @@ export default async function RootLayout({
 }>) {
   const whitelabelConfig = await getWhitelabelConfig();
 
-  const themePrimaryColorHslString = whitelabelConfig.primaryColorHex ? hexToHslString(whitelabelConfig.primaryColorHex) : null;
-  const secondaryColorHslString = whitelabelConfig.secondaryColorHex ? hexToHslString(whitelabelConfig.secondaryColorHex) : null;
-  const pageBackgroundColorHslString = whitelabelConfig.pageBackgroundColorHex ? hexToHslString(whitelabelConfig.pageBackgroundColorHex) : null;
-  const quizBackgroundColorHslString = whitelabelConfig.quizBackgroundColorHex ? hexToHslString(whitelabelConfig.quizBackgroundColorHex) : null;
+  const {
+    primaryColorHex,
+    secondaryColorHex,
+    pageBackgroundColorHex,
+    quizBackgroundColorHex,
+    buttonPrimaryBgColorHex,
+    pageBackgroundImageUrl,
+    pageBackgroundGradient
+  } = whitelabelConfig;
 
+  const themePrimaryColorHslString = primaryColorHex ? hexToHslString(primaryColorHex) : null;
+  const secondaryColorHslString = secondaryColorHex ? hexToHslString(secondaryColorHex) : null;
+  const pageBackgroundColorHslString = pageBackgroundColorHex ? hexToHslString(pageBackgroundColorHex) : null;
+  const quizBackgroundColorHslString = quizBackgroundColorHex ? hexToHslString(quizBackgroundColorHex) : null;
+  
   let buttonSpecificPrimaryHslString: string | null = null;
-  if (whitelabelConfig.buttonPrimaryBgColorHex && whitelabelConfig.buttonPrimaryBgColorHex.trim() !== "") {
-    buttonSpecificPrimaryHslString = hexToHslString(whitelabelConfig.buttonPrimaryBgColorHex);
+  if (buttonPrimaryBgColorHex && buttonPrimaryBgColorHex.trim() !== "") {
+    buttonSpecificPrimaryHslString = hexToHslString(buttonPrimaryBgColorHex);
   }
-
+  
   const finalPrimaryInteractiveHsl = buttonSpecificPrimaryHslString || themePrimaryColorHslString;
-
   const accentColorHslString = secondaryColorHslString; 
 
-  const dynamicStyles = `
+  let dynamicStyles = `
     :root {
       ${pageBackgroundColorHslString ? `--background: ${pageBackgroundColorHslString};` : ''}
       ${quizBackgroundColorHslString ? `--card: ${quizBackgroundColorHslString};` : ''}
@@ -63,6 +72,24 @@ export default async function RootLayout({
       ${themePrimaryColorHslString ? `--chart-1: ${themePrimaryColorHslString};` : ''}
     }
   `;
+
+  let bodyBackgroundStyles = '';
+  if (pageBackgroundGradient?.trim()) {
+    bodyBackgroundStyles = `body { background: ${pageBackgroundGradient.trim()}; }`;
+  } else if (pageBackgroundImageUrl?.trim()) {
+    bodyBackgroundStyles = `
+      body {
+        background-image: url('${pageBackgroundImageUrl.trim()}');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+      }
+    `;
+  }
+  
+  if (bodyBackgroundStyles) {
+    dynamicStyles += bodyBackgroundStyles;
+  }
 
   return (
     <html lang="pt-BR">

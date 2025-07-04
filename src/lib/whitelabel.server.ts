@@ -7,13 +7,15 @@ import crypto from 'crypto';
 const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-config.json');
 
 export const defaultConfig: WhitelabelConfig = {
-  projectName: "Sistema de Quiz Whitelabel",
+  projectName: "Sistema de Quiz Interativo",
   logoUrl: "https://placehold.co/150x50.png?text=Sua+Logo",
   primaryColorHex: "#3B82F6", 
   secondaryColorHex: "#BFDBFE", 
   buttonPrimaryBgColorHex: "#2563EB", 
   pageBackgroundColorHex: "#F3F4F6", 
-  quizBackgroundColorHex: "#FFFFFF", 
+  quizBackgroundColorHex: "#FFFFFF",
+  pageBackgroundImageUrl: "",
+  pageBackgroundGradient: "",
   quizSubmissionWebhookUrl: "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
   facebookPixelId: "",
   facebookPixelIdSecondary: "",
@@ -22,7 +24,7 @@ export const defaultConfig: WhitelabelConfig = {
   apiStatsAccessToken: "",
   websiteUrl: "", 
   instagramUrl: "", 
-  facebookDomainVerification: "", // Novo campo
+  facebookDomainVerification: "",
 };
 
 async function ensureConfigFileExists() {
@@ -68,6 +70,8 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
     mergedConfig.websiteUrl = typeof savedConfig.websiteUrl === 'string' ? savedConfig.websiteUrl : defaultConfig.websiteUrl;
     mergedConfig.instagramUrl = typeof savedConfig.instagramUrl === 'string' ? savedConfig.instagramUrl : defaultConfig.instagramUrl;
     mergedConfig.facebookDomainVerification = typeof savedConfig.facebookDomainVerification === 'string' ? savedConfig.facebookDomainVerification : defaultConfig.facebookDomainVerification;
+    mergedConfig.pageBackgroundImageUrl = typeof savedConfig.pageBackgroundImageUrl === 'string' ? savedConfig.pageBackgroundImageUrl : defaultConfig.pageBackgroundImageUrl;
+    mergedConfig.pageBackgroundGradient = typeof savedConfig.pageBackgroundGradient === 'string' ? savedConfig.pageBackgroundGradient : defaultConfig.pageBackgroundGradient;
 
 
     return mergedConfig as WhitelabelConfig;
@@ -97,6 +101,8 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
         buttonPrimaryBgColorHex: typeof newConfig.buttonPrimaryBgColorHex === 'string' ? newConfig.buttonPrimaryBgColorHex : defaultConfig.buttonPrimaryBgColorHex,
         pageBackgroundColorHex: newConfig.pageBackgroundColorHex,
         quizBackgroundColorHex: newConfig.quizBackgroundColorHex,
+        pageBackgroundImageUrl: typeof newConfig.pageBackgroundImageUrl === 'string' ? newConfig.pageBackgroundImageUrl : defaultConfig.pageBackgroundImageUrl,
+        pageBackgroundGradient: typeof newConfig.pageBackgroundGradient === 'string' ? newConfig.pageBackgroundGradient : defaultConfig.pageBackgroundGradient,
         quizSubmissionWebhookUrl: newConfig.quizSubmissionWebhookUrl,
         facebookPixelId: typeof newConfig.facebookPixelId === 'string' ? newConfig.facebookPixelId : defaultConfig.facebookPixelId,
         facebookPixelIdSecondary: typeof newConfig.facebookPixelIdSecondary === 'string' ? newConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary,
@@ -120,4 +126,3 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
 export async function generateNewApiToken(): Promise<string> {
   return crypto.randomBytes(32).toString('hex');
 }
-
