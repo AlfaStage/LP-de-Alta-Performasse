@@ -1,10 +1,9 @@
-
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Settings, Palette, Link2, BarChart3, Info, Fingerprint, LucideIcon } from 'lucide-react';
+import { Settings, Palette, Link2, BarChart3, Info, Fingerprint, BookText, LucideIcon } from 'lucide-react';
 
 const settingsNavItems: { title: string; href: string; icon: LucideIcon }[] = [
   {
@@ -13,24 +12,29 @@ const settingsNavItems: { title: string; href: string; icon: LucideIcon }[] = [
     icon: Settings,
   },
   {
-    title: 'Aparência e Cores',
+    title: 'Aparência',
     href: '/config/dashboard/settings/appearance',
     icon: Palette,
   },
   {
-    title: 'Integrações e Webhooks',
+    title: 'Integrações',
     href: '/config/dashboard/settings/integrations',
     icon: Link2,
   },
   {
-    title: 'Rastreadores (Pixels)',
+    title: 'Rastreadores',
     href: '/config/dashboard/settings/tracking',
     icon: Fingerprint,
   },
   {
-    title: 'Dashboard e Estatísticas',
+    title: 'Estatísticas',
     href: '/config/dashboard/settings/analytics',
     icon: BarChart3,
+  },
+   {
+    title: 'Documentação API',
+    href: '/config/dashboard/settings/documentation',
+    icon: BookText,
   },
   {
     title: 'Sobre',
