@@ -7,7 +7,6 @@ import type { QuizConfig } from '@/types/quiz';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
-import { defaultContactStep } from '@/config/quizConfig';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
 
@@ -15,7 +14,7 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   loading: () => <QuizFormLoading />,
 });
 
-const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas para nos ajudar a entender suas preferências.";
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas para nos ajudar a entender suas preferências.";
 
 interface QuizPageProps {
   params: {
@@ -39,14 +38,6 @@ async function getQuizConfigFromFile(slug: string): Promise<QuizConfig | null> {
     quizData.slug = quizData.slug || slug;
     quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
     quizData.dashboardName = quizData.dashboardName || quizData.title;
-
-
-    if (quizData.questions && Array.isArray(quizData.questions)) {
-      quizData.questions = quizData.questions.filter(q => q.id !== defaultContactStep.id);
-      quizData.questions.push(defaultContactStep);
-    } else {
-      quizData.questions = [defaultContactStep];
-    }
     
     return quizData;
   } catch (error: any) {
@@ -65,7 +56,7 @@ export async function generateStaticParams() {
   try {
     const filenames = await fs.readdir(quizzesDirectory);
     return filenames
-      .filter(filename => filename.endsWith('.json') && filename !== 'ba.json' && filename !== 'be.json' && filename !== 'bsb.json' && filename !== 'cam.json') // Exclude deleted files explicitly
+      .filter(filename => filename.endsWith('.json') && filename.trim() !== '.json') // Exclude empty filenames
       .map(filename => ({
         quizSlug: filename.replace('.json', ''),
       }));
@@ -95,10 +86,6 @@ export default async function QuizPage({ params }: QuizPageProps) {
       </main>
     );
   }
-  
-   if (quizConfigFromFile.questions.length === 1 && quizConfigFromFile.questions[0].id === defaultContactStep.id) {
-     // Permite quiz com apenas a etapa de contato.
-   }
 
   const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Sua+Logo";
   const clientAbandonmentWebhook = ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
@@ -124,4 +111,3 @@ export default async function QuizPage({ params }: QuizPageProps) {
     </main>
   );
 }
-

@@ -3,7 +3,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption } from '@/types/quiz';
-import { defaultContactStep } from '@/config/quizConfig'; 
 import { revalidatePath } from 'next/cache';
 
 const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
@@ -192,15 +191,12 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
     // File does not exist, proceed to create
   }
 
-  const questionsWithoutExistingContact = questions.filter(q => q.id !== defaultContactStep.id);
-  const questionsWithContactStep = [...questionsWithoutExistingContact, defaultContactStep];
-
   const quizConfig: QuizConfig = {
     title,
     slug,
     description: description || DEFAULT_QUIZ_DESCRIPTION,
     dashboardName: dashboardName || title,
-    questions: questionsWithContactStep,
+    questions: questions,
     successIcon: 'CheckCircle', 
   };
 
@@ -235,14 +231,12 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
     const fileContents = await fs.readFile(filePath, 'utf8');
     const quizData = JSON.parse(fileContents) as QuizConfig;
     
-    const questionsForEditing = quizData.questions.filter(q => q.id !== defaultContactStep.id);
-    
     return {
       title: quizData.title,
       slug: quizData.slug,
       description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
       dashboardName: quizData.dashboardName || quizData.title,
-      questionsJson: JSON.stringify(questionsForEditing, null, 2),
+      questionsJson: JSON.stringify(quizData.questions, null, 2),
     };
   } catch (error) {
     console.error(`Failed to read quiz config for editing (slug ${slug}):`, error);
@@ -262,13 +256,6 @@ export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig 
     quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
     quizData.dashboardName = quizData.dashboardName || quizData.title;
 
-    if (quizData.questions && Array.isArray(quizData.questions)) {
-      quizData.questions = quizData.questions.filter(q => q.id !== defaultContactStep.id);
-      quizData.questions.push(defaultContactStep);
-    } else {
-      quizData.questions = [defaultContactStep];
-    }
-    
     return quizData;
   } catch (error) {
     console.error(`Failed to read quiz config for preview (slug ${slug}):`, error);
@@ -304,15 +291,12 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
     return { success: false, message: `Quiz com o slug "${slug}" não encontrado para atualização.` };
   }
 
-  const questionsWithoutExistingContact = questions.filter(q => q.id !== defaultContactStep.id);
-  const questionsWithContactStep = [...questionsWithoutExistingContact, defaultContactStep];
-
   const quizConfig: QuizConfig = {
     title,
     slug, 
     description: description || DEFAULT_QUIZ_DESCRIPTION,
     dashboardName: dashboardName || title,
-    questions: questionsWithContactStep,
+    questions: questions,
     successIcon: 'CheckCircle', 
   };
 

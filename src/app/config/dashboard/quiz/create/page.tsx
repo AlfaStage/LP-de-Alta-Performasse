@@ -2,7 +2,6 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +14,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react'; 
 import { createQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
-import { defaultContactStep } from '@/config/quizConfig';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
@@ -63,7 +61,9 @@ export default function CreateQuizPage() {
   const [baseUrl, setBaseUrl] = useState('');
 
   useEffect(() => {
-    setBaseUrl(window.location.origin);
+    if (typeof window !== 'undefined') {
+      setBaseUrl(window.location.origin);
+    }
     async function fetchPreviewConfig() {
       const config = await fetchWhitelabelSettings();
       setWhitelabelSettings(config);
@@ -198,7 +198,7 @@ export default function CreateQuizPage() {
         return;
       }
     }
-    setPreviewQuizData([...questionsForPreview, defaultContactStep]);
+    setPreviewQuizData(questionsForPreview);
     setIsPreviewModalOpen(true);
   };
   
@@ -347,7 +347,7 @@ export default function CreateQuizPage() {
                     <CardHeader>
                         <CardTitle>Construtor Interativo de Perguntas</CardTitle>
                         <CardDescription>
-                        Adicione e configure as perguntas do seu quiz. A etapa de contato será adicionada automaticamente no final.
+                        Adicione e configure as perguntas do seu quiz.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -467,7 +467,7 @@ export default function CreateQuizPage() {
                     <CardHeader>
                         <CardTitle>Perguntas do Quiz (Formato JSON)</CardTitle>
                         <CardDescription>
-                            Cole aqui o array de objetos das perguntas em formato JSON. A etapa de contato é adicionada automaticamente.
+                            Cole aqui o array de objetos das perguntas em formato JSON.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -485,7 +485,7 @@ export default function CreateQuizPage() {
                             <AlertDescription>
                             <p className="mb-2">Cada pergunta deve ser um objeto com `id`, `name`, `text`, `type`, `icon` (opcional), `explanation` (opcional), e `options` (para radio/checkbox) ou `fields` (para textFields). Nomes de ícones devem ser de `lucide-react`.</p>
                             <details>
-                                <summary className="cursor-pointer text-primary hover:underline">Ver exemplo JSON (sem etapa de contato)</summary>
+                                <summary className="cursor-pointer text-primary hover:underline">Ver exemplo JSON</summary>
                                 <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-x-auto">
                                 {exampleQuizJson}
                                 </pre>
@@ -565,5 +565,3 @@ export default function CreateQuizPage() {
     </div>
   );
 }
-
-    

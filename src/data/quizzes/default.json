@@ -54,58 +54,33 @@
       ]
     },
     {
-      "id": "q3_generic_goal",
-      "name": "mainGoal",
-      "icon": "Target",
-      "text": "Qual seu principal objetivo ao preencher este quiz?",
-      "explanation": "Isso nos ajudará a direcionar você para a melhor solução.",
-      "type": "radio",
-      "options": [
+      "id": "final_contact_step",
+      "name": "contato",
+      "icon": "MessageSquare",
+      "text": "Excelente! Para finalizarmos e nossa equipe entrar em contato, por favor, deixe seus dados:",
+      "explanation": "Suas informações estão seguras conosco.",
+      "type": "textFields",
+      "fields": [
         {
-          "value": "learn_more",
-          "label": "Aprender mais sobre o serviço/produto"
+          "name": "nomeCompleto",
+          "label": "Seu nome completo",
+          "type": "text",
+          "placeholder": "Ex: Maria da Silva",
+          "icon": "User"
         },
         {
-          "value": "get_quote",
-          "label": "Obter um orçamento personalizado"
+          "name": "whatsapp",
+          "label": "Seu WhatsApp (com DDD)",
+          "type": "tel",
+          "placeholder": "Ex: (11) 98765-4321",
+          "icon": "Smartphone"
         },
         {
-          "value": "find_solution",
-          "label": "Encontrar uma solução para um problema específico"
-        },
-        {
-          "value": "general_curiosity",
-          "label": "Apenas curiosidade geral"
-        }
-      ]
-    },
-    {
-      "id": "q4_generic_region",
-      "name": "regionPreference",
-      "icon": "MapPin",
-      "text": "Em qual região você tem preferência de atendimento?",
-      "explanation": "Selecione a região mais conveniente para você.",
-      "type": "radio",
-      "options": [
-        {
-          "value": "north_region",
-          "label": "Região Norte"
-        },
-        {
-          "value": "south_region",
-          "label": "Região Sul"
-        },
-        {
-          "value": "east_region",
-          "label": "Região Leste"
-        },
-        {
-          "value": "west_region",
-          "label": "Região Oeste"
-        },
-        {
-          "value": "central_region",
-          "label": "Região Central"
+          "name": "email",
+          "label": "Seu melhor email",
+          "type": "email",
+          "placeholder": "Ex: maria.silva@email.com",
+          "icon": "Mail"
         }
       ]
     }

@@ -14,7 +14,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react';
 import { getQuizForEdit, updateQuizAction, type QuizEditData, getQuizAnalyticsBySlug } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData } from '@/types/quiz';
-import { defaultContactStep } from '@/config/quizConfig';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
@@ -75,7 +74,9 @@ export default function EditQuizPage() {
 
 
   useEffect(() => {
-    setBaseUrl(window.location.origin);
+    if (typeof window !== 'undefined') {
+      setBaseUrl(window.location.origin);
+    }
     async function fetchPreviewConfig() {
       setIsLoadingPreview(true);
       const config = await fetchWhitelabelSettings();
@@ -283,7 +284,7 @@ export default function EditQuizPage() {
             }
         }
     }
-    setPreviewQuizData([...questionsForPreview, defaultContactStep]);
+    setPreviewQuizData(questionsForPreview);
     setIsLoadingPreview(false);
   };
   
@@ -446,7 +447,6 @@ export default function EditQuizPage() {
                   <CardTitle>Detalhes do Quiz</CardTitle>
                   <CardDescription>
                       Modifique o título público, slug, descrição pública e nome interno do quiz.
-                      A etapa de contato é gerenciada automaticamente.
                   </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -504,7 +504,7 @@ export default function EditQuizPage() {
                   <CardHeader>
                       <CardTitle>Construtor Interativo de Perguntas</CardTitle>
                       <CardDescription>
-                      Adicione e configure as perguntas do seu quiz. A etapa de contato será adicionada automaticamente no final.
+                      Adicione e configure as perguntas do seu quiz.
                       </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -707,7 +707,7 @@ export default function EditQuizPage() {
                   <CardHeader>
                       <CardTitle>Perguntas do Quiz (Formato JSON)</CardTitle>
                       <CardDescription>
-                      Edite o array de objetos das perguntas. Não inclua a etapa de contato aqui; ela é adicionada automaticamente.
+                      Edite o array de objetos das perguntas.
                       </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -726,7 +726,7 @@ export default function EditQuizPage() {
                           <AlertDescription>
                           <p className="mb-2">Edite o array de objetos das perguntas. Nomes de ícones devem ser de `lucide-react`.</p>
                           <details>
-                              <summary className="cursor-pointer text-primary hover:underline">Ver exemplo JSON (apenas perguntas de conteúdo)</summary>
+                              <summary className="cursor-pointer text-primary hover:underline">Ver exemplo JSON</summary>
                               <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-x-auto">
                               {exampleQuizJson}
                               </pre>
@@ -810,5 +810,3 @@ export default function EditQuizPage() {
     </div>
   );
 }
-
-    

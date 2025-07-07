@@ -11,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getSuccessIcon, defaultContactStep } from '@/config/quizConfig';
+import { getSuccessIcon } from '@/config/quizConfig';
 import QuizProgressBar from './QuizProgressBar';
-import { getActivePixelIds, trackFbCustomEvent, trackFbEvent, trackFbPageView } from '@/lib/fpixel';
-import { trackGaEvent, trackGaPageView } from '@/lib/gtag';
+import { getActivePixelIds, trackFbCustomEvent, trackFbEvent } from '@/lib/fpixel';
+import { trackGaEvent } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
 import { recordQuizStartedAction, recordQuestionAnswerAction } from '@/app/config/dashboard/quiz/actions';
 import * as LucideIcons from 'lucide-react';
@@ -24,12 +24,6 @@ import Link from 'next/link';
 import type { QuizQuestion } from '@/types/quiz';
 
 type FormData = Record<string, any>;
-
-// This schema is specifically for the contact step
-const contactSchema = z.object({
-  nomeCompleto: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres." }),
-  whatsapp: z.string().min(10, { message: "WhatsApp inválido. Inclua o DDD." }).regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, { message: "Formato de WhatsApp inválido. Use (XX) XXXXX-XXXX ou XXXXXXXXXXX." }),
-});
 
 interface QuizFormProps {
   quizQuestions: QuizQuestion[];
@@ -81,13 +75,10 @@ export default function QuizForm({
   const SuccessIcon = getSuccessIcon();
 
   const methods = useForm<FormData>({
-    resolver: (quizQuestions && quizQuestions.length > 0 && currentStep === quizQuestions.length -1 && quizQuestions[currentStep]?.id === defaultContactStep.id) 
-                ? zodResolver(contactSchema) 
-                : undefined,
     mode: 'onChange',
   });
 
-  const { control, handleSubmit, setValue, getValues, trigger, formState: { errors, isValid: formIsValid }, setError: setFormError, clearErrors } = methods;
+  const { control, handleSubmit, setValue, getValues, trigger, formState: { errors }, setError: setFormError, clearErrors } = methods;
 
   const activeQuestions = useMemo(() => {
     if (!quizQuestions) return [];
@@ -173,64 +164,93 @@ export default function QuizForm({
     if (submissionStatus === 'pending' || !currentQuestion) return;
 
     let stepIsValid = true;
-    if (currentQuestion.id === defaultContactStep.id) { // Specific validation for contact step
-        stepIsValid = await trigger(['nomeCompleto', 'whatsapp']);
-    } else if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
-        const fieldNamesToValidate = currentQuestion.fields.map(f => f.name);
-        stepIsValid = await trigger(fieldNamesToValidate);
+    
+    // Clear previous errors for all fields in the current step to avoid stale errors
+    if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
+        currentQuestion.fields.forEach(field => clearErrors(field.name));
+    } else if (currentQuestion.name) {
+        clearErrors(currentQuestion.name);
+    }
+    
+    if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
+        const schemaFields: Record<string, z.ZodString> = {};
+        currentQuestion.fields.forEach(field => {
+            let fieldSchema = z.string().min(1, `${field.label} é obrigatório.`);
+            if (field.type === 'email') {
+                fieldSchema = fieldSchema.email('Formato de email inválido.');
+            } else if (field.type === 'tel') {
+                fieldSchema = fieldSchema.min(10, "Telefone inválido. Inclua o DDD.").regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, "Formato de telefone inválido. Use (XX) XXXXX-XXXX ou apenas números.");
+            } else { // 'text'
+                fieldSchema = fieldSchema.min(3, `${field.label} deve ter pelo menos 3 caracteres.`);
+            }
+            schemaFields[field.name] = fieldSchema;
+        });
+
+        const stepSchema = z.object(schemaFields);
+        const result = stepSchema.safeParse(getValues());
+
+        if (!result.success) {
+            stepIsValid = false;
+            result.error.errors.forEach(err => {
+                const fieldName = err.path[0];
+                if (typeof fieldName === 'string') {
+                    setFormError(fieldName, { type: 'manual', message: err.message });
+                }
+            });
+        }
+
     } else if (currentQuestion.type === 'radio' || currentQuestion.type === 'checkbox') {
         const value = getValues(currentQuestion.name);
         stepIsValid = !!value && (Array.isArray(value) ? value.length > 0 : true);
         if (!stepIsValid) {
             setFormError(currentQuestion.name, { type: "manual", message: "Por favor, selecione uma opção."});
-        } else {
-            clearErrors(currentQuestion.name);
         }
     }
 
-    const answerValue = getValues(currentQuestion.name);
-    const answerString = Array.isArray(answerValue) ? answerValue.join(', ') : String(answerValue);
+    if (!stepIsValid) return;
 
-    if (stepIsValid) {
-        if (!isPreview) {
-            recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, answerValue, currentQuestion.type)
-              .catch(err => console.error("Failed to record question answer:", err));
+    const answerValue = getValues(currentQuestion.name) || (currentQuestion.type === 'textFields' && currentQuestion.fields ? currentQuestion.fields.reduce((acc, field) => ({...acc, [field.name]: getValues(field.name)}), {}) : {});
+    const answerString = typeof answerValue === 'object' && answerValue !== null && !Array.isArray(answerValue) ? JSON.stringify(answerValue) : Array.isArray(answerValue) ? answerValue.join(', ') : String(answerValue);
 
-            const eventDataFb = {
-              quiz_slug: quizSlug,
-              question_id: currentQuestion.id,
-              question_name: currentQuestion.name,
-              answer: answerString,
-              step_number: currentStep + 1,
-            };
-             const eventDataGa = { 
-                action: 'question_answered', 
-                category: 'Quiz', 
-                label: `Q: ${currentQuestion.id} - A: ${answerString.substring(0, 100)}`, 
-                quiz_slug: quizSlug,
-                question_id: currentQuestion.id,
-                question_name: currentQuestion.name,
-                answer: answerString,
-                step_number: currentStep + 1,
-            };
 
-            if (configuredFbPixelIds.length > 0) {
-              trackFbCustomEvent('QuestionAnswered', eventDataFb, configuredFbPixelIds);
-            }
-            if(isGaConfigured && googleAnalyticsId){
-              trackGaEvent(eventDataGa, googleAnalyticsId);
-            }
+    if (!isPreview) {
+        recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, answerValue, currentQuestion.type)
+          .catch(err => console.error("Failed to record question answer:", err));
+
+        const eventDataFb = {
+          quiz_slug: quizSlug,
+          question_id: currentQuestion.id,
+          question_name: currentQuestion.name,
+          answer: answerString,
+          step_number: currentStep + 1,
+        };
+         const eventDataGa = { 
+            action: 'question_answered', 
+            category: 'Quiz', 
+            label: `Q: ${currentQuestion.id} - A: ${answerString.substring(0, 100)}`, 
+            quiz_slug: quizSlug,
+            question_id: currentQuestion.id,
+            question_name: currentQuestion.name,
+            answer: answerString,
+            step_number: currentStep + 1,
+        };
+
+        if (configuredFbPixelIds.length > 0) {
+          trackFbCustomEvent('QuestionAnswered', eventDataFb, configuredFbPixelIds);
         }
-
-        if (currentStep < activeQuestions.length - 1) {
-            setAnimationClass('animate-slide-out');
-            setTimeout(() => {
-                setCurrentStep(prev => prev + 1);
-                setAnimationClass('animate-slide-in');
-            }, 300);
-        } else { 
-            await handleSubmit(onSubmit)();
+        if(isGaConfigured && googleAnalyticsId){
+          trackGaEvent(eventDataGa, googleAnalyticsId);
         }
+    }
+
+    if (currentStep < activeQuestions.length - 1) {
+        setAnimationClass('animate-slide-out');
+        setTimeout(() => {
+            setCurrentStep(prev => prev + 1);
+            setAnimationClass('animate-slide-in');
+        }, 300);
+    } else { 
+        await handleSubmit(onSubmit)();
     }
   };
 
@@ -265,7 +285,7 @@ export default function QuizForm({
 
     const finalData = {
       ...formData,
-      ...data, // This includes validated data from the last step (e.g., nomeCompleto, whatsapp)
+      ...data, 
       quizSlug,
       quizTitle,
       clientInfo,
@@ -329,6 +349,7 @@ export default function QuizForm({
 
         } else if (result.status === 'invalid_number') {
             setSubmissionStatus('idle');
+            // Assuming the field name for whatsapp is 'whatsapp'
             setFormError('whatsapp', {
                 type: 'manual',
                 message: result.message || "O número de WhatsApp informado parece ser inválido. Por favor, corrija e tente novamente."
@@ -611,12 +632,7 @@ export default function QuizForm({
                 <Button
                     onClick={handleNext}
                     className="px-6 py-3 text-base"
-                    disabled={
-                        submissionStatus === 'pending' ||
-                        (currentQuestion.type !== 'textFields' && (!getValues(currentQuestion.name) || (Array.isArray(getValues(currentQuestion.name)) && getValues(currentQuestion.name).length === 0))) ||
-                        (currentQuestion.id === defaultContactStep.id && !formIsValid) || // Stricter validation for contact step
-                        (currentQuestion.type === 'textFields' && currentQuestion.id !== defaultContactStep.id && !formIsValid && Object.keys(errors).length > 0) // For other textFields steps if any
-                    }
+                    disabled={submissionStatus === 'pending'}
                 >
                     {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                     {submissionStatus === 'pending' ? 'Enviando...' : (currentStep === activeQuestions.length - 1 ? 'Finalizar e Enviar' : 'Próximo')}

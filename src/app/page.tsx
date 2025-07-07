@@ -9,7 +9,6 @@ import type { QuizConfig } from '@/types/quiz';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
-import { defaultContactStep } from '@/config/quizConfig';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
@@ -17,7 +16,7 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
 });
 
 const DEFAULT_QUIZ_SLUG = "default";
-const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas para nos ajudar a entender suas preferências.";
+const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas para nos ajudar a entender suas preferências.";
 
 
 async function getDefaultQuizConfig(): Promise<QuizConfig | null> {
@@ -37,13 +36,6 @@ async function getDefaultQuizConfig(): Promise<QuizConfig | null> {
     quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
     quizData.dashboardName = quizData.dashboardName || quizData.title;
 
-
-    if (quizData.questions && Array.isArray(quizData.questions)) {
-      quizData.questions = quizData.questions.filter(q => q.id !== defaultContactStep.id);
-      quizData.questions.push(defaultContactStep);
-    } else {
-      quizData.questions = [defaultContactStep];
-    }
     return quizData;
   } catch (error: any) {
     if (error.code === 'ENOENT') {
@@ -120,4 +112,3 @@ export default async function HomePage() {
     </main>
   );
 }
-
