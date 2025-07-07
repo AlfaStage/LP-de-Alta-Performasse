@@ -17,7 +17,7 @@ const navItems = [
   { href: "/config/dashboard", label: "Quizzes (Início)", icon: Home, exactMatch: true },
   { href: "/config/dashboard/quiz/create", label: "Criar Novo Quiz", icon: ListPlus, exactMatch: true }, 
   { href: "/config/dashboard/settings", label: "Configurações", icon: Settings2, exactMatch: false }, 
-  { href: "/config/dashboard/settings/documentation", label: "Documentação API", icon: BookText, exactMatch: true }, 
+  { href: "/config/dashboard/documentation", label: "Documentação", icon: BookText, exactMatch: false }, 
 ];
 
 export default function DashboardShell({ children, logoutAction }: DashboardShellProps) {

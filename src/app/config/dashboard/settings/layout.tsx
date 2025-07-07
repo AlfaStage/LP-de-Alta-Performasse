@@ -32,16 +32,6 @@ const settingsNavItems: { title: string; href: string; icon: LucideIcon }[] = [
     href: '/config/dashboard/settings/analytics',
     icon: BarChart3,
   },
-   {
-    title: 'Documentação API',
-    href: '/config/dashboard/settings/documentation',
-    icon: Database,
-  },
-  {
-    title: 'Guia: Criar Quiz (JSON)',
-    href: '/config/dashboard/settings/quiz-json',
-    icon: FileJson,
-  },
   {
     title: 'Sobre',
     href: '/config/dashboard/settings/about',
