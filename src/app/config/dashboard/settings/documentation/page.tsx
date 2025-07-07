@@ -20,8 +20,12 @@ export default function DocumentationApiPage() {
   const [isDeletingToken, setIsDeletingToken] = useState(false);
   const [showDeleteTokenDialog, setShowDeleteTokenDialog] = useState(false);
   const { toast } = useToast();
+  const [baseUrl, setBaseUrl] = useState('SUA_APP_BASE_URL');
 
   useEffect(() => {
+    // This runs only on the client, after hydration, preventing the mismatch error.
+    setBaseUrl(window.location.origin);
+    
     async function loadToken() {
       setIsLoadingToken(true);
       try {
@@ -102,7 +106,6 @@ export default function DocumentationApiPage() {
   };
 
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'SUA_APP_BASE_URL';
   const exampleCurlCall = apiToken 
     ? `
 curl -X GET \\
@@ -279,4 +282,3 @@ curl -X GET \\
     </div>
   );
 }
-
