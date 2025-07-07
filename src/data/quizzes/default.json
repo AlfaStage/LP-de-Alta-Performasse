@@ -4,6 +4,9 @@
   "slug": "default",
   "dashboardName": "Quiz Padrão (Modelo)",
   "description": "Responda algumas perguntas para nos ajudar a entender suas preferências. Este é um quiz modelo.",
+  "isActive": true,
+  "useCustomTheme": false,
+  "customTheme": {},
   "questions": [
     {
       "id": "q1_generic_experience",

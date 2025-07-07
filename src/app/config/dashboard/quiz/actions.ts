@@ -62,7 +62,7 @@ async function saveAggregateQuizStatsData(data: AggregateQuizStats): Promise<voi
   }
 }
 
-// Helper to filter events by date range
+// Helper to filter events by date
 const filterEventsByDate = (events: AnalyticsEvent[], dateRange?: DateRange): AnalyticsEvent[] => {
   if (!dateRange || !dateRange.from) return events;
   const fromDate = startOfDay(dateRange.from);
@@ -242,6 +242,9 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
     dashboardName: dashboardName || title,
     questions: questions,
     successIcon: 'CheckCircle', 
+    isActive: true,
+    useCustomTheme: false,
+    customTheme: {},
   };
 
   try {
@@ -265,7 +268,15 @@ export interface QuizEditData {
   slug: string;
   description?: string;
   dashboardName?: string;
-  questionsJson: string; 
+  questionsJson: string;
+  isActive?: boolean;
+  useCustomTheme?: boolean;
+  customTheme?: {
+    primaryColorHex?: string;
+    secondaryColorHex?: string;
+    buttonPrimaryBgColorHex?: string;
+    quizBackgroundColorHex?: string;
+  };
 }
 
 export async function getQuizForEdit(slug: string): Promise<QuizEditData | null> {
@@ -281,6 +292,9 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
       description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
       dashboardName: quizData.dashboardName || quizData.title,
       questionsJson: JSON.stringify(quizData.questions, null, 2),
+      isActive: quizData.isActive ?? true,
+      useCustomTheme: quizData.useCustomTheme ?? false,
+      customTheme: quizData.customTheme || {},
     };
   } catch (error) {
     console.error(`Failed to read quiz config for editing (slug ${slug}):`, error);
@@ -299,6 +313,9 @@ export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig 
     quizData.slug = quizData.slug || slug; 
     quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
     quizData.dashboardName = quizData.dashboardName || quizData.title;
+    quizData.isActive = quizData.isActive ?? true;
+    quizData.useCustomTheme = quizData.useCustomTheme ?? false;
+    quizData.customTheme = quizData.customTheme || {};
 
     return quizData;
   } catch (error) {
@@ -314,11 +331,19 @@ interface UpdateQuizPayload {
   description?: string;
   dashboardName?: string;
   questions: QuizQuestion[];
+  isActive?: boolean;
+  useCustomTheme?: boolean;
+  customTheme?: {
+    primaryColorHex?: string;
+    secondaryColorHex?: string;
+    buttonPrimaryBgColorHex?: string;
+    quizBackgroundColorHex?: string;
+  };
 }
 
 export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, description, dashboardName, questions } = payload;
+  const { title, slug, description, dashboardName, questions, isActive, useCustomTheme, customTheme } = payload;
 
   if (!title || !slug) {
     return { success: false, message: "Título e slug são obrigatórios." };
@@ -342,6 +367,9 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
     dashboardName: dashboardName || title,
     questions: questions,
     successIcon: 'CheckCircle', 
+    isActive: isActive ?? true,
+    useCustomTheme: useCustomTheme ?? false,
+    customTheme: customTheme || {},
   };
 
   try {
@@ -436,6 +464,7 @@ export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListIte
           slug: quizData.slug || slug,
           dashboardName: quizData.dashboardName || quizData.title,
           successIcon: quizData.successIcon,
+          isActive: quizData.isActive ?? true,
           startedCount: startedCount,
           completedCount: completedCount,
           firstAnswerCount: firstAnswerCount,
@@ -448,6 +477,7 @@ export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListIte
           slug: slug,
           dashboardName: `Erro: ${filename}`,
           successIcon: undefined, 
+          isActive: false,
           startedCount: filterEventsByDate(analytics.started, dateRange).length,
           completedCount: filterEventsByDate(analytics.completed, dateRange).length,
           firstAnswerCount: filterEventsByDate(analytics.firstAnswer || [], dateRange).length,
@@ -529,6 +559,7 @@ export async function getQuizAnalyticsBySlug(slug: string, dateRange?: DateRange
       description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
       dashboardName: quizData.dashboardName || quizData.title,
       successIcon: quizData.successIcon,
+      isActive: quizData.isActive ?? true,
       startedCount: startedCount,
       completedCount: completedCount,
       firstAnswerCount: firstAnswerCount,
@@ -541,6 +572,7 @@ export async function getQuizAnalyticsBySlug(slug: string, dateRange?: DateRange
             description: DEFAULT_QUIZ_DESCRIPTION,
             dashboardName: `Quiz ${slug} (Arquivo não encontrado)`,
             successIcon: undefined,
+            isActive: false,
             startedCount: filterEventsByDate(quizAggStats.started, dateRange).length,
             completedCount: filterEventsByDate(quizAggStats.completed, dateRange).length,
             firstAnswerCount: filterEventsByDate(quizAggStats.firstAnswer || [], dateRange).length,

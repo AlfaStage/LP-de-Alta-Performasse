@@ -41,6 +41,14 @@ export interface QuizConfig {
   dashboardName?: string;
   questions: QuizQuestion[];
   successIcon?: keyof typeof import('lucide-react');
+  isActive?: boolean;
+  useCustomTheme?: boolean;
+  customTheme?: {
+    primaryColorHex?: string;
+    secondaryColorHex?: string;
+    buttonPrimaryBgColorHex?: string;
+    quizBackgroundColorHex?: string;
+  };
 }
 
 export interface WhitelabelConfig {
@@ -68,12 +76,13 @@ export interface WhitelabelConfig {
 }
 
 // Statistics types
-export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'description' | 'dashboardName'> {
+export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'description' | 'dashboardName' | 'customTheme' | 'useCustomTheme'> {
   title: string;
   slug: string;
   description?: string;
   dashboardName?: string;
   successIcon?: keyof typeof import('lucide-react');
+  isActive?: boolean;
   startedCount?: number;
   completedCount?: number;
   firstAnswerCount?: number;
@@ -123,5 +132,13 @@ export interface QuizEditData {
   slug: string;
   description?: string;
   dashboardName?: string;
-  questionsJson: string; 
+  questionsJson: string;
+  isActive?: boolean;
+  useCustomTheme?: boolean;
+  customTheme?: {
+    primaryColorHex?: string;
+    secondaryColorHex?: string;
+    buttonPrimaryBgColorHex?: string;
+    quizBackgroundColorHex?: string;
+  };
 }

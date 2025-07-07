@@ -127,7 +127,7 @@ export default function DashboardPage() {
 
 
   const fetchData = useCallback(async () => {
-    if (!dateRange) return; // Wait until dateRange is set by the initial settings load
+    if (!dateRange) return; 
 
     setIsFetchingData(true);
     setIsLoadingList(true); 
@@ -373,16 +373,22 @@ export default function DashboardPage() {
 
             const conversionRate = conversionDenominatorCard > 0 ? ((quiz.completedCount || 0) / conversionDenominatorCard) * 100 : 0;
             const displayTitle = quiz.dashboardName || quiz.title;
+            const isActive = quiz.isActive ?? true;
             return (
-            <Card key={quiz.slug} className="shadow-lg hover:shadow-xl transition-shadow bg-card flex flex-col">
+            <Card key={quiz.slug} className={`shadow-lg hover:shadow-xl transition-shadow bg-card flex flex-col ${!isActive ? 'opacity-60' : ''}`}>
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                     <FileText className="h-8 w-8 text-primary mt-1" />
-                    {quiz.slug === DEFAULT_QUIZ_SLUG && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                            <Lock className="h-3 w-3" /> Padrão
+                    <div className='flex items-center gap-2'>
+                        <Badge variant={isActive ? 'default' : 'secondary'} className={`${isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+                           {isActive ? 'Ativo' : 'Inativo'}
                         </Badge>
-                    )}
+                        {quiz.slug === DEFAULT_QUIZ_SLUG && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                                <Lock className="h-3 w-3" /> Padrão
+                            </Badge>
+                        )}
+                    </div>
                 </div>
                 <CardTitle className="text-xl font-semibold pt-2 text-card-foreground">{displayTitle}</CardTitle>
                 <CardDescription className="mt-1">
@@ -548,6 +554,8 @@ export default function DashboardPage() {
                   toast({ title: "Simulação de Abandono", description: "Abandono simulado no console." });
                 }}
                 isPreview={true}
+                useCustomTheme={previewQuizConfig.useCustomTheme}
+                customTheme={previewQuizConfig.customTheme}
               />
             ) : (
               <div className="p-4 text-center text-muted-foreground">Não foi possível carregar a pré-visualização do quiz.</div>

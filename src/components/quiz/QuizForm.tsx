@@ -21,7 +21,8 @@ import * as LucideIcons from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
-import type { QuizQuestion } from '@/types/quiz';
+import type { QuizConfig, QuizQuestion } from '@/types/quiz';
+import { hexToHslString } from '@/lib/whitelabel';
 
 type FormData = Record<string, any>;
 
@@ -41,6 +42,8 @@ interface QuizFormProps {
   onSubmitOverride?: (data: FormData) => Promise<void>;
   onAbandonmentOverride?: (data: FormData, quizSlug?: string) => Promise<void>;
   isPreview?: boolean;
+  useCustomTheme?: boolean;
+  customTheme?: QuizConfig['customTheme'];
 }
 
 const IconComponents = LucideIcons;
@@ -63,13 +66,16 @@ export default function QuizForm({
   instagramUrl,
   onSubmitOverride,
   onAbandonmentOverride,
-  isPreview = false
+  isPreview = false,
+  useCustomTheme = false,
+  customTheme,
 }: QuizFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
   const [animationClass, setAnimationClass] = useState('animate-slide-in');
   const [isQuizCompleted, setIsQuizCompleted] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
+  const [themeStyles, setThemeStyles] = useState<React.CSSProperties>({});
   const { toast } = useToast();
 
   const SuccessIcon = getSuccessIcon();
@@ -92,6 +98,28 @@ export default function QuizForm({
     [facebookPixelId, facebookPixelIdSecondary]
   );
   const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== "YOUR_GA_ID";
+
+  useEffect(() => {
+    if (useCustomTheme && customTheme) {
+      const styles: React.CSSProperties = {};
+      const primaryColor = customTheme.primaryColorHex;
+      const secondaryColor = customTheme.secondaryColorHex;
+      const quizBgColor = customTheme.quizBackgroundColorHex;
+      const buttonBgColor = customTheme.buttonPrimaryBgColorHex;
+
+      if (primaryColor) styles['--primary'] = hexToHslString(primaryColor) || '';
+      if (secondaryColor) styles['--secondary'] = hexToHslString(secondaryColor) || '';
+      if (quizBgColor) styles['--card'] = hexToHslString(quizBgColor) || '';
+      
+      const finalButtonColor = buttonBgColor || primaryColor;
+      if (finalButtonColor) {
+         styles['--primary'] = hexToHslString(finalButtonColor) || '';
+      }
+      setThemeStyles(styles);
+    } else {
+      setThemeStyles({});
+    }
+  }, [useCustomTheme, customTheme]);
 
 
   useEffect(() => {
@@ -474,7 +502,7 @@ export default function QuizForm({
 
   return (
     <FormProvider {...methods}>
-      <div className={`flex flex-col items-center justify-center min-h-screen p-4 text-foreground ${isPreview ? 'h-full overflow-y-auto' : 'bg-background'}`}>
+      <div style={themeStyles} className={`flex flex-col items-center justify-center min-h-screen p-4 text-foreground ${isPreview ? 'h-full overflow-y-auto' : 'bg-background'}`}>
         <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8 bg-card text-card-foreground`}>
           <CardHeader className="p-6 bg-card">
              <div className="flex items-center space-x-3">
