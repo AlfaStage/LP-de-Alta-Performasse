@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowLeft, Users, CheckCircle2, Target, BarChart3, Info, AlertTriangle, FileText, MessageSquare, ListChecks, Edit3, TrendingUp, RotateCcw, Loader2, ShieldAlert, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Users, CheckCircle2, Target, Info, AlertTriangle, FileText, MessageSquare, ListChecks, Edit3, TrendingUp, RotateCcw, Loader2, ShieldAlert } from 'lucide-react';
 import type { QuizConfig, QuizQuestion, QuizAnalyticsData, QuizQuestionAnalytics, QuestionSpecificAnalytics, DateRange } from '@/types/quiz';
 import { getQuizConfigForPreview, getQuizAnalyticsBySlug, getQuizQuestionAnalytics, resetSingleQuizAnalyticsAction } from '@/app/config/dashboard/quiz/actions';
 import {
@@ -239,30 +239,7 @@ export default function QuizStatsPage() {
           </h1>
           <p className="text-muted-foreground">Análise detalhada do desempenho do quiz <code className="text-xs bg-muted px-1 py-0.5 rounded-sm">/{quizSlug}</code>.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
-            <Button variant="outline" onClick={() => router.push('/config/dashboard')}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-            </Button>
-            <Button
-                variant="outline"
-                onClick={() => setShowResetSingleDialog(true)}
-                disabled={isLoading || isResettingSingleStats}
-                className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive"
-            >
-                {isResettingSingleStats ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
-                Resetar Estatísticas
-            </Button>
-        </div>
-      </div>
-
-       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-            Filtro de Período
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
+        <div className="flex flex-col sm:flex-row items-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
             <DateRangePicker date={dateRange} onDateChange={setDateRange} />
             <Select onValueChange={handleDatePresetChange} defaultValue="last7">
               <SelectTrigger className="w-full sm:w-[180px]">
@@ -275,13 +252,20 @@ export default function QuizStatsPage() {
                 <SelectItem value="last30">Últimos 30 dias</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={fetchStatsData} disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-              Aplicar Filtro
+            <Button variant="outline" onClick={() => router.push('/config/dashboard')}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
             </Button>
-        </CardContent>
-      </Card>
-
+            <Button
+                variant="outline"
+                onClick={() => setShowResetSingleDialog(true)}
+                disabled={isLoading || isResettingSingleStats}
+                className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive"
+            >
+                {isResettingSingleStats ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                Resetar
+            </Button>
+        </div>
+      </div>
 
       <Card className="shadow-lg">
         <CardHeader>

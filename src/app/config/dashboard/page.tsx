@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw, ExternalLink, Copy, BarChart3, CalendarIcon } from 'lucide-react';
-import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, resetAllQuizAnalyticsAction, getQuizConfigForPreview } from './quiz/actions';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, ExternalLink, Copy, BarChart3 } from 'lucide-react';
+import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, getQuizConfigForPreview } from './quiz/actions';
 import type { QuizListItem, OverallQuizStats, QuizConfig, WhitelabelConfig, DateRange } from '@/types/quiz';
 import { useEffect, useState, useCallback } from 'react';
-import { addDays, format } from "date-fns";
+import { addDays } from "date-fns";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,8 +75,6 @@ export default function DashboardPage() {
   const [isFetchingData, setIsFetchingData] = useState(true);
   const [quizToDelete, setQuizToDelete] = useState<QuizListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showResetStatsDialog, setShowResetStatsDialog] = useState(false);
-  const [isResettingStats, setIsResettingStats] = useState(false);
   
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewQuizConfig, setPreviewQuizConfig] = useState<QuizConfig | null>(null);
@@ -165,36 +163,6 @@ export default function DashboardPage() {
       setQuizToDelete(null);
     }
   };
-  
-  const handleResetStats = async () => {
-    setIsResettingStats(true);
-    try {
-      const result = await resetAllQuizAnalyticsAction();
-      if (result.success) {
-        toast({
-          title: "Estatísticas Resetadas!",
-          description: "As estatísticas de todos os quizzes foram resetadas.",
-          variant: "default",
-        });
-        fetchData(); 
-      } else {
-        toast({
-          title: "Erro ao Resetar",
-          description: result.message || "Não foi possível resetar as estatísticas.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-       toast({
-        title: "Erro Inesperado",
-        description: "Ocorreu um erro ao tentar resetar as estatísticas.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsResettingStats(false);
-      setShowResetStatsDialog(false);
-    }
-  }
 
   const handleOpenPreview = async (slug: string) => {
     setIsLoadingPreview(true);
@@ -485,26 +453,6 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <Card className="border-destructive/30 bg-destructive/5">
-        <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2"><ShieldAlert className="h-5 w-5" />Ações de Risco</CardTitle>
-            <CardDescription className="text-destructive/80">
-                Esta ação é permanente e não pode ser desfeita. Use com cuidado.
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Button 
-              variant="destructive" 
-              onClick={() => setShowResetStatsDialog(true)} 
-              disabled={isFetchingData || isResettingStats}
-            >
-                <RotateCcw className="h-5 w-5 mr-2" />
-                Resetar Todas as Estatísticas
-            </Button>
-        </CardContent>
-      </Card>
-
-
       <AlertDialog open={!!quizToDelete} onOpenChange={(open) => !open && setQuizToDelete(null)}>
         <AlertDialogContent className="bg-card">
           <AlertDialogHeader>
@@ -529,37 +477,6 @@ export default function DashboardPage() {
                   Apagando...
                 </>
               ) : "Sim, Apagar Quiz"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={showResetStatsDialog} onOpenChange={setShowResetStatsDialog}>
-        <AlertDialogContent className="bg-card">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-xl text-foreground">
-              <ShieldAlert className="h-7 w-7 text-destructive" />
-              Confirmar Reset de Todas as Estatísticas
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-base text-muted-foreground">
-              Você tem certeza que deseja resetar todas as estatísticas dos quizzes? 
-              Isso apagará permanentemente todos os registros de quizzes iniciados, finalizados e respostas por pergunta para todos os quizzes.
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowResetStatsDialog(false)} disabled={isResettingStats} className="px-4 py-2">Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleResetStats} 
-              disabled={isResettingStats}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-4 py-2"
-            >
-              {isResettingStats ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Resetando...
-                </>
-              ) : "Sim, Resetar Tudo"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
