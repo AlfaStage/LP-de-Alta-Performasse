@@ -2,7 +2,7 @@
 "use server";
 import { SERVER_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
-import { updateQuizStat } from '@/app/config/dashboard/quiz/actions'; // Importar a função para atualizar estatísticas
+import { recordQuizCompletedAction } from '@/app/config/dashboard/quiz/actions'; // Importar a nova função
 
 interface ClientInfo {
   userAgent?: string;
@@ -116,7 +116,7 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
       console.log("Submitted quiz data sent to webhook successfully. Webhook 'status' header: mensagem enviada");
       // Registrar que o quiz foi completado
       if (payload.quizSlug) {
-        await updateQuizStat(payload.quizSlug, 'completedCount');
+        await recordQuizCompletedAction(payload.quizSlug);
       }
       return { status: 'success', message: "Dados enviados com sucesso!" };
     } else if (webhookStatusHeader === 'numero incorreto') {

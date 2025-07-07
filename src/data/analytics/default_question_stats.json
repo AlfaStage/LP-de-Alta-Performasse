@@ -1,10 +1,1 @@
-{
-  "q1_generic_experience": {
-    "id": "q1_generic_experience",
-    "type": "radio",
-    "totalAnswers": 1,
-    "options": {
-      "yes": 1
-    }
-  }
-}
+{}

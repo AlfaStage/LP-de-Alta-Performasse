@@ -3,16 +3,14 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowLeft, Users, CheckCircle2, Target, BarChart3, Info, AlertTriangle, FileText, MessageSquare, ListChecks, Edit3, TrendingUp, RotateCcw, Loader2, ShieldAlert } from 'lucide-react';
-import type { QuizConfig, QuizQuestion, QuizAnalyticsData, QuizQuestionAnalytics, QuestionSpecificAnalytics } from '@/types/quiz';
+import { ArrowLeft, Users, CheckCircle2, Target, BarChart3, Info, AlertTriangle, FileText, MessageSquare, ListChecks, Edit3, TrendingUp, RotateCcw, Loader2, ShieldAlert, CalendarIcon } from 'lucide-react';
+import type { QuizConfig, QuizQuestion, QuizAnalyticsData, QuizQuestionAnalytics, QuestionSpecificAnalytics, DateRange } from '@/types/quiz';
 import { getQuizConfigForPreview, getQuizAnalyticsBySlug, getQuizQuestionAnalytics, resetSingleQuizAnalyticsAction } from '@/app/config/dashboard/quiz/actions';
-import { defaultContactStep } from '@/config/quizConfig';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +22,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { addDays } from 'date-fns';
 
 function StatDisplayCard({ title, value, icon: Icon, subtext }: { title: string, value: string | number, icon: React.ElementType, subtext?: string }) {
   return (
@@ -65,6 +65,11 @@ export default function QuizStatsPage() {
   
   const [showResetSingleDialog, setShowResetSingleDialog] = useState(false);
   const [isResettingSingleStats, setIsResettingSingleStats] = useState(false);
+  
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: addDays(new Date(), -7),
+    to: new Date(),
+  });
 
   const fetchStatsData = useCallback(async () => {
     if (!quizSlug) {
@@ -77,8 +82,8 @@ export default function QuizStatsPage() {
     try {
       const [configData, aggData, qStatsData] = await Promise.all([
         getQuizConfigForPreview(quizSlug),
-        getQuizAnalyticsBySlug(quizSlug),
-        getQuizQuestionAnalytics(quizSlug)
+        getQuizAnalyticsBySlug(quizSlug, dateRange),
+        getQuizQuestionAnalytics(quizSlug, dateRange)
       ]);
 
       if (!configData) {
@@ -103,7 +108,7 @@ export default function QuizStatsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [quizSlug]);
+  }, [quizSlug, dateRange]);
 
   useEffect(() => {
     fetchStatsData();
@@ -139,21 +144,33 @@ export default function QuizStatsPage() {
       setShowResetSingleDialog(false);
     }
   };
-
+  
+  const handleDatePresetChange = (value: string) => {
+    const now = new Date();
+    switch (value) {
+      case 'today':
+        setDateRange({ from: now, to: now });
+        break;
+      case 'yesterday':
+        const yesterday = addDays(now, -1);
+        setDateRange({ from: yesterday, to: yesterday });
+        break;
+      case 'last7':
+        setDateRange({ from: addDays(now, -7), to: now });
+        break;
+      case 'last30':
+        setDateRange({ from: addDays(now, -30), to: now });
+        break;
+      default:
+        setDateRange(undefined);
+    }
+  };
 
   const conversionRate = aggregateStats?.startedCount && aggregateStats.startedCount > 0
     ? ((aggregateStats.completedCount || 0) / aggregateStats.startedCount * 100).toFixed(1) + "%"
     : "0.0%";
-
-  const contentQuestions = quizConfig?.questions.filter(q => q.id !== defaultContactStep.id) || [];
-  const contactStepConfig = quizConfig?.questions.find(q => q.id === defaultContactStep.id);
-  
-  let contactStepStats: QuestionSpecificAnalytics | null = null;
-  if (contactStepConfig && questionStats && questionStats[contactStepConfig.id]) {
-    contactStepStats = questionStats[contactStepConfig.id];
-  }
-  const ContactStepIcon = contactStepConfig ? getQuestionTypeIcon(contactStepConfig.type) : FileText;
-
+    
+  const contentQuestions = quizConfig?.questions || [];
 
   if (isLoading) {
     return (
@@ -165,6 +182,7 @@ export default function QuizStatsPage() {
             <Skeleton className="h-10 w-48" />
           </div>
         </div>
+        <Skeleton className="h-24 w-full" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Skeleton className="h-28 w-full" />
           <Skeleton className="h-28 w-full" />
@@ -223,7 +241,7 @@ export default function QuizStatsPage() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
             <Button variant="outline" onClick={() => router.push('/config/dashboard')}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para o Dashboard
+                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
             </Button>
             <Button
                 variant="outline"
@@ -232,16 +250,44 @@ export default function QuizStatsPage() {
                 className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive"
             >
                 {isResettingSingleStats ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
-                Resetar Estatísticas Deste Quiz
+                Resetar Estatísticas
             </Button>
         </div>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+            Filtro de Período
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
+            <DateRangePicker date={dateRange} onDateChange={setDateRange} />
+            <Select onValueChange={handleDatePresetChange} defaultValue="last7">
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Período pré-definido" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="yesterday">Ontem</SelectItem>
+                <SelectItem value="last7">Últimos 7 dias</SelectItem>
+                <SelectItem value="last30">Últimos 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={fetchStatsData} disabled={isLoading}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+              Aplicar Filtro
+            </Button>
+        </CardContent>
+      </Card>
+
 
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
-            Resumo Geral do Quiz
+            Resumo Geral (período selecionado)
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -257,13 +303,14 @@ export default function QuizStatsPage() {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertTitle>Nenhuma pergunta de conteúdo</AlertTitle>
-          <AlertDescription>Este quiz não possui perguntas de conteúdo configuradas para exibir estatísticas detalhadas (além da etapa de contato).</AlertDescription>
+          <AlertDescription>Este quiz não possui perguntas de conteúdo configuradas para exibir estatísticas detalhadas.</AlertDescription>
         </Alert>
       )}
 
       {contentQuestions.map((question, index) => {
         const qStat: QuestionSpecificAnalytics | undefined = questionStats ? questionStats[question.id] : undefined;
         const QuestionIcon = getQuestionTypeIcon(question.type);
+        const totalAnswers = qStat?.answers?.length || 0;
 
         return (
           <Card key={question.id} className="shadow-md hover:shadow-lg transition-shadow">
@@ -276,19 +323,19 @@ export default function QuizStatsPage() {
                 </div>
               </div>
               <div className="flex flex-col items-end flex-shrink-0 text-right">
-                <p className="text-2xl font-bold text-primary">{qStat?.totalAnswers || 0}</p>
+                <p className="text-2xl font-bold text-primary">{totalAnswers}</p>
                 <p className="text-xs text-muted-foreground -mt-1">Respostas</p>
               </div>
             </CardHeader>
             <CardContent>
-              {!qStat || qStat.totalAnswers === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhuma resposta registrada para esta pergunta ainda.</p>
+              {!qStat || totalAnswers === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma resposta registrada para esta pergunta no período selecionado.</p>
               ) : (
-                (question.type === 'radio' || question.type === 'checkbox') && question.options && qStat.options ? (
+                (question.type === 'radio' || question.type === 'checkbox') && question.options ? (
                   <div className="space-y-3">
                     {question.options.map(option => {
-                      const count = qStat.options?.[option.value] || 0;
-                      const percentage = qStat.totalAnswers > 0 ? (count / qStat.totalAnswers) * 100 : 0;
+                      const count = qStat.answers.filter(a => a.value === option.value || (Array.isArray(a.value) && a.value.includes(option.value))).length;
+                      const percentage = totalAnswers > 0 ? (count / totalAnswers) * 100 : 0;
                       return (
                         <div key={option.value}>
                           <div className="flex justify-between items-center text-sm mb-1">
@@ -301,7 +348,7 @@ export default function QuizStatsPage() {
                     })}
                   </div>
                 ) : question.type === 'textFields' && qStat ? (
-                  <p className="text-sm text-muted-foreground">Esta etapa de campos de texto foi submetida {qStat.totalAnswers} vez(es).</p>
+                  <p className="text-sm text-muted-foreground">Esta etapa de campos de texto foi submetida {totalAnswers} vez(es) no período selecionado.</p>
                 ) : (
                    <p className="text-sm text-muted-foreground">Não há opções visuais para este tipo de pergunta ou estatísticas detalhadas não disponíveis.</p>
                 )
@@ -310,27 +357,6 @@ export default function QuizStatsPage() {
           </Card>
         );
       })}
-
-      {contactStepConfig && (
-         <Card className="shadow-md hover:shadow-lg transition-shadow mt-4 border-dashed border-primary/50">
-            <CardHeader className="flex flex-row items-start justify-between gap-4">
-               <div className="flex items-start gap-3 flex-grow">
-                 <ContactStepIcon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                 <div className="flex-grow">
-                    <CardTitle className="text-lg">Etapa de Contato: {contactStepConfig.text.substring(0,60)}...</CardTitle>
-                    <CardDescription>ID: {contactStepConfig.id} | Nome: {contactStepConfig.name}</CardDescription>
-                 </div>
-               </div>
-               <div className="flex flex-col items-end flex-shrink-0 text-right">
-                <p className="text-2xl font-bold text-primary">{contactStepStats?.totalAnswers || 0}</p>
-                <p className="text-xs text-muted-foreground -mt-1">Submissões</p>
-              </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">A etapa de contato foi preenchida {contactStepStats?.totalAnswers || 0} vez(es).</p>
-            </CardContent>
-          </Card>
-       )}
       
       <AlertDialog open={showResetSingleDialog} onOpenChange={setShowResetSingleDialog}>
         <AlertDialogContent className="bg-card">
@@ -341,7 +367,7 @@ export default function QuizStatsPage() {
             </AlertDialogTitle>
             <AlertDialogDescription className="text-base text-muted-foreground">
               Você tem certeza que deseja resetar as estatísticas para o quiz "<strong>{aggregateStats?.dashboardName || aggregateStats?.title || quizSlug}</strong>"?
-              Isso zerará as contagens de quizzes iniciados, finalizados e todas as respostas por pergunta para este quiz específico.
+              Isso apagará permanentemente todos os registros de quizzes iniciados, finalizados e todas as respostas por pergunta para este quiz específico.
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

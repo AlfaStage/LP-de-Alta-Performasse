@@ -1,5 +1,9 @@
 
 import type { LucideIcon } from 'lucide-react';
+import type { DateRange as ReactDayPickerDateRange } from 'react-day-picker';
+
+
+export interface DateRange extends ReactDayPickerDateRange {}
 
 export interface QuizOption {
   value: string;
@@ -83,23 +87,28 @@ export interface QuizAnalyticsData extends QuizListItem {
 }
 
 // New types for per-question analytics
-export interface QuestionOptionStats {
-  [optionValue: string]: number; // count for each option value
+export interface AnalyticsEvent {
+  date: string; // ISO Date String
 }
 
-export interface QuestionFieldStats {
-  totalSubmissions: number; // For textFields, just count submissions for the step
+export interface QuestionAnswerEvent extends AnalyticsEvent {
+  value: any; // The answer given
 }
+
+export interface AggregateQuizStats {
+  [quizSlug: string]: {
+    started: AnalyticsEvent[];
+    completed: AnalyticsEvent[];
+  };
+}
+
 
 export interface QuestionSpecificAnalytics {
   id: string; // questionId
   type: QuizQuestion['type'];
-  totalAnswers: number; // Total times this question was answered/submitted
-  options?: QuestionOptionStats; // For radio/checkbox
-  fieldsHandled?: boolean; // For textFields, indicates submissions were counted
+  answers: QuestionAnswerEvent[];
 }
 
-// Structure for the [quizSlug]_question_stats.json file
 export interface QuizQuestionAnalytics {
   [questionId: string]: QuestionSpecificAnalytics;
 }

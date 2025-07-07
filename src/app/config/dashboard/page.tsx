@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw, ExternalLink, Copy, BarChart3 } from 'lucide-react';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, RotateCcw, ExternalLink, Copy, BarChart3, CalendarIcon } from 'lucide-react';
 import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, resetAllQuizAnalyticsAction, getQuizConfigForPreview } from './quiz/actions';
-import type { QuizListItem, OverallQuizStats, QuizConfig, WhitelabelConfig } from '@/types/quiz';
+import type { QuizListItem, OverallQuizStats, QuizConfig, WhitelabelConfig, DateRange } from '@/types/quiz';
 import { useEffect, useState, useCallback } from 'react';
+import { addDays, format } from "date-fns";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from './settings/actions';
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   ssr: false,
@@ -78,8 +82,20 @@ export default function DashboardPage() {
   const [previewQuizConfig, setPreviewQuizConfig] = useState<QuizConfig | null>(null);
   const [whitelabelSettingsForPreview, setWhitelabelSettingsForPreview] = useState<Partial<WhitelabelConfig> | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('');
+
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: addDays(new Date(), -7),
+    to: new Date(),
+  });
 
   const { toast } = useToast();
+
+   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setBaseUrl(window.location.origin);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     setIsFetchingData(true);
@@ -87,8 +103,8 @@ export default function DashboardPage() {
     setIsLoadingStats(true);
     try {
       const [quizList, stats] = await Promise.all([
-        getQuizzesList(),
-        getOverallQuizAnalytics()
+        getQuizzesList(dateRange),
+        getOverallQuizAnalytics(dateRange)
       ]);
       setQuizzes(quizList);
       setOverallStats(stats);
@@ -96,7 +112,7 @@ export default function DashboardPage() {
       console.error("Failed to fetch dashboard data:", error);
       toast({
         title: "Erro ao carregar dados",
-        description: "Não foi possível buscar os quizzes ou as estatísticas.",
+        description: "Não foi possível buscar os quizzes ou as estatísticas para o período selecionado.",
         variant: "destructive",
       });
     } finally {
@@ -104,7 +120,7 @@ export default function DashboardPage() {
       setIsLoadingStats(false);
       setIsFetchingData(false);
     }
-  }, [toast]); 
+  }, [toast, dateRange]); 
 
   useEffect(() => {
     fetchData();
@@ -205,7 +221,8 @@ export default function DashboardPage() {
   };
 
   const handleCopyLink = (slug: string) => {
-    const url = `${window.location.origin}/${slug}`;
+    if(!baseUrl) return;
+    const url = `${baseUrl}/${slug}`;
     navigator.clipboard.writeText(url)
       .then(() => {
         toast({
@@ -224,6 +241,27 @@ export default function DashboardPage() {
       });
   };
 
+  const handleDatePresetChange = (value: string) => {
+    const now = new Date();
+    switch (value) {
+      case 'today':
+        setDateRange({ from: now, to: now });
+        break;
+      case 'yesterday':
+        const yesterday = addDays(now, -1);
+        setDateRange({ from: yesterday, to: yesterday });
+        break;
+      case 'last7':
+        setDateRange({ from: addDays(now, -7), to: now });
+        break;
+      case 'last30':
+        setDateRange({ from: addDays(now, -30), to: now });
+        break;
+      default:
+        setDateRange(undefined);
+    }
+  };
+
   const overallConversionRate = overallStats && overallStats.totalStarted > 0 
     ? ((overallStats.totalCompleted / overallStats.totalStarted) * 100).toFixed(1) 
     : "0.0";
@@ -232,7 +270,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <span className="font-display text-3xl font-bold text-primary">LP de Alta Performasse</span>
+            <h1 className="font-display text-3xl font-bold text-primary">LP de Alta Performasse</h1>
             <p className="text-muted-foreground">Gerencie seus quizzes e acompanhe o desempenho.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -246,16 +284,6 @@ export default function DashboardPage() {
             {isFetchingData ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <RefreshCcw className="h-5 w-5 mr-2" />}
             Atualizar Dados
           </Button>
-          <Button 
-            variant="outline" 
-            size="lg" 
-            onClick={() => setShowResetStatsDialog(true)} 
-            disabled={isFetchingData || isResettingStats}
-            className="whitespace-nowrap w-full sm:w-auto border-destructive/50 text-destructive hover:bg-destructive/5 hover:text-destructive"
-          >
-            <RotateCcw className="h-5 w-5 mr-2" />
-            Resetar Estatísticas
-          </Button>
           <Link href="/config/dashboard/quiz/create" className="w-full sm:w-auto">
             <Button size="lg" className="flex items-center gap-2 shadow-sm whitespace-nowrap w-full">
               <PlusCircle className="h-5 w-5" />
@@ -264,6 +292,43 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+            Filtro de Período
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
+            <DateRangePicker date={dateRange} onDateChange={setDateRange} />
+            <Select onValueChange={handleDatePresetChange} defaultValue="last7">
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Período pré-definido" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="yesterday">Ontem</SelectItem>
+                <SelectItem value="last7">Últimos 7 dias</SelectItem>
+                <SelectItem value="last30">Últimos 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={fetchData} disabled={isFetchingData}>
+              {isFetchingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+              Aplicar Filtro
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowResetStatsDialog(true)} 
+              disabled={isFetchingData || isResettingStats}
+              className="whitespace-nowrap border-destructive/50 text-destructive hover:bg-destructive/5 hover:text-destructive"
+            >
+              <RotateCcw className="h-5 w-5 mr-2" />
+              Resetar Todas Estatísticas
+            </Button>
+        </CardContent>
+      </Card>
+
 
       {isLoadingStats ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -280,17 +345,17 @@ export default function DashboardPage() {
             </Card>
           ))}
         </div>
-      ) : overallStats && (
+      ) : overallStats ? (
         <>
           <h2 className="text-2xl font-semibold text-foreground tracking-tight -mb-4">Resumo de Desempenho</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <StatCard title="Total de Quizzes Iniciados" value={overallStats.totalStarted} icon={Users} description="Pessoas que começaram qualquer quiz." />
-            <StatCard title="Total de Quizzes Finalizados" value={overallStats.totalCompleted} icon={CheckCircle2} description="Pessoas que completaram qualquer quiz." />
+            <StatCard title="Total de Quizzes Iniciados" value={overallStats.totalStarted} icon={Users} description="No período selecionado." />
+            <StatCard title="Total de Quizzes Finalizados" value={overallStats.totalCompleted} icon={CheckCircle2} description="No período selecionado." />
             <StatCard 
               title="Taxa de Conclusão Geral" 
               value={`${overallConversionRate}%`} 
               icon={Target} 
-              description="Percentual de quizzes iniciados que foram concluídos." 
+              description="No período selecionado." 
             />
           </div>
           {overallStats.mostEngagingQuiz && (
@@ -300,7 +365,7 @@ export default function DashboardPage() {
                    <TrendingUp className="h-6 w-6 text-primary" />
                    <CardTitle className="text-xl">Quiz em Destaque: {overallStats.mostEngagingQuiz.dashboardName || overallStats.mostEngagingQuiz.title}</CardTitle>
                 </div>
-                <CardDescription>Com a maior taxa de conclusão ({overallStats.mostEngagingQuiz.conversionRate}%).</CardDescription>
+                <CardDescription>Com a maior taxa de conclusão ({overallStats.mostEngagingQuiz.conversionRate}%) no período selecionado.</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -327,7 +392,7 @@ export default function DashboardPage() {
             </Card>
           )}
         </>
-      )}
+      ) : <p>Nenhum dado de estatística encontrado para o período selecionado.</p>}
 
       <h2 className="text-2xl font-semibold text-foreground tracking-tight -mb-4">Seus Quizzes</h2>
       {isLoadingList ? (
@@ -371,6 +436,7 @@ export default function DashboardPage() {
                     <span className="font-semibold">{conversionRate.toFixed(1)}%</span>
                   </div>
                   <Progress value={conversionRate} className="h-2" />
+                   <p className="text-xs text-muted-foreground mt-1">No período selecionado</p>
                 </div>
               </CardContent>
               <CardFooter className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-4 border-t">
@@ -386,7 +452,12 @@ export default function DashboardPage() {
                   variant="outline"
                   size="sm"
                   className="w-full flex items-center gap-1"
-                  onClick={() => window.open(`/${quiz.slug}`, '_blank')}
+                  onClick={() => {
+                      if (baseUrl) {
+                          window.open(`${baseUrl}/${quiz.slug}`, '_blank');
+                      }
+                  }}
+                  disabled={!baseUrl}
                 >
                   <ExternalLink className="h-4 w-4" /> Abrir Quiz
                 </Button>
@@ -405,6 +476,7 @@ export default function DashboardPage() {
                   size="sm" 
                   className="w-full flex items-center gap-1"
                   onClick={() => handleCopyLink(quiz.slug)}
+                  disabled={!baseUrl}
                 >
                   <Copy className="h-4 w-4" /> Copiar Link
                 </Button>
@@ -473,11 +545,11 @@ export default function DashboardPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-xl text-foreground">
               <ShieldAlert className="h-7 w-7 text-destructive" />
-              Confirmar Reset de Estatísticas
+              Confirmar Reset de Todas as Estatísticas
             </AlertDialogTitle>
             <AlertDialogDescription className="text-base text-muted-foreground">
               Você tem certeza que deseja resetar todas as estatísticas dos quizzes? 
-              Isso zerará as contagens de quizzes iniciados e finalizados para todos os quizzes.
+              Isso apagará permanentemente todos os registros de quizzes iniciados, finalizados e respostas por pergunta para todos os quizzes.
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -493,7 +565,7 @@ export default function DashboardPage() {
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Resetando...
                 </>
-              ) : "Sim, Resetar Estatísticas"}
+              ) : "Sim, Resetar Tudo"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -550,6 +622,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-    
-
-    

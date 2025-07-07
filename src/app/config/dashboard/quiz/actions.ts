@@ -2,8 +2,9 @@
 "use server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption } from '@/types/quiz';
+import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption, AggregateQuizStats, AnalyticsEvent, QuestionAnswerEvent, QuestionSpecificAnalytics, DateRange } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
+import { isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 
 const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
 const analyticsDirectory = path.join(process.cwd(), 'src', 'data', 'analytics');
@@ -11,12 +12,6 @@ const AGGREGATE_STATS_FILE_PATH = path.join(analyticsDirectory, 'quiz_stats.json
 const DEFAULT_QUIZ_SLUG = "default";
 const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas e descubra o tratamento de depilação a laser Ice Lazer perfeito para você!";
 
-interface AggregateQuizStats {
-  [quizSlug: string]: {
-    startedCount: number;
-    completedCount: number;
-  };
-}
 
 function getQuestionStatsFilePath(quizSlug: string): string {
   return path.join(analyticsDirectory, `${quizSlug}_question_stats.json`);
@@ -43,7 +38,13 @@ async function getAggregateQuizStatsData(): Promise<AggregateQuizStats> {
   await ensureFileExists(AGGREGATE_STATS_FILE_PATH, JSON.stringify({}, null, 2));
   try {
     const fileContents = await fs.readFile(AGGREGATE_STATS_FILE_PATH, 'utf8');
-    return JSON.parse(fileContents) as AggregateQuizStats;
+    const data = JSON.parse(fileContents);
+    // Ensure data structure is valid
+    for (const slug in data) {
+        if (!data[slug].started) data[slug].started = [];
+        if (!data[slug].completed) data[slug].completed = [];
+    }
+    return data as AggregateQuizStats;
   } catch (error) {
     console.error("Failed to read or parse quiz_stats.json:", error);
     return {}; 
@@ -59,21 +60,44 @@ async function saveAggregateQuizStatsData(data: AggregateQuizStats): Promise<voi
   }
 }
 
-export async function updateQuizStat(quizSlug: string, statType: 'startedCount' | 'completedCount'): Promise<void> {
-  const stats = await getAggregateQuizStatsData();
-  if (!stats[quizSlug]) {
-    stats[quizSlug] = { startedCount: 0, completedCount: 0 };
-  }
-  stats[quizSlug][statType]++;
-  await saveAggregateQuizStatsData(stats);
-  revalidatePath('/config/dashboard');
-  revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`);
-  revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`);
-}
+// Helper to filter events by date range
+const filterEventsByDate = (events: AnalyticsEvent[], dateRange?: DateRange): AnalyticsEvent[] => {
+  if (!dateRange || !dateRange.from) return events;
+  const fromDate = startOfDay(dateRange.from);
+  const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+
+  return events.filter(event => {
+    try {
+      const eventDate = parseISO(event.date);
+      return isWithinInterval(eventDate, { start: fromDate, end: toDate });
+    } catch (e) {
+      return false;
+    }
+  });
+};
 
 export async function recordQuizStartedAction(quizSlug: string): Promise<void> {
   if (!quizSlug) return;
-  await updateQuizStat(quizSlug, 'startedCount');
+  const stats = await getAggregateQuizStatsData();
+  if (!stats[quizSlug]) {
+    stats[quizSlug] = { started: [], completed: [] };
+  }
+  stats[quizSlug].started.push({ date: new Date().toISOString() });
+  await saveAggregateQuizStatsData(stats);
+  revalidatePath('/config/dashboard');
+  revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`);
+}
+
+export async function recordQuizCompletedAction(quizSlug: string): Promise<void> {
+    if (!quizSlug) return;
+    const stats = await getAggregateQuizStatsData();
+    if (!stats[quizSlug]) {
+      stats[quizSlug] = { started: [], completed: [] };
+    }
+    stats[quizSlug].completed.push({ date: new Date().toISOString() });
+    await saveAggregateQuizStatsData(stats);
+    revalidatePath('/config/dashboard');
+    revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`);
 }
 
 async function getQuizQuestionAnalyticsData(quizSlug: string): Promise<QuizQuestionAnalytics> {
@@ -81,7 +105,12 @@ async function getQuizQuestionAnalyticsData(quizSlug: string): Promise<QuizQuest
   await ensureFileExists(filePath);
   try {
     const fileContents = await fs.readFile(filePath, 'utf8');
-    return JSON.parse(fileContents) as QuizQuestionAnalytics;
+    const data = JSON.parse(fileContents);
+    // Ensure data structure is valid
+    for (const qId in data) {
+        if (!data[qId].answers) data[qId].answers = [];
+    }
+    return data as QuizQuestionAnalytics;
   } catch (error) {
     console.error(`Failed to read or parse ${filePath}:`, error);
     return {};
@@ -101,12 +130,11 @@ async function saveQuizQuestionAnalyticsData(quizSlug: string, data: QuizQuestio
 export async function recordQuestionAnswerAction(
   quizSlug: string, 
   questionId: string, 
-  questionName: string,
+  questionType: QuizQuestion['type'],
   answer: any, 
-  questionType: QuizQuestion['type']
 ): Promise<{ success: boolean; message?: string }> {
-  if (!quizSlug || !questionId || !questionName) {
-    return { success: false, message: "Quiz slug, question ID, and question name are required." };
+  if (!quizSlug || !questionId) {
+    return { success: false, message: "Quiz slug and question ID are required." };
   }
 
   try {
@@ -116,31 +144,18 @@ export async function recordQuestionAnswerAction(
       questionStats[questionId] = {
         id: questionId,
         type: questionType,
-        totalAnswers: 0,
-        ...(questionType === 'radio' || questionType === 'checkbox' ? { options: {} } : {}),
-        ...(questionType === 'textFields' ? { fieldsHandled: false } : {}) 
+        answers: [],
       };
     }
 
-    const currentQStats = questionStats[questionId];
-    currentQStats.totalAnswers++;
-
-    if (questionType === 'radio' && typeof answer === 'string') {
-      if (!currentQStats.options) currentQStats.options = {};
-      currentQStats.options[answer] = (currentQStats.options[answer] || 0) + 1;
-    } else if (questionType === 'checkbox' && Array.isArray(answer)) {
-      if (!currentQStats.options) currentQStats.options = {};
-      answer.forEach(optValue => {
-        if (typeof optValue === 'string') {
-          currentQStats.options[optValue] = (currentQStats.options[optValue] || 0) + 1;
-        }
-      });
-    } else if (questionType === 'textFields') {
-      currentQStats.fieldsHandled = true;
-    }
+    const newAnswerEvent: QuestionAnswerEvent = {
+        date: new Date().toISOString(),
+        value: answer,
+    };
+    
+    questionStats[questionId].answers.push(newAnswerEvent);
 
     await saveQuizQuestionAnalyticsData(quizSlug, questionStats);
-    revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`); 
     revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`);
     return { success: true };
   } catch (error) {
@@ -150,9 +165,20 @@ export async function recordQuestionAnswerAction(
   }
 }
 
-export async function getQuizQuestionAnalytics(quizSlug: string): Promise<QuizQuestionAnalytics | null> {
+export async function getQuizQuestionAnalytics(quizSlug: string, dateRange?: DateRange): Promise<QuizQuestionAnalytics | null> {
   if (!quizSlug) return null;
-  return await getQuizQuestionAnalyticsData(quizSlug);
+  const allQuestionStats = await getQuizQuestionAnalyticsData(quizSlug);
+  if (!dateRange) return allQuestionStats;
+
+  const filteredStats: QuizQuestionAnalytics = {};
+  for (const qId in allQuestionStats) {
+      const questionData = allQuestionStats[qId];
+      filteredStats[qId] = {
+          ...questionData,
+          answers: filterEventsByDate(questionData.answers, dateRange) as QuestionAnswerEvent[],
+      };
+  }
+  return filteredStats;
 }
 
 
@@ -202,7 +228,7 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
 
   try {
     await fs.writeFile(filePath, JSON.stringify(quizConfig, null, 2));
-    await saveAggregateQuizStatsData({ ...(await getAggregateQuizStatsData()), [slug]: { startedCount: 0, completedCount: 0 } });
+    await saveAggregateQuizStatsData({ ...(await getAggregateQuizStatsData()), [slug]: { started: [], completed: [] } });
     await saveQuizQuestionAnalyticsData(slug, {});
 
     revalidatePath('/'); 
@@ -368,7 +394,7 @@ export async function deleteQuizAction(slug: string): Promise<{ success: boolean
 }
 
 
-export async function getQuizzesList(): Promise<QuizListItem[]> {
+export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListItem[]> {
   await ensureDirectoryExists(quizzesDirectory);
   const aggStatsData = await getAggregateQuizStatsData();
   try {
@@ -381,25 +407,29 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
       try {
         const fileContents = await fs.readFile(filePath, 'utf8');
         const quizData = JSON.parse(fileContents) as QuizConfig;
-        const analytics = aggStatsData[slug] || { startedCount: 0, completedCount: 0 };
+        
+        const quizAggStats = aggStatsData[slug] || { started: [], completed: [] };
+        const startedCount = filterEventsByDate(quizAggStats.started, dateRange).length;
+        const completedCount = filterEventsByDate(quizAggStats.completed, dateRange).length;
+
         return { 
           title: quizData.title || `Quiz ${slug}`,
           slug: quizData.slug || slug,
           dashboardName: quizData.dashboardName || quizData.title,
           successIcon: quizData.successIcon,
-          startedCount: analytics.startedCount,
-          completedCount: analytics.completedCount,
+          startedCount: startedCount,
+          completedCount: completedCount,
         };
       } catch (parseError) {
         console.error(`Failed to parse quiz file ${filename}:`, parseError);
-        const analytics = aggStatsData[slug] || { startedCount: 0, completedCount: 0 };
+        const analytics = aggStatsData[slug] || { started: [], completed: [] };
         return {
           title: `Erro ao carregar: ${filename}`,
           slug: slug,
           dashboardName: `Erro: ${filename}`,
           successIcon: undefined, 
-          startedCount: analytics.startedCount,
-          completedCount: analytics.completedCount,
+          startedCount: filterEventsByDate(analytics.started, dateRange).length,
+          completedCount: filterEventsByDate(analytics.completed, dateRange).length,
         };
       }
     });
@@ -411,21 +441,24 @@ export async function getQuizzesList(): Promise<QuizListItem[]> {
   }
 }
 
-export async function getOverallQuizAnalytics(): Promise<OverallQuizStats> {
+export async function getOverallQuizAnalytics(dateRange?: DateRange): Promise<OverallQuizStats> {
   const aggStatsData = await getAggregateQuizStatsData();
   let totalStarted = 0;
   let totalCompleted = 0;
   let mostEngagingQuizData: (QuizListItem & { conversionRate?: number }) | undefined = undefined;
   let highestConversionRate = -1;
 
-  const quizzesList = await getQuizzesList(); 
+  const quizzesList = await getQuizzesList(dateRange);
 
   for (const quizSlug in aggStatsData) {
     const quizStats = aggStatsData[quizSlug];
-    totalStarted += quizStats.startedCount;
-    totalCompleted += quizStats.completedCount;
+    const startedCount = filterEventsByDate(quizStats.started, dateRange).length;
+    const completedCount = filterEventsByDate(quizStats.completed, dateRange).length;
+    
+    totalStarted += startedCount;
+    totalCompleted += completedCount;
 
-    const conversionRate = quizStats.startedCount > 0 ? (quizStats.completedCount / quizStats.startedCount) * 100 : 0;
+    const conversionRate = startedCount > 0 ? (completedCount / startedCount) * 100 : 0;
     if (conversionRate > highestConversionRate) {
       highestConversionRate = conversionRate;
       const quizDetails = quizzesList.find(q => q.slug === quizSlug);
@@ -446,7 +479,7 @@ export async function getOverallQuizAnalytics(): Promise<OverallQuizStats> {
 }
 
 
-export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalyticsData | null> {
+export async function getQuizAnalyticsBySlug(slug: string, dateRange?: DateRange): Promise<QuizAnalyticsData | null> {
   await ensureDirectoryExists(quizzesDirectory);
   const aggStatsData = await getAggregateQuizStatsData();
   const quizAggStats = aggStatsData[slug];
@@ -456,14 +489,17 @@ export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalytic
     const fileContents = await fs.readFile(filePath, 'utf8');
     const quizData = JSON.parse(fileContents) as QuizConfig;
     
+    const startedCount = quizAggStats ? filterEventsByDate(quizAggStats.started, dateRange).length : 0;
+    const completedCount = quizAggStats ? filterEventsByDate(quizAggStats.completed, dateRange).length : 0;
+
     return {
       title: quizData.title,
       slug: quizData.slug,
       description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
       dashboardName: quizData.dashboardName || quizData.title,
       successIcon: quizData.successIcon,
-      startedCount: quizAggStats?.startedCount || 0,
-      completedCount: quizAggStats?.completedCount || 0,
+      startedCount: startedCount,
+      completedCount: completedCount,
     };
   } catch {
     if (quizAggStats) { 
@@ -473,8 +509,8 @@ export async function getQuizAnalyticsBySlug(slug: string): Promise<QuizAnalytic
             description: DEFAULT_QUIZ_DESCRIPTION,
             dashboardName: `Quiz ${slug} (Arquivo não encontrado)`,
             successIcon: undefined,
-            startedCount: quizAggStats.startedCount,
-            completedCount: quizAggStats.completedCount,
+            startedCount: filterEventsByDate(quizAggStats.started, dateRange).length,
+            completedCount: filterEventsByDate(quizAggStats.completed, dateRange).length,
         }
     }
     return null; 
@@ -516,18 +552,13 @@ export async function resetSingleQuizAnalyticsAction(quizSlug: string): Promise<
   try {
     const aggStats = await getAggregateQuizStatsData();
     if (aggStats[quizSlug]) {
-      aggStats[quizSlug].startedCount = 0;
-      aggStats[quizSlug].completedCount = 0;
-      await saveAggregateQuizStatsData(aggStats);
-    } else {
-      // If quiz not in aggregate, ensure it's added with 0 counts
-      aggStats[quizSlug] = { startedCount: 0, completedCount: 0 };
+      aggStats[quizSlug].started = [];
+      aggStats[quizSlug].completed = [];
       await saveAggregateQuizStatsData(aggStats);
     }
 
     const questionStatsFilePath = getQuestionStatsFilePath(quizSlug);
     try {
-      // Attempt to delete, if fails (e.g. not found), ensure a clean empty file
       await fs.unlink(questionStatsFilePath);
     } catch (unlinkError) {
       const nodeError = unlinkError as NodeJS.ErrnoException;
@@ -535,9 +566,8 @@ export async function resetSingleQuizAnalyticsAction(quizSlug: string): Promise<
         console.warn(`Could not delete question stats file ${questionStatsFilePath} during reset, will attempt to clear:`, unlinkError);
       }
     }
-    // Ensure the file exists as an empty JSON object after attempting deletion or if it didn't exist
-    await ensureDirectoryExists(path.dirname(questionStatsFilePath));
-    await fs.writeFile(questionStatsFilePath, JSON.stringify({}, null, 2), 'utf8');
+    // Ensure the file exists as an empty JSON object
+    await saveQuizQuestionAnalyticsData(quizSlug, {});
 
 
     console.log(`Statistics for quiz "${quizSlug}" have been reset.`);
@@ -554,4 +584,3 @@ export async function resetSingleQuizAnalyticsAction(quizSlug: string): Promise<
     return { success: false, message: `Falha ao resetar estatísticas do quiz: ${errorMessage}` };
   }
 }
-    
