@@ -1,9 +1,10 @@
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Settings, Palette, Link2, BarChart3, Info, Fingerprint, BookText, LucideIcon } from 'lucide-react';
+import { Settings, Palette, Link2, BarChart3, Info, Fingerprint, LucideIcon, Database, FileJson } from 'lucide-react';
 
 const settingsNavItems: { title: string; href: string; icon: LucideIcon }[] = [
   {
@@ -34,7 +35,12 @@ const settingsNavItems: { title: string; href: string; icon: LucideIcon }[] = [
    {
     title: 'Documentação API',
     href: '/config/dashboard/settings/documentation',
-    icon: BookText,
+    icon: Database,
+  },
+  {
+    title: 'Guia: Criar Quiz (JSON)',
+    href: '/config/dashboard/settings/quiz-json',
+    icon: FileJson,
   },
   {
     title: 'Sobre',
