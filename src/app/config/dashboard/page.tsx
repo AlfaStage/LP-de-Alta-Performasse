@@ -268,67 +268,41 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
             <h1 className="font-display text-3xl font-bold text-primary">LP de Alta Performasse</h1>
             <p className="text-muted-foreground">Gerencie seus quizzes e acompanhe o desempenho.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <div className="flex items-center justify-end gap-2 flex-wrap">
+          <DateRangePicker date={dateRange} onDateChange={setDateRange} />
+          <Select onValueChange={handleDatePresetChange} defaultValue="last7">
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Período pré-definido" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Hoje</SelectItem>
+              <SelectItem value="yesterday">Ontem</SelectItem>
+              <SelectItem value="last7">Últimos 7 dias</SelectItem>
+              <SelectItem value="last30">Últimos 30 dias</SelectItem>
+            </SelectContent>
+          </Select>
           <Button 
             variant="outline" 
             size="lg" 
             onClick={fetchData} 
             disabled={isFetchingData}
-            className="whitespace-nowrap w-full sm:w-auto"
+            className="whitespace-nowrap"
           >
-            {isFetchingData ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <RefreshCcw className="h-5 w-5 mr-2" />}
-            Atualizar Dados
+            {isFetchingData ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCcw className="h-5 w-5" />}
           </Button>
-          <Link href="/config/dashboard/quiz/create" className="w-full sm:w-auto">
-            <Button size="lg" className="flex items-center gap-2 shadow-sm whitespace-nowrap w-full">
+          <Link href="/config/dashboard/quiz/create">
+            <Button size="lg" className="flex items-center gap-2 shadow-sm whitespace-nowrap">
               <PlusCircle className="h-5 w-5" />
-              Criar Novo Quiz
+              Criar Quiz
             </Button>
           </Link>
         </div>
       </div>
-
-       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-            Filtro de Período
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
-            <DateRangePicker date={dateRange} onDateChange={setDateRange} />
-            <Select onValueChange={handleDatePresetChange} defaultValue="last7">
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Período pré-definido" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Hoje</SelectItem>
-                <SelectItem value="yesterday">Ontem</SelectItem>
-                <SelectItem value="last7">Últimos 7 dias</SelectItem>
-                <SelectItem value="last30">Últimos 30 dias</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={fetchData} disabled={isFetchingData}>
-              {isFetchingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-              Aplicar Filtro
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowResetStatsDialog(true)} 
-              disabled={isFetchingData || isResettingStats}
-              className="whitespace-nowrap border-destructive/50 text-destructive hover:bg-destructive/5 hover:text-destructive"
-            >
-              <RotateCcw className="h-5 w-5 mr-2" />
-              Resetar Todas Estatísticas
-            </Button>
-        </CardContent>
-      </Card>
-
 
       {isLoadingStats ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -510,6 +484,26 @@ export default function DashboardPage() {
             </CardContent>
         </Card>
       )}
+
+      <Card className="border-destructive/30 bg-destructive/5">
+        <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2"><ShieldAlert className="h-5 w-5" />Ações de Risco</CardTitle>
+            <CardDescription className="text-destructive/80">
+                Esta ação é permanente e não pode ser desfeita. Use com cuidado.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowResetStatsDialog(true)} 
+              disabled={isFetchingData || isResettingStats}
+            >
+                <RotateCcw className="h-5 w-5 mr-2" />
+                Resetar Todas as Estatísticas
+            </Button>
+        </CardContent>
+      </Card>
+
 
       <AlertDialog open={!!quizToDelete} onOpenChange={(open) => !open && setQuizToDelete(null)}>
         <AlertDialogContent className="bg-card">
