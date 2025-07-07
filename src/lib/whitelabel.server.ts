@@ -26,6 +26,8 @@ export const defaultConfig: WhitelabelConfig = {
   websiteUrl: "", 
   instagramUrl: "", 
   facebookDomainVerification: "",
+  dashboardDefaultFilter: "last7",
+  conversionMetric: "start_vs_complete",
 };
 
 async function ensureConfigFileExists() {
@@ -74,6 +76,8 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
     mergedConfig.pageBackgroundImageUrl = typeof savedConfig.pageBackgroundImageUrl === 'string' ? savedConfig.pageBackgroundImageUrl : defaultConfig.pageBackgroundImageUrl;
     mergedConfig.pageBackgroundGradient = typeof savedConfig.pageBackgroundGradient === 'string' ? savedConfig.pageBackgroundGradient : defaultConfig.pageBackgroundGradient;
     mergedConfig.pageBackgroundType = savedConfig.pageBackgroundType || defaultConfig.pageBackgroundType;
+    mergedConfig.dashboardDefaultFilter = savedConfig.dashboardDefaultFilter || defaultConfig.dashboardDefaultFilter;
+    mergedConfig.conversionMetric = savedConfig.conversionMetric || defaultConfig.conversionMetric;
 
 
     return mergedConfig as WhitelabelConfig;
@@ -115,6 +119,8 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
         websiteUrl: typeof newConfig.websiteUrl === 'string' ? newConfig.websiteUrl : defaultConfig.websiteUrl,
         instagramUrl: typeof newConfig.instagramUrl === 'string' ? newConfig.instagramUrl : defaultConfig.instagramUrl,
         facebookDomainVerification: typeof newConfig.facebookDomainVerification === 'string' ? newConfig.facebookDomainVerification : defaultConfig.facebookDomainVerification,
+        dashboardDefaultFilter: newConfig.dashboardDefaultFilter || defaultConfig.dashboardDefaultFilter,
+        conversionMetric: newConfig.conversionMetric || defaultConfig.conversionMetric,
     };
 
     await fs.writeFile(configFilePath, JSON.stringify(dataToSave, null, 2), 'utf8');

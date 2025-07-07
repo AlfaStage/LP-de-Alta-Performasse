@@ -16,7 +16,7 @@ import QuizProgressBar from './QuizProgressBar';
 import { getActivePixelIds, trackFbCustomEvent, trackFbEvent } from '@/lib/fpixel';
 import { trackGaEvent } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
-import { recordQuizStartedAction, recordQuestionAnswerAction } from '@/app/config/dashboard/quiz/actions';
+import { recordQuizStartedAction, recordQuestionAnswerAction, recordFirstQuestionAnsweredAction } from '@/app/config/dashboard/quiz/actions';
 import * as LucideIcons from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
@@ -214,8 +214,12 @@ export default function QuizForm({
 
 
     if (!isPreview) {
-        recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.name, answerValue, currentQuestion.type)
+        recordQuestionAnswerAction(quizSlug, currentQuestion.id, currentQuestion.type, answerValue)
           .catch(err => console.error("Failed to record question answer:", err));
+        
+        if (currentStep === 0) {
+            recordFirstQuestionAnsweredAction(quizSlug).catch(err => console.error("Failed to record first question answered:", err));
+        }
 
         const eventDataFb = {
           quiz_slug: quizSlug,

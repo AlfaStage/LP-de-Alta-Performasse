@@ -63,6 +63,8 @@ export interface WhitelabelConfig {
   websiteUrl?: string;
   instagramUrl?: string;
   facebookDomainVerification?: string;
+  dashboardDefaultFilter?: 'today' | 'yesterday' | 'last7' | 'last30';
+  conversionMetric?: 'start_vs_complete' | 'first_answer_vs_complete';
 }
 
 // Statistics types
@@ -74,11 +76,13 @@ export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'descriptio
   successIcon?: keyof typeof import('lucide-react');
   startedCount?: number;
   completedCount?: number;
+  firstAnswerCount?: number;
 }
 
 export interface OverallQuizStats {
   totalStarted: number;
   totalCompleted: number;
+  totalFirstAnswers?: number;
   mostEngagingQuiz?: QuizListItem & { conversionRate?: number };
 }
 
@@ -99,6 +103,7 @@ export interface AggregateQuizStats {
   [quizSlug: string]: {
     started: AnalyticsEvent[];
     completed: AnalyticsEvent[];
+    firstAnswer?: AnalyticsEvent[];
   };
 }
 

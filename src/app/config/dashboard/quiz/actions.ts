@@ -5,6 +5,7 @@ import path from 'path';
 import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption, AggregateQuizStats, AnalyticsEvent, QuestionAnswerEvent, QuestionSpecificAnalytics, DateRange } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
 import { isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 
 const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
 const analyticsDirectory = path.join(process.cwd(), 'src', 'data', 'analytics');
@@ -43,6 +44,7 @@ async function getAggregateQuizStatsData(): Promise<AggregateQuizStats> {
     for (const slug in data) {
         if (!data[slug].started) data[slug].started = [];
         if (!data[slug].completed) data[slug].completed = [];
+        if (!data[slug].firstAnswer) data[slug].firstAnswer = [];
     }
     return data as AggregateQuizStats;
   } catch (error) {
@@ -80,7 +82,7 @@ export async function recordQuizStartedAction(quizSlug: string): Promise<void> {
   if (!quizSlug) return;
   const stats = await getAggregateQuizStatsData();
   if (!stats[quizSlug]) {
-    stats[quizSlug] = { started: [], completed: [] };
+    stats[quizSlug] = { started: [], completed: [], firstAnswer: [] };
   }
   stats[quizSlug].started.push({ date: new Date().toISOString() });
   await saveAggregateQuizStatsData(stats);
@@ -88,11 +90,27 @@ export async function recordQuizStartedAction(quizSlug: string): Promise<void> {
   revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`);
 }
 
+export async function recordFirstQuestionAnsweredAction(quizSlug: string): Promise<void> {
+  if (!quizSlug) return;
+  const stats = await getAggregateQuizStatsData();
+  if (!stats[quizSlug]) {
+    stats[quizSlug] = { started: [], completed: [], firstAnswer: [] };
+  }
+  if (!stats[quizSlug].firstAnswer) {
+    stats[quizSlug].firstAnswer = [];
+  }
+  stats[quizSlug].firstAnswer!.push({ date: new Date().toISOString() });
+  await saveAggregateQuizStatsData(stats);
+  revalidatePath('/config/dashboard');
+  revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`);
+}
+
+
 export async function recordQuizCompletedAction(quizSlug: string): Promise<void> {
     if (!quizSlug) return;
     const stats = await getAggregateQuizStatsData();
     if (!stats[quizSlug]) {
-      stats[quizSlug] = { started: [], completed: [] };
+      stats[quizSlug] = { started: [], completed: [], firstAnswer: [] };
     }
     stats[quizSlug].completed.push({ date: new Date().toISOString() });
     await saveAggregateQuizStatsData(stats);
@@ -228,7 +246,7 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
 
   try {
     await fs.writeFile(filePath, JSON.stringify(quizConfig, null, 2));
-    await saveAggregateQuizStatsData({ ...(await getAggregateQuizStatsData()), [slug]: { started: [], completed: [] } });
+    await saveAggregateQuizStatsData({ ...(await getAggregateQuizStatsData()), [slug]: { started: [], completed: [], firstAnswer: [] } });
     await saveQuizQuestionAnalyticsData(slug, {});
 
     revalidatePath('/'); 
@@ -408,9 +426,10 @@ export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListIte
         const fileContents = await fs.readFile(filePath, 'utf8');
         const quizData = JSON.parse(fileContents) as QuizConfig;
         
-        const quizAggStats = aggStatsData[slug] || { started: [], completed: [] };
+        const quizAggStats = aggStatsData[slug] || { started: [], completed: [], firstAnswer: [] };
         const startedCount = filterEventsByDate(quizAggStats.started, dateRange).length;
         const completedCount = filterEventsByDate(quizAggStats.completed, dateRange).length;
+        const firstAnswerCount = filterEventsByDate(quizAggStats.firstAnswer || [], dateRange).length;
 
         return { 
           title: quizData.title || `Quiz ${slug}`,
@@ -419,10 +438,11 @@ export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListIte
           successIcon: quizData.successIcon,
           startedCount: startedCount,
           completedCount: completedCount,
+          firstAnswerCount: firstAnswerCount,
         };
       } catch (parseError) {
         console.error(`Failed to parse quiz file ${filename}:`, parseError);
-        const analytics = aggStatsData[slug] || { started: [], completed: [] };
+        const analytics = aggStatsData[slug] || { started: [], completed: [], firstAnswer: [] };
         return {
           title: `Erro ao carregar: ${filename}`,
           slug: slug,
@@ -430,6 +450,7 @@ export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListIte
           successIcon: undefined, 
           startedCount: filterEventsByDate(analytics.started, dateRange).length,
           completedCount: filterEventsByDate(analytics.completed, dateRange).length,
+          firstAnswerCount: filterEventsByDate(analytics.firstAnswer || [], dateRange).length,
         };
       }
     });
@@ -443,8 +464,10 @@ export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListIte
 
 export async function getOverallQuizAnalytics(dateRange?: DateRange): Promise<OverallQuizStats> {
   const aggStatsData = await getAggregateQuizStatsData();
+  const whitelabelConfig = await getWhitelabelConfig();
   let totalStarted = 0;
   let totalCompleted = 0;
+  let totalFirstAnswers = 0;
   let mostEngagingQuizData: (QuizListItem & { conversionRate?: number }) | undefined = undefined;
   let highestConversionRate = -1;
 
@@ -454,11 +477,17 @@ export async function getOverallQuizAnalytics(dateRange?: DateRange): Promise<Ov
     const quizStats = aggStatsData[quizSlug];
     const startedCount = filterEventsByDate(quizStats.started, dateRange).length;
     const completedCount = filterEventsByDate(quizStats.completed, dateRange).length;
+    const firstAnswerCount = filterEventsByDate(quizStats.firstAnswer || [], dateRange).length;
     
     totalStarted += startedCount;
     totalCompleted += completedCount;
+    totalFirstAnswers += firstAnswerCount;
 
-    const conversionRate = startedCount > 0 ? (completedCount / startedCount) * 100 : 0;
+    const conversionDenominator = whitelabelConfig.conversionMetric === 'first_answer_vs_complete'
+      ? firstAnswerCount
+      : startedCount;
+    
+    const conversionRate = conversionDenominator > 0 ? (completedCount / conversionDenominator) * 100 : 0;
     if (conversionRate > highestConversionRate) {
       highestConversionRate = conversionRate;
       const quizDetails = quizzesList.find(q => q.slug === quizSlug);
@@ -474,6 +503,7 @@ export async function getOverallQuizAnalytics(dateRange?: DateRange): Promise<Ov
   return {
     totalStarted: totalStarted, 
     totalCompleted: totalCompleted,
+    totalFirstAnswers: totalFirstAnswers,
     mostEngagingQuiz: mostEngagingQuizData,
   };
 }
@@ -491,6 +521,7 @@ export async function getQuizAnalyticsBySlug(slug: string, dateRange?: DateRange
     
     const startedCount = quizAggStats ? filterEventsByDate(quizAggStats.started, dateRange).length : 0;
     const completedCount = quizAggStats ? filterEventsByDate(quizAggStats.completed, dateRange).length : 0;
+    const firstAnswerCount = quizAggStats ? filterEventsByDate(quizAggStats.firstAnswer || [], dateRange).length : 0;
 
     return {
       title: quizData.title,
@@ -500,6 +531,7 @@ export async function getQuizAnalyticsBySlug(slug: string, dateRange?: DateRange
       successIcon: quizData.successIcon,
       startedCount: startedCount,
       completedCount: completedCount,
+      firstAnswerCount: firstAnswerCount,
     };
   } catch {
     if (quizAggStats) { 
@@ -511,6 +543,7 @@ export async function getQuizAnalyticsBySlug(slug: string, dateRange?: DateRange
             successIcon: undefined,
             startedCount: filterEventsByDate(quizAggStats.started, dateRange).length,
             completedCount: filterEventsByDate(quizAggStats.completed, dateRange).length,
+            firstAnswerCount: filterEventsByDate(quizAggStats.firstAnswer || [], dateRange).length,
         }
     }
     return null; 
@@ -552,8 +585,7 @@ export async function resetSingleQuizAnalyticsAction(quizSlug: string): Promise<
   try {
     const aggStats = await getAggregateQuizStatsData();
     if (aggStats[quizSlug]) {
-      aggStats[quizSlug].started = [];
-      aggStats[quizSlug].completed = [];
+      aggStats[quizSlug] = { started: [], completed: [], firstAnswer: [] };
       await saveAggregateQuizStatsData(aggStats);
     }
 

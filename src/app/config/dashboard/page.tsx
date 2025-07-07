@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, ExternalLink, Copy, BarChart3 } from 'lucide-react';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, ExternalLink, Copy, BarChart3, MousePointerClick } from 'lucide-react';
 import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, getQuizConfigForPreview } from './quiz/actions';
 import type { QuizListItem, OverallQuizStats, QuizConfig, WhitelabelConfig, DateRange } from '@/types/quiz';
 import { useEffect, useState, useCallback } from 'react';
@@ -78,14 +78,11 @@ export default function DashboardPage() {
   
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewQuizConfig, setPreviewQuizConfig] = useState<QuizConfig | null>(null);
-  const [whitelabelSettingsForPreview, setWhitelabelSettingsForPreview] = useState<Partial<WhitelabelConfig> | null>(null);
+  const [whitelabelSettings, setWhitelabelSettings] = useState<Partial<WhitelabelConfig> | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [baseUrl, setBaseUrl] = useState('');
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -7),
-    to: new Date(),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const { toast } = useToast();
 
@@ -94,8 +91,44 @@ export default function DashboardPage() {
       setBaseUrl(window.location.origin);
     }
   }, []);
+  
+  const handleDatePresetChange = (value: string) => {
+    const now = new Date();
+    let newRange: DateRange | undefined;
+    switch (value) {
+      case 'today':
+        newRange = { from: now, to: now };
+        break;
+      case 'yesterday':
+        const yesterday = addDays(now, -1);
+        newRange = { from: yesterday, to: yesterday };
+        break;
+      case 'last7':
+        newRange = { from: addDays(now, -7), to: now };
+        break;
+      case 'last30':
+        newRange = { from: addDays(now, -30), to: now };
+        break;
+      default:
+        newRange = undefined;
+    }
+    setDateRange(newRange);
+  };
+  
+  useEffect(() => {
+    async function loadInitialSettings() {
+      const settings = await fetchWhitelabelSettings();
+      setWhitelabelSettings(settings);
+      handleDatePresetChange(settings.dashboardDefaultFilter || 'last7');
+    }
+    loadInitialSettings();
+    // Eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const fetchData = useCallback(async () => {
+    if (!dateRange) return; // Wait until dateRange is set by the initial settings load
+
     setIsFetchingData(true);
     setIsLoadingList(true); 
     setIsLoadingStats(true);
@@ -173,11 +206,11 @@ export default function DashboardPage() {
         fetchWhitelabelSettings()
       ]);
       setPreviewQuizConfig(config);
-      setWhitelabelSettingsForPreview(wlSettings);
+      setWhitelabelSettings(wlSettings);
     } catch (error) {
       console.error("Error fetching data for preview:", error);
       setPreviewQuizConfig(null);
-      setWhitelabelSettingsForPreview(null);
+      setWhitelabelSettings(null);
       toast({
         title: "Erro ao Carregar Pré-visualização",
         description: "Não foi possível carregar os dados do quiz para pré-visualização.",
@@ -209,30 +242,18 @@ export default function DashboardPage() {
       });
   };
 
-  const handleDatePresetChange = (value: string) => {
-    const now = new Date();
-    switch (value) {
-      case 'today':
-        setDateRange({ from: now, to: now });
-        break;
-      case 'yesterday':
-        const yesterday = addDays(now, -1);
-        setDateRange({ from: yesterday, to: yesterday });
-        break;
-      case 'last7':
-        setDateRange({ from: addDays(now, -7), to: now });
-        break;
-      case 'last30':
-        setDateRange({ from: addDays(now, -30), to: now });
-        break;
-      default:
-        setDateRange(undefined);
-    }
-  };
+  const conversionMetric = whitelabelSettings?.conversionMetric || 'start_vs_complete';
+  const conversionDenominator = conversionMetric === 'first_answer_vs_complete' 
+    ? (overallStats?.totalFirstAnswers || 0)
+    : (overallStats?.totalStarted || 0);
 
-  const overallConversionRate = overallStats && overallStats.totalStarted > 0 
-    ? ((overallStats.totalCompleted / overallStats.totalStarted) * 100).toFixed(1) 
+  const overallConversionRate = overallStats && conversionDenominator > 0 
+    ? ((overallStats.totalCompleted / conversionDenominator) * 100).toFixed(1) 
     : "0.0";
+    
+  const conversionDescription = conversionMetric === 'first_answer_vs_complete'
+    ? 'Finalizados / Engajados'
+    : 'Finalizados / Iniciados';
 
   return (
     <div className="flex flex-col gap-8">
@@ -243,7 +264,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center justify-end gap-2 flex-wrap">
           <DateRangePicker date={dateRange} onDateChange={setDateRange} />
-          <Select onValueChange={handleDatePresetChange} defaultValue="last7">
+          <Select onValueChange={handleDatePresetChange} defaultValue={whitelabelSettings?.dashboardDefaultFilter || 'last7'}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Período pré-definido" />
             </SelectTrigger>
@@ -273,8 +294,8 @@ export default function DashboardPage() {
       </div>
 
       {isLoadingStats ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1,2,3].map(i => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1,2,3,4].map(i => (
             <Card key={i} className="shadow-md bg-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-5 w-24" />
@@ -290,14 +311,15 @@ export default function DashboardPage() {
       ) : overallStats ? (
         <>
           <h2 className="text-2xl font-semibold text-foreground tracking-tight -mb-4">Resumo de Desempenho</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <StatCard title="Total de Quizzes Iniciados" value={overallStats.totalStarted} icon={Users} description="No período selecionado." />
-            <StatCard title="Total de Quizzes Finalizados" value={overallStats.totalCompleted} icon={CheckCircle2} description="No período selecionado." />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard title="Quizzes Iniciados" value={overallStats.totalStarted} icon={Users} description="No período selecionado." />
+            <StatCard title="Quizzes Engajados" value={overallStats.totalFirstAnswers || 0} icon={MousePointerClick} description="Responderam a 1ª pergunta." />
+            <StatCard title="Quizzes Finalizados" value={overallStats.totalCompleted} icon={CheckCircle2} description="No período selecionado." />
             <StatCard 
               title="Taxa de Conclusão Geral" 
               value={`${overallConversionRate}%`} 
               icon={Target} 
-              description="No período selecionado." 
+              description={conversionDescription} 
             />
           </div>
           {overallStats.mostEngagingQuiz && (
@@ -345,7 +367,11 @@ export default function DashboardPage() {
       ) : quizzes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {quizzes.map((quiz) => {
-            const conversionRate = quiz.startedCount && quiz.startedCount > 0 ? ((quiz.completedCount || 0) / quiz.startedCount) * 100 : 0;
+             const conversionDenominatorCard = conversionMetric === 'first_answer_vs_complete' 
+                ? (quiz.firstAnswerCount || 0)
+                : (quiz.startedCount || 0);
+
+            const conversionRate = conversionDenominatorCard > 0 ? ((quiz.completedCount || 0) / conversionDenominatorCard) * 100 : 0;
             const displayTitle = quiz.dashboardName || quiz.title;
             return (
             <Card key={quiz.slug} className="shadow-lg hover:shadow-xl transition-shadow bg-card flex flex-col">
@@ -368,6 +394,10 @@ export default function DashboardPage() {
                   <span className="text-muted-foreground flex items-center"><Users className="h-4 w-4 mr-1.5"/> Iniciados:</span>
                   <span className="font-semibold">{quiz.startedCount || 0}</span>
                 </div>
+                 <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center"><MousePointerClick className="h-4 w-4 mr-1.5"/> Engajados:</span>
+                  <span className="font-semibold">{quiz.firstAnswerCount || 0}</span>
+                </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground flex items-center"><CheckCircle2 className="h-4 w-4 mr-1.5"/> Finalizados:</span>
                   <span className="font-semibold">{quiz.completedCount || 0}</span>
@@ -378,7 +408,7 @@ export default function DashboardPage() {
                     <span className="font-semibold">{conversionRate.toFixed(1)}%</span>
                   </div>
                   <Progress value={conversionRate} className="h-2" />
-                   <p className="text-xs text-muted-foreground mt-1">No período selecionado</p>
+                   <p className="text-xs text-muted-foreground mt-1">{conversionDescription}</p>
                 </div>
               </CardContent>
               <CardFooter className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-4 border-t">
@@ -485,7 +515,7 @@ export default function DashboardPage() {
       <Dialog open={isPreviewModalOpen} onOpenChange={(open) => {
         if (!open) {
           setPreviewQuizConfig(null); 
-          setWhitelabelSettingsForPreview(null);
+          setWhitelabelSettings(null);
         }
         setIsPreviewModalOpen(open);
       }}>
@@ -496,16 +526,16 @@ export default function DashboardPage() {
           <div className="flex-grow overflow-y-auto bg-background">
             {isLoadingPreview ? (
               <div className="flex items-center justify-center h-full"><QuizFormLoading/></div>
-            ) : previewQuizConfig && whitelabelSettingsForPreview ? (
+            ) : previewQuizConfig && whitelabelSettings ? (
               <QuizForm
                 quizQuestions={previewQuizConfig.questions}
                 quizSlug={previewQuizConfig.slug}
                 quizTitle={previewQuizConfig.title}
                 quizDescription={previewQuizConfig.description}
-                logoUrl={whitelabelSettingsForPreview.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
-                footerCopyrightText={whitelabelSettingsForPreview.footerCopyrightText || `© ${new Date().getFullYear()} Preview`}
-                websiteUrl={whitelabelSettingsForPreview.websiteUrl}
-                instagramUrl={whitelabelSettingsForPreview.instagramUrl}
+                logoUrl={whitelabelSettings.logoUrl || "https://placehold.co/150x50.png?text=Logo"}
+                footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview`}
+                websiteUrl={whitelabelSettings.websiteUrl}
+                instagramUrl={whitelabelSettings.instagramUrl}
                 facebookPixelId="" 
                 googleAnalyticsId="" 
                 onSubmitOverride={async (data) => {

@@ -8,8 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowLeft, Users, CheckCircle2, Target, Info, AlertTriangle, FileText, MessageSquare, ListChecks, Edit3, TrendingUp, RotateCcw, Loader2, ShieldAlert } from 'lucide-react';
-import type { QuizConfig, QuizQuestion, QuizAnalyticsData, QuizQuestionAnalytics, QuestionSpecificAnalytics, DateRange } from '@/types/quiz';
+import { ArrowLeft, Users, CheckCircle2, Target, Info, AlertTriangle, FileText, MessageSquare, ListChecks, Edit3, TrendingUp, RotateCcw, Loader2, ShieldAlert, MousePointerClick } from 'lucide-react';
+import type { QuizConfig, QuizQuestion, QuizAnalyticsData, QuizQuestionAnalytics, QuestionSpecificAnalytics, DateRange, WhitelabelConfig } from '@/types/quiz';
 import { getQuizConfigForPreview, getQuizAnalyticsBySlug, getQuizQuestionAnalytics, resetSingleQuizAnalyticsAction } from '@/app/config/dashboard/quiz/actions';
 import {
   AlertDialog,
@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { addDays } from 'date-fns';
+import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
 
 function StatDisplayCard({ title, value, icon: Icon, subtext }: { title: string, value: string | number, icon: React.ElementType, subtext?: string }) {
   return (
@@ -60,30 +61,50 @@ export default function QuizStatsPage() {
   const [quizConfig, setQuizConfig] = useState<QuizConfig | null>(null);
   const [aggregateStats, setAggregateStats] = useState<QuizAnalyticsData | null>(null);
   const [questionStats, setQuestionStats] = useState<QuizQuestionAnalytics | null>(null);
+  const [whitelabelSettings, setWhitelabelSettings] = useState<Partial<WhitelabelConfig> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const [showResetSingleDialog, setShowResetSingleDialog] = useState(false);
   const [isResettingSingleStats, setIsResettingSingleStats] = useState(false);
   
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -7),
-    to: new Date(),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+  const handleDatePresetChange = (value: string) => {
+    const now = new Date();
+    let newRange: DateRange | undefined;
+    switch (value) {
+      case 'today':
+        newRange = { from: now, to: now };
+        break;
+      case 'yesterday':
+        const yesterday = addDays(now, -1);
+        newRange = { from: yesterday, to: yesterday };
+        break;
+      case 'last7':
+        newRange = { from: addDays(now, -7), to: now };
+        break;
+      case 'last30':
+        newRange = { from: addDays(now, -30), to: now };
+        break;
+      default:
+        newRange = undefined;
+    }
+    setDateRange(newRange);
+  };
 
   const fetchStatsData = useCallback(async () => {
-    if (!quizSlug) {
-      setError("Slug do quiz não encontrado na URL.");
-      setIsLoading(false);
+    if (!quizSlug || !dateRange) {
       return;
     }
     setIsLoading(true);
     setError(null);
     try {
-      const [configData, aggData, qStatsData] = await Promise.all([
+      const [configData, aggData, qStatsData, settings] = await Promise.all([
         getQuizConfigForPreview(quizSlug),
         getQuizAnalyticsBySlug(quizSlug, dateRange),
-        getQuizQuestionAnalytics(quizSlug, dateRange)
+        getQuizQuestionAnalytics(quizSlug, dateRange),
+        fetchWhitelabelSettings(),
       ]);
 
       if (!configData) {
@@ -93,14 +114,9 @@ export default function QuizStatsPage() {
         setQuizConfig(configData);
       }
 
-      if (!aggData) {
-        console.warn(`Estatísticas agregadas para o quiz "${quizSlug}" não encontradas.`);
-        setAggregateStats(null); 
-      } else {
-        setAggregateStats(aggData);
-      }
-      
+      setAggregateStats(aggData || null);
       setQuestionStats(qStatsData || {});
+      setWhitelabelSettings(settings);
 
     } catch (err) {
       console.error("Erro ao buscar dados de estatísticas do quiz:", err);
@@ -109,8 +125,20 @@ export default function QuizStatsPage() {
       setIsLoading(false);
     }
   }, [quizSlug, dateRange]);
+  
+  useEffect(() => {
+    // This effect runs once to set the initial date range based on global settings.
+    async function loadInitialSettings() {
+      const settings = await fetchWhitelabelSettings();
+      setWhitelabelSettings(settings);
+      handleDatePresetChange(settings.dashboardDefaultFilter || 'last7');
+    }
+    loadInitialSettings();
+    // Eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
+    // This effect runs whenever the date range changes.
     fetchStatsData();
   }, [fetchStatsData]);
   
@@ -144,35 +172,23 @@ export default function QuizStatsPage() {
       setShowResetSingleDialog(false);
     }
   };
-  
-  const handleDatePresetChange = (value: string) => {
-    const now = new Date();
-    switch (value) {
-      case 'today':
-        setDateRange({ from: now, to: now });
-        break;
-      case 'yesterday':
-        const yesterday = addDays(now, -1);
-        setDateRange({ from: yesterday, to: yesterday });
-        break;
-      case 'last7':
-        setDateRange({ from: addDays(now, -7), to: now });
-        break;
-      case 'last30':
-        setDateRange({ from: addDays(now, -30), to: now });
-        break;
-      default:
-        setDateRange(undefined);
-    }
-  };
 
-  const conversionRate = aggregateStats?.startedCount && aggregateStats.startedCount > 0
-    ? ((aggregateStats.completedCount || 0) / aggregateStats.startedCount * 100).toFixed(1) + "%"
+  const conversionMetric = whitelabelSettings?.conversionMetric || 'start_vs_complete';
+  const conversionDenominator = conversionMetric === 'first_answer_vs_complete'
+    ? (aggregateStats?.firstAnswerCount || 0)
+    : (aggregateStats?.startedCount || 0);
+
+  const conversionRate = conversionDenominator > 0
+    ? ((aggregateStats?.completedCount || 0) / conversionDenominator * 100).toFixed(1) + "%"
     : "0.0%";
+
+  const conversionDescription = conversionMetric === 'first_answer_vs_complete'
+    ? 'Finalizados / Engajados'
+    : 'Finalizados / Iniciados';
     
   const contentQuestions = quizConfig?.questions || [];
 
-  if (isLoading) {
+  if (isLoading && !aggregateStats) { // Show skeleton only on initial load
     return (
       <div className="p-6 md:p-8 space-y-6">
         <div className="flex items-center justify-between">
@@ -183,7 +199,8 @@ export default function QuizStatsPage() {
           </div>
         </div>
         <Skeleton className="h-24 w-full" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Skeleton className="h-28 w-full" />
           <Skeleton className="h-28 w-full" />
           <Skeleton className="h-28 w-full" />
           <Skeleton className="h-28 w-full" />
@@ -241,7 +258,7 @@ export default function QuizStatsPage() {
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
             <DateRangePicker date={dateRange} onDateChange={setDateRange} />
-            <Select onValueChange={handleDatePresetChange} defaultValue="last7">
+            <Select onValueChange={handleDatePresetChange} defaultValue={whitelabelSettings?.dashboardDefaultFilter || 'last7'}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Período pré-definido" />
               </SelectTrigger>
@@ -274,10 +291,11 @@ export default function QuizStatsPage() {
             Resumo Geral (período selecionado)
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatDisplayCard title="Iniciados" value={aggregateStats.startedCount || 0} icon={Users} subtext="Total de vezes que o quiz foi iniciado."/>
+          <StatDisplayCard title="Engajados" value={aggregateStats.firstAnswerCount || 0} icon={MousePointerClick} subtext="Responderam a 1ª pergunta."/>
           <StatDisplayCard title="Finalizados" value={aggregateStats.completedCount || 0} icon={CheckCircle2} subtext="Total de vezes que o quiz foi completado."/>
-          <StatDisplayCard title="Taxa de Conversão" value={conversionRate} icon={Target} subtext="Percentual de finalizações sobre inícios."/>
+          <StatDisplayCard title="Taxa de Conversão" value={conversionRate} icon={Target} subtext={conversionDescription}/>
         </CardContent>
       </Card>
       
