@@ -537,11 +537,49 @@ export default function EditQuizPage() {
 
                <Card className="shadow-lg">
                   <CardHeader><CardTitle>Configurações do Quiz</CardTitle></CardHeader>
-                  <CardContent className="space-y-6">
-                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4"><Label htmlFor="isActive-switch" className="flex flex-col space-y-1"><span className="font-medium flex items-center gap-2"><ToggleLeft className="h-4 w-4" />Status</span><span className="text-xs font-normal text-muted-foreground">Quiz acessível ao público.</span></Label><Switch id="isActive-switch" checked={isActive} onCheckedChange={setIsActive} /></div>
-                      <div className="space-y-3 p-4 border rounded-lg"><Label className="flex items-center gap-2 font-semibold"><LayoutDashboard className="h-5 w-5 text-primary" />Formato</Label><RadioGroup value={displayMode} onValueChange={(value) => setDisplayMode(value as 'step-by-step' | 'single-page')} className="flex gap-4 pt-2"><div className="flex items-center space-x-2"><RadioGroupItem value="step-by-step" id="mode-step" /><Label htmlFor="mode-step" className="font-normal">Passo a Passo</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="single-page" id="mode-single" /><Label htmlFor="mode-single" className="font-normal">Página Única</Label></div></RadioGroup></div>
+                  <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                        <div className='flex items-start gap-3'>
+                          <ToggleLeft className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                          <div className='flex flex-col'>
+                            <Label htmlFor="isActive-switch" className="font-medium">Status</Label>
+                            <span className="text-xs font-normal text-muted-foreground">Quiz acessível ao público.</span>
+                          </div>
+                        </div>
+                        <Switch id="isActive-switch" checked={isActive} onCheckedChange={setIsActive} />
+                      </div>
+
+                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                        <div className='flex items-start gap-3'>
+                          <LayoutDashboard className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                           <div className='flex flex-col'>
+                            <p className="font-medium">Formato</p>
+                            <span className="text-xs font-normal text-muted-foreground">Como as perguntas são exibidas.</span>
+                          </div>
+                        </div>
+                        <RadioGroup value={displayMode} onValueChange={(value) => setDisplayMode(value as 'step-by-step' | 'single-page')} className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="step-by-step" id="mode-step" />
+                                <Label htmlFor="mode-step" className="font-normal text-sm">Passo a Passo</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="single-page" id="mode-single" />
+                                <Label htmlFor="mode-single" className="font-normal text-sm">Página Única</Label>
+                            </div>
+                        </RadioGroup>
+                      </div>
+
                       <div className="space-y-4 rounded-lg border p-4">
-                          <div className="flex items-center justify-between space-x-2"><Label htmlFor="useCustomTheme-switch" className="flex flex-col space-y-1"><span className="font-medium flex items-center gap-2"><Palette className="h-4 w-4" />Tema Customizado</span><span className="text-xs font-normal text-muted-foreground">Sobrescrever cores globais.</span></Label><Switch id="useCustomTheme-switch" checked={useCustomTheme} onCheckedChange={setUseCustomTheme} /></div>
+                          <div className="flex items-center justify-between space-x-2">
+                            <div className='flex items-start gap-3'>
+                              <Palette className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
+                              <div className='flex flex-col'>
+                                <Label htmlFor="useCustomTheme-switch" className="font-medium">Tema Customizado</Label>
+                                <span className="text-xs font-normal text-muted-foreground">Sobrescrever cores globais.</span>
+                              </div>
+                            </div>
+                            <Switch id="useCustomTheme-switch" checked={useCustomTheme} onCheckedChange={setUseCustomTheme} />
+                          </div>
                           {useCustomTheme && (
                               <div className="space-y-4 pt-4 border-t animate-in fade-in-0 zoom-in-95">
                                   <div className="space-y-2">
