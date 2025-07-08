@@ -3,8 +3,12 @@
     "started": [
       {
         "date": "2025-07-07T21:51:27.810Z"
+      },
+      {
+        "date": "2025-07-08T12:09:34.999Z"
       }
     ],
-    "completed": []
+    "completed": [],
+    "firstAnswer": []
   }
 }

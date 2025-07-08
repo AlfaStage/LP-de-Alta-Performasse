@@ -22,7 +22,7 @@ import type { WhitelabelConfig } from '@/types/quiz';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
@@ -446,83 +446,25 @@ export default function EditQuizPage() {
           )}
         </CardContent>
       </Card>
-
-      <Tabs value={currentTab} onValueChange={(value) => handleTabChange(value as 'interactive' | 'json')} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="interactive"><Wand2 className="mr-2 h-4 w-4" />Construtor</TabsTrigger>
-              <TabsTrigger value="json"><FileJson className="mr-2 h-4 w-4" />JSON</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="interactive">
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <Card className="shadow-lg">
-                      <CardHeader>
-                      <CardTitle>Detalhes do Quiz</CardTitle>
-                      <CardDescription>
-                          Modifique o título público, slug, descrição pública e nome interno do quiz.
-                      </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                          <div className="space-y-2">
-                          <Label htmlFor="title" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público do Quiz</Label>
-                          <Input
-                              id="title"
-                              value={title}
-                              onChange={(e) => setTitle(e.target.value)}
-                              placeholder="Ex: Quiz de Avaliação de Produto"
-                              required
-                          />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="dashboardName" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno (para o Dashboard)</Label>
-                            <Input
-                                id="dashboardName"
-                                value={dashboardName}
-                                onChange={(e) => setDashboardName(e.target.value)}
-                                placeholder="Ex: Quiz Produto X - Campanha Y (opcional)"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Este nome aparecerá apenas no seu painel de controle. Se deixado em branco, o título público será usado.
-                            </p>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição do Quiz (visível ao usuário)</Label>
-                            <Textarea
-                                id="description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Ex: Responda algumas perguntas e nos ajude a entender suas preferências!"
-                                rows={3}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Esta descrição aparecerá abaixo do título na página do quiz.
-                            </p>
-                          </div>
-                          <div className="space-y-2">
-                          <Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug do Quiz (URL)</Label>
-                          <Input
-                              id="slug"
-                              value={slug}
-                              readOnly
-                              disabled
-                              className="bg-muted/50 cursor-not-allowed"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                              Acessível em: {baseUrl}/{slug || "seu-slug"} (Slug não é editável)
-                          </p>
-                          </div>
-                      </CardContent>
-                  </Card>
-                   <Card className="shadow-lg mt-6">
-                        <CardHeader>
-                            <CardTitle>Construtor Interativo de Perguntas</CardTitle>
-                            <CardDescription>
-                            Adicione e configure as perguntas do seu quiz.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+      
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* Main Content: Question Editor */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle>Editor de Perguntas</CardTitle>
+                    <CardDescription>Use o construtor interativo ou edite o JSON diretamente.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Tabs value={currentTab} onValueChange={(value) => handleTabChange(value as 'interactive' | 'json')}>
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="interactive"><Wand2 className="mr-2 h-4 w-4" />Construtor</TabsTrigger>
+                            <TabsTrigger value="json"><FileJson className="mr-2 h-4 w-4" />JSON</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="interactive" className="pt-4">
+                           <div className="space-y-4">
                             {interactiveQuestions.map((q, qIndex) => (
                             <Card key={q.id || `q_interactive_edit_${qIndex}`} className="p-4 space-y-3 bg-muted/30 shadow-md">
                                 <div className="flex justify-between items-center mb-3">
@@ -631,225 +573,147 @@ export default function EditQuizPage() {
                             <Button type="button" onClick={addQuestion} variant="outline" className="w-full mt-6 py-3 text-base shadow-sm">
                                 <PlusCircle className="mr-2 h-5 w-5" /> Adicionar Nova Pergunta
                             </Button>
-                        </CardContent>
-                  </Card>
-                </div>
+                           </div>
+                        </TabsContent>
 
-                <div className="lg:col-span-1 space-y-6">
-                    <Card className="shadow-lg sticky top-6">
-                        <CardHeader>
-                            <CardTitle>Configurações do Quiz</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
-                                <Label htmlFor="isActive-switch" className="flex flex-col space-y-1">
-                                    <span className="font-medium flex items-center gap-2"><ToggleLeft className="h-4 w-4" />Status do Quiz</span>
-                                    <span className="text-xs font-normal leading-snug text-muted-foreground">
-                                    Controle se este quiz está acessível ao público.
-                                    </span>
-                                </Label>
-                                <Switch
-                                    id="isActive-switch"
-                                    checked={isActive}
-                                    onCheckedChange={setIsActive}
-                                    aria-label="Ativar ou desativar quiz"
-                                />
-                            </div>
-
-                             <div className="space-y-4 rounded-lg border p-4">
-                                <div className="flex items-center justify-between space-x-2">
-                                     <Label htmlFor="useCustomTheme-switch" className="flex flex-col space-y-1">
-                                        <span className="font-medium flex items-center gap-2"><Palette className="h-4 w-4" />Tema Customizado</span>
-                                        <span className="text-xs font-normal leading-snug text-muted-foreground">
-                                        Usar uma paleta de cores exclusiva para este quiz.
-                                        </span>
-                                    </Label>
-                                    <Switch
-                                        id="useCustomTheme-switch"
-                                        checked={useCustomTheme}
-                                        onCheckedChange={setUseCustomTheme}
-                                        aria-label="Ativar tema customizado"
-                                    />
-                                </div>
-                                {useCustomTheme && (
-                                    <div className="space-y-4 pt-4 border-t animate-in fade-in-0 zoom-in-95">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="custom-primaryColorHex">Cor Primária</Label>
-                                            <Input id="custom-primaryColorHex" type="color" value={customTheme?.primaryColorHex || '#000000'} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))}/>
-                                        </div>
-                                         <div className="space-y-2">
-                                            <Label htmlFor="custom-secondaryColorHex">Cor Secundária</Label>
-                                            <Input id="custom-secondaryColorHex" type="color" value={customTheme?.secondaryColorHex || '#000000'} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))}/>
-                                        </div>
-                                         <div className="space-y-2">
-                                            <Label htmlFor="custom-quizBackgroundColorHex">Fundo do Quiz</Label>
-                                            <Input id="custom-quizBackgroundColorHex" type="color" value={customTheme?.quizBackgroundColorHex || '#FFFFFF'} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))}/>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="custom-buttonPrimaryBgColorHex">Fundo do Botão (Opcional)</Label>
-                                            <Input id="custom-buttonPrimaryBgColorHex" type="color" value={customTheme?.buttonPrimaryBgColorHex || '#000000'} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))}/>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                        </CardContent>
-                    </Card>
-                </div>
-              </div>
-              <div className="mt-6">
-                <Card className="shadow-lg">
-                    <CardFooter className="flex flex-col items-start gap-4 p-6">
-                        {error && !success && ( 
-                        <Alert variant="destructive" className="w-full">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Erro</AlertTitle>
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                        )}
-                        {success && (
-                        <Alert variant="default" className="w-full bg-green-50 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-400">
-                            <Save className="h-4 w-4 text-green-600 dark:text-green-400" />
-                            <AlertTitle>Sucesso!</AlertTitle>
-                            <AlertDescription>{success}</AlertDescription>
-                        </Alert>
-                        )}
-                        <Button type="submit" className="text-base py-3 px-6 shadow-md" disabled={isLoading || isFetching}>
-                        {isLoading ? (
-                            <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Salvando Alterações...
-                            </>
-                        ) : (
-                            <>
-                            <Save className="mr-2 h-5 w-5" />
-                            Salvar Alterações
-                            </>
-                        )}
-                    </Button>
-                    </CardFooter>
-                </Card>
-              </div>
-            </form>
-          </TabsContent>
-          <TabsContent value="json">
-            <form onSubmit={handleSubmit}>
-              <Card className="shadow-lg mb-6">
-                    <CardHeader>
-                    <CardTitle>Detalhes do Quiz (JSON)</CardTitle>
-                    <CardDescription>
-                        Modifique o título, descrição e nome interno. O slug não pode ser alterado.
-                    </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-2">
-                        <Label htmlFor="title-json" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público do Quiz</Label>
-                        <Input
-                            id="title-json"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Ex: Quiz de Avaliação de Produto"
-                            required
-                        />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="dashboardName-json" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno (Dashboard)</Label>
-                            <Input
-                                id="dashboardName-json"
-                                value={dashboardName}
-                                onChange={(e) => setDashboardName(e.target.value)}
-                                placeholder="Ex: Quiz Produto X - Campanha Y (opcional)"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="description-json" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição do Quiz</Label>
+                        <TabsContent value="json" className="pt-4">
                             <Textarea
-                                id="description-json"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Ex: Responda algumas perguntas e nos ajude a entender suas preferências!"
-                                rows={3}
+                                id="questionsJson"
+                                value={questionsJson}
+                                onChange={(e) => setQuestionsJson(e.target.value)}
+                                placeholder="Cole aqui o array de objetos das perguntas em formato JSON."
+                                rows={25}
+                                required
+                                className="font-mono text-xs bg-muted/20"
                             />
-                        </div>
-                        <div className="space-y-2">
-                        <Label htmlFor="slug-json" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug do Quiz (URL)</Label>
-                        <Input
-                            id="slug-json"
-                            value={slug}
-                            readOnly
-                            disabled
-                            className="bg-muted/50 cursor-not-allowed"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Acessível em: {baseUrl}/{slug || "seu-slug"} (Slug não é editável)
-                        </p>
-                        </div>
-                    </CardContent>
-              </Card>
+                            <Alert variant="default" className="mt-4">
+                                <Info className="h-4 w-4" />
+                                <AlertTitle>Estrutura JSON para Perguntas</AlertTitle>
+                                <AlertDescription>
+                                <p className="mb-2">Edite o array de objetos das perguntas. Nomes de ícones devem ser de `lucide-react`.</p>
+                                <details>
+                                    <summary className="cursor-pointer text-primary hover:underline">Ver exemplo JSON</summary>
+                                    <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-x-auto">
+                                    {exampleQuizJson}
+                                    </pre>
+                                </details>
+                                </AlertDescription>
+                            </Alert>
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar for Details and Settings */}
+          <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6">
               <Card className="shadow-lg">
-                  <CardHeader>
-                      <CardTitle>Perguntas do Quiz (Formato JSON)</CardTitle>
-                      <CardDescription>
-                      Edite o array de objetos das perguntas.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <Textarea
-                          id="questionsJson"
-                          value={questionsJson}
-                          onChange={(e) => setQuestionsJson(e.target.value)}
-                          placeholder="Cole aqui o array de objetos das perguntas em formato JSON."
-                          rows={15}
-                          required
-                          className="font-mono text-xs bg-muted/20"
-                      />
-                      <Alert variant="default" className="mt-2">
-                          <Info className="h-4 w-4" />
-                          <AlertTitle>Estrutura JSON para Perguntas</AlertTitle>
-                          <AlertDescription>
-                          <p className="mb-2">Edite o array de objetos das perguntas. Nomes de ícones devem ser de `lucide-react`.</p>
-                          <details>
-                              <summary className="cursor-pointer text-primary hover:underline">Ver exemplo JSON</summary>
-                              <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-x-auto">
-                              {exampleQuizJson}
-                              </pre>
-                          </details>
-                          </AlertDescription>
-                      </Alert>
-                  </CardContent>
-                  <CardFooter className="flex flex-col items-start gap-4 p-6">
-                      {error && !success && ( 
-                      <Alert variant="destructive" className="w-full">
-                          <AlertTriangle className="h-4 w-4" />
-                          <AlertTitle>Erro</AlertTitle>
-                          <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                      )}
-                      {success && (
-                      <Alert variant="default" className="w-full bg-green-50 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-400">
-                          <Save className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          <AlertTitle>Sucesso!</AlertTitle>
-                          <AlertDescription>{success}</AlertDescription>
-                      </Alert>
-                      )}
-                      <Button type="submit" className="text-base py-3 px-6 shadow-md" disabled={isLoading || isFetching}>
-                      {isLoading ? (
-                          <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Salvando Alterações...
-                          </>
-                      ) : (
-                          <>
-                          <Save className="mr-2 h-5 w-5" />
-                          Salvar Alterações (JSON)
-                          </>
-                      )}
-                  </Button>
-                  </CardFooter>
+                <CardHeader>
+                  <CardTitle>Detalhes do Quiz</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="title" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público do Quiz</Label>
+                        <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Quiz de Avaliação de Produto" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="dashboardName" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno (Dashboard)</Label>
+                        <Input id="dashboardName" value={dashboardName} onChange={(e) => setDashboardName(e.target.value)} placeholder="Ex: Quiz Produto X - Campanha Y (opcional)" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição do Quiz</Label>
+                        <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: Responda algumas perguntas..." rows={3} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug do Quiz (URL)</Label>
+                        <Input id="slug" value={slug} readOnly disabled className="bg-muted/50 cursor-not-allowed" />
+                        <p className="text-xs text-muted-foreground"> Acessível em: {baseUrl}/{slug || "seu-slug"} (Slug não é editável)</p>
+                    </div>
+                </CardContent>
               </Card>
-            </form>
-          </TabsContent>
-      </Tabs>
+
+               <Card className="shadow-lg">
+                  <CardHeader>
+                      <CardTitle>Configurações</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                          <Label htmlFor="isActive-switch" className="flex flex-col space-y-1">
+                              <span className="font-medium flex items-center gap-2"><ToggleLeft className="h-4 w-4" />Status do Quiz</span>
+                              <span className="text-xs font-normal leading-snug text-muted-foreground">Controle se este quiz está acessível ao público.</span>
+                          </Label>
+                          <Switch id="isActive-switch" checked={isActive} onCheckedChange={setIsActive} aria-label="Ativar ou desativar quiz" />
+                      </div>
+
+                       <div className="space-y-4 rounded-lg border p-4">
+                          <div className="flex items-center justify-between space-x-2">
+                               <Label htmlFor="useCustomTheme-switch" className="flex flex-col space-y-1">
+                                  <span className="font-medium flex items-center gap-2"><Palette className="h-4 w-4" />Tema Customizado</span>
+                                  <span className="text-xs font-normal leading-snug text-muted-foreground">Usar uma paleta de cores exclusiva para este quiz.</span>
+                              </Label>
+                              <Switch id="useCustomTheme-switch" checked={useCustomTheme} onCheckedChange={setUseCustomTheme} aria-label="Ativar tema customizado" />
+                          </div>
+                          {useCustomTheme && (
+                              <div className="space-y-4 pt-4 border-t animate-in fade-in-0 zoom-in-95">
+                                  <div className="space-y-2">
+                                      <Label htmlFor="custom-primaryColorHex">Cor Primária</Label>
+                                      <Input id="custom-primaryColorHex" type="color" value={customTheme?.primaryColorHex || '#000000'} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))}/>
+                                  </div>
+                                   <div className="space-y-2">
+                                      <Label htmlFor="custom-secondaryColorHex">Cor Secundária</Label>
+                                      <Input id="custom-secondaryColorHex" type="color" value={customTheme?.secondaryColorHex || '#000000'} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))}/>
+                                  </div>
+                                   <div className="space-y-2">
+                                      <Label htmlFor="custom-quizBackgroundColorHex">Fundo do Quiz</Label>
+                                      <Input id="custom-quizBackgroundColorHex" type="color" value={customTheme?.quizBackgroundColorHex || '#FFFFFF'} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))}/>
+                                  </div>
+                                  <div className="space-y-2">
+                                      <Label htmlFor="custom-buttonPrimaryBgColorHex">Fundo do Botão (Opcional)</Label>
+                                      <Input id="custom-buttonPrimaryBgColorHex" type="color" value={customTheme?.buttonPrimaryBgColorHex || '#000000'} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))}/>
+                                  </div>
+                              </div>
+                          )}
+                      </div>
+                  </CardContent>
+              </Card>
+          </div>
+        </div>
+
+        {/* Save Button Area */}
+        <div className="mt-6">
+            <Card className="shadow-lg">
+                <CardFooter className="flex flex-col items-start gap-4 p-6">
+                    {error && !success && ( 
+                    <Alert variant="destructive" className="w-full">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Erro</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                    )}
+                    {success && (
+                    <Alert variant="default" className="w-full bg-green-50 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-400">
+                        <Save className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <AlertTitle>Sucesso!</AlertTitle>
+                        <AlertDescription>{success}</AlertDescription>
+                    </Alert>
+                    )}
+                    <Button type="submit" className="text-base py-3 px-6 shadow-md" disabled={isLoading || isFetching}>
+                    {isLoading ? (
+                        <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Salvando Alterações...
+                        </>
+                    ) : (
+                        <>
+                        <Save className="mr-2 h-5 w-5" />
+                        Salvar Alterações
+                        </>
+                    )}
+                </Button>
+                </CardFooter>
+            </Card>
+        </div>
+      </form>
 
       <Dialog open={isPreviewModalOpen} onOpenChange={(open) => {
         if (!open) {
