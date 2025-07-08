@@ -543,7 +543,7 @@ export default function DashboardPage() {
                 footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview`}
                 websiteUrl={whitelabelSettings.websiteUrl}
                 instagramUrl={whitelabelSettings.instagramUrl}
-                facebookPixelId="" 
+                finalFacebookPixelIds={[]}
                 googleAnalyticsId="" 
                 onSubmitOverride={async (data) => {
                   console.log("Preview Submit:", data);

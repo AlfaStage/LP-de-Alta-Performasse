@@ -1,3 +1,4 @@
+
 {
   "title": "Quiz de Exemplo",
   "slug": "default",
@@ -88,7 +89,7 @@
   "isActive": true,
   "useCustomTheme": false,
   "customTheme": {},
-  "displayMode": "single-page",
+  "displayMode": "step-by-step",
   "pixelSettings": {
     "ignoreGlobalPrimaryPixel": false,
     "ignoreGlobalSecondaryPixel": false,

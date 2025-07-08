@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, File, BookOpen, ChevronsUpDown } from 'lucide-react';
+import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, PlusCircle, Trash2, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, BookOpen, ChevronsUpDown, Fingerprint } from 'lucide-react';
 import { getQuizForEdit, updateQuizAction, type QuizEditData } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig } from '@/types/quiz';
 import Link from 'next/link';
@@ -47,6 +47,7 @@ export default function EditQuizPage() {
   const [useCustomTheme, setUseCustomTheme] = useState(false);
   const [customTheme, setCustomTheme] = useState<QuizEditData['customTheme']>({});
   const [displayMode, setDisplayMode] = useState<'step-by-step' | 'single-page'>('step-by-step');
+  const [pixelSettings, setPixelSettings] = useState<QuizEditData['pixelSettings']>({});
 
   const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive'); 
   const [originalQuizData, setOriginalQuizData] = useState<QuizEditData | null>(null);
@@ -99,6 +100,7 @@ export default function EditQuizPage() {
         setUseCustomTheme(data.useCustomTheme ?? false);
         setCustomTheme(data.customTheme || {});
         setDisplayMode(data.displayMode || 'step-by-step');
+        setPixelSettings(data.pixelSettings || {});
         try {
             const parsedForInteractive = JSON.parse(data.questionsJson);
             if (Array.isArray(parsedForInteractive)) {
@@ -305,6 +307,7 @@ export default function EditQuizPage() {
         useCustomTheme: useCustomTheme,
         customTheme: customTheme,
         displayMode: displayMode,
+        pixelSettings: pixelSettings,
       });
       if (result.success) {
         setSuccess(`Quiz "${title}" atualizado com sucesso!`);
@@ -584,6 +587,29 @@ export default function EditQuizPage() {
                       </div>
                   </CardContent>
               </Card>
+
+              <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-md">
+                        <Fingerprint className="h-5 w-5 text-muted-foreground" />
+                        Rastreamento (Pixel)
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                   <div className="flex items-center justify-between space-x-2 rounded-lg border p-3">
+                        <Label htmlFor="pixel-ignore-primary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Primário</Label>
+                        <Switch id="pixel-ignore-primary" checked={pixelSettings?.ignoreGlobalPrimaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalPrimaryPixel: checked}))} />
+                   </div>
+                    <div className="flex items-center justify-between space-x-2 rounded-lg border p-3">
+                        <Label htmlFor="pixel-ignore-secondary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Secundário</Label>
+                        <Switch id="pixel-ignore-secondary" checked={pixelSettings?.ignoreGlobalSecondaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalSecondaryPixel: checked}))} />
+                   </div>
+                   <div className="space-y-2">
+                        <Label htmlFor="pixel-specific" className="text-sm">Pixel Exclusivo do Quiz</Label>
+                        <Input id="pixel-specific" placeholder="ID do Pixel (opcional)" value={pixelSettings?.quizSpecificPixelId || ''} onChange={(e) => setPixelSettings(prev => ({...prev, quizSpecificPixelId: e.target.value}))} />
+                   </div>
+                </CardContent>
+              </Card>
           </div>
         </div>
 
@@ -613,7 +639,7 @@ export default function EditQuizPage() {
                 footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview.`}
                 websiteUrl={whitelabelSettings.websiteUrl}
                 instagramUrl={whitelabelSettings.instagramUrl}
-                facebookPixelId="" 
+                finalFacebookPixelIds={[]}
                 googleAnalyticsId="" 
                 onSubmitOverride={mockSubmitOverride}
                 onAbandonmentOverride={async () => { console.log("Preview abandonment") }}

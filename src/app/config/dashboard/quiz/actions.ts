@@ -250,6 +250,11 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
     useCustomTheme: false,
     customTheme: {},
     displayMode: displayMode || 'step-by-step',
+    pixelSettings: {
+      ignoreGlobalPrimaryPixel: false,
+      ignoreGlobalSecondaryPixel: false,
+      quizSpecificPixelId: '',
+    },
   };
 
   try {
@@ -266,23 +271,6 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return { success: false, message: `Erro ao salvar o arquivo do quiz: ${errorMessage}` };
   }
-}
-
-export interface QuizEditData {
-  title: string;
-  slug: string;
-  description?: string;
-  dashboardName?: string;
-  questionsJson: string;
-  isActive?: boolean;
-  useCustomTheme?: boolean;
-  customTheme?: {
-    primaryColorHex?: string;
-    secondaryColorHex?: string;
-    buttonPrimaryBgColorHex?: string;
-    quizBackgroundColorHex?: string;
-  };
-  displayMode?: 'step-by-step' | 'single-page';
 }
 
 export async function getQuizForEdit(slug: string): Promise<QuizEditData | null> {
@@ -302,6 +290,7 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
       useCustomTheme: quizData.useCustomTheme ?? false,
       customTheme: quizData.customTheme || {},
       displayMode: quizData.displayMode || 'step-by-step',
+      pixelSettings: quizData.pixelSettings || {},
     };
   } catch (error) {
     console.error(`Failed to read quiz config for editing (slug ${slug}):`, error);
@@ -324,6 +313,7 @@ export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig 
     quizData.useCustomTheme = quizData.useCustomTheme ?? false;
     quizData.customTheme = quizData.customTheme || {};
     quizData.displayMode = quizData.displayMode || 'step-by-step';
+    quizData.pixelSettings = quizData.pixelSettings || {};
 
     return quizData;
   } catch (error) {
@@ -348,11 +338,12 @@ interface UpdateQuizPayload {
     quizBackgroundColorHex?: string;
   };
   displayMode?: 'step-by-step' | 'single-page';
+  pixelSettings?: QuizConfig['pixelSettings'];
 }
 
 export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, description, dashboardName, questions, isActive, useCustomTheme, customTheme, displayMode } = payload;
+  const { title, slug, description, dashboardName, questions, isActive, useCustomTheme, customTheme, displayMode, pixelSettings } = payload;
 
   if (!title || !slug) {
     return { success: false, message: "Título e slug são obrigatórios." };
@@ -380,6 +371,7 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
     useCustomTheme: useCustomTheme ?? false,
     customTheme: customTheme || {},
     displayMode: displayMode || 'step-by-step',
+    pixelSettings: pixelSettings || {},
   };
 
   try {

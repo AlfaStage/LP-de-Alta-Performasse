@@ -107,12 +107,7 @@ export interface OverallQuizStats {
   totalStarted: number;
   totalCompleted: number;
   totalFirstAnswers?: number;
-  totalQuizzes: number;
-  overallConversionRate: number;
   mostEngagingQuiz?: QuizListItem & { conversionRate: number };
-  mostAbandonedQuiz?: QuizListItem & { abandonmentCount: number, abandonmentRate: number };
-  performanceOverTime: ChartDataPoint[];
-  topPerformingQuizzes: (QuizListItem & { conversionRate: number })[];
 }
 
 export interface QuizAnalyticsData extends QuizListItem {

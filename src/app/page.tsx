@@ -121,6 +121,9 @@ export default async function HomePage() {
           footerCopyrightText={footerText}
           websiteUrl={whitelabelConfig.websiteUrl}
           instagramUrl={whitelabelConfig.instagramUrl}
+          useCustomTheme={defaultQuizConfig.useCustomTheme}
+          customTheme={defaultQuizConfig.customTheme}
+          displayMode={defaultQuizConfig.displayMode}
         />
         <div className="py-8 text-center bg-background">
           <Link href="/config/login">
