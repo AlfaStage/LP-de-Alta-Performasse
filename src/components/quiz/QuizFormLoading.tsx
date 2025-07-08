@@ -16,17 +16,22 @@ export default function QuizFormLoading() {
             </div>
           </div>
         </CardHeader>
-        <div className="w-full px-2 mb-6">
+        <div className="w-full px-6 pb-4">
             <Skeleton className="h-3 w-full" data-ai-hint="progress bar placeholder"/>
-            <Skeleton className="h-4 w-24 mx-auto mt-2" data-ai-hint="progress text placeholder" />
         </div>
         <CardContent className="p-6 md:p-8 space-y-6 bg-card">
-          <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-12 w-12 text-primary animate-spin" />
-            <p className="ml-4 text-lg text-muted-foreground">Carregando Quiz...</p>
-          </div>
-           <Skeleton className="h-10 w-full" data-ai-hint="question text placeholder" />
-           <Skeleton className="h-20 w-full" data-ai-hint="options placeholder" />
+           <div className="flex items-start space-x-3">
+                <Skeleton className="h-8 w-8 rounded-full" data-ai-hint="icon placeholder"/>
+                <div className="space-y-2 flex-1">
+                    <Skeleton className="h-6 w-3/4" data-ai-hint="question text placeholder" />
+                    <Skeleton className="h-4 w-1/2" data-ai-hint="question description placeholder" />
+                </div>
+           </div>
+           <div className="space-y-3 pt-4">
+               <Skeleton className="h-12 w-full" data-ai-hint="option placeholder" />
+               <Skeleton className="h-12 w-full" data-ai-hint="option placeholder" />
+               <Skeleton className="h-12 w-full" data-ai-hint="option placeholder" />
+           </div>
         </CardContent>
         <div className="flex justify-between p-6 bg-muted/30">
             <Skeleton className="h-12 w-28" data-ai-hint="button placeholder" />

@@ -23,6 +23,8 @@ import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
 import type { QuizConfig, QuizQuestion } from '@/types/quiz';
 import { hexToHslString } from '@/lib/whitelabel';
+import { Send, ChevronRight, Loader2, Info, CheckCircle, ChevronLeft, Globe, Instagram } from 'lucide-react';
+
 
 type FormData = Record<string, any>;
 
@@ -483,7 +485,7 @@ export default function QuizForm({
                   <div
                     key={option.value}
                     className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80 animate-staggered-fade-in-up"
-                    style={{ animationFillMode: 'backwards', animationDelay: `${400 + index * 150}ms` }}
+                    style={{ animationFillMode: 'backwards', animationDelay: `${300 + index * 100}ms` }}
                   >
                     {OptionIconComponent && <OptionIconComponent className="h-5 w-5 text-muted-foreground group-has-[:checked]:text-primary" />}
                     <RadioGroupItem value={option.value} id={`${question.name}-${option.value}`} className="border-muted-foreground text-primary focus:ring-primary"/>
@@ -510,7 +512,7 @@ export default function QuizForm({
                 {question.options!.map((option, index) => {
                   const isSelected = field.value?.includes(option.value);
                   const OptionIconComponent = getIconComponent(option.icon);
-                  const CheckCircleIcon = IconComponents.CheckCircle || 'span';
+                  
                   return (
                     <div
                       key={option.value}
@@ -522,7 +524,7 @@ export default function QuizForm({
                       }}
                       className={`relative p-3 border rounded-lg cursor-pointer transition-all group hover:shadow-lg animate-staggered-fade-in-up
                         ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10' : 'border-input hover:border-primary/50'}`}
-                        style={{ animationFillMode: 'backwards', animationDelay: `${400 + index * 150}ms` }}
+                        style={{ animationFillMode: 'backwards', animationDelay: `${300 + index * 100}ms` }}
                     >
                       {option.imageUrl && (
                         <div className="relative w-full h-24 mb-2 rounded-md overflow-hidden">
@@ -536,7 +538,7 @@ export default function QuizForm({
                       </div>
                       {isSelected && (
                         <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                          <CheckCircleIcon className="h-4 w-4" />
+                          <CheckCircle className="h-4 w-4" />
                         </div>
                       )}
                       {OptionIconComponent && !option.imageUrl && <OptionIconComponent className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
@@ -556,7 +558,7 @@ export default function QuizForm({
               <div
                 key={f.name}
                 className="space-y-1 animate-staggered-fade-in-up"
-                style={{ animationFillMode: 'backwards', animationDelay: `${400 + index * 150}ms` }}
+                style={{ animationFillMode: 'backwards', animationDelay: `${300 + index * 100}ms` }}
               >
                  <Label htmlFor={f.name} className="font-medium flex items-center text-card-foreground">
                    {FieldIconComponent && <FieldIconComponent className="h-4 w-4 mr-2 text-primary" />}
@@ -592,7 +594,7 @@ export default function QuizForm({
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
           <Alert className="bg-card text-card-foreground">
-            {IconComponents.Info && <IconComponents.Info className="h-4 w-4" />}
+            <Info className="h-4 w-4" />
             <AlertTitle>Carregando Quiz...</AlertTitle>
             <AlertDescription>
               Por favor, aguarde enquanto preparamos as perguntas.
@@ -603,9 +605,8 @@ export default function QuizForm({
   }
 
   if (isQuizCompleted && submissionStatus === 'success') {
-    const FinalSuccessIcon = SuccessIcon || IconComponents.CheckCircle;
-    const GlobeIcon = IconComponents.Globe || 'span';
-    const InstagramIcon = IconComponents.Instagram || 'span';
+    const FinalSuccessIcon = SuccessIcon || CheckCircle;
+    
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
         <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center bg-card text-card-foreground">
@@ -632,13 +633,13 @@ export default function QuizForm({
                 <p className="text-sm text-card-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
                 {websiteUrl && websiteUrl.trim() !== "" && (
                     <Link href={websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                    <GlobeIcon className="mr-2 h-5 w-5" />
+                    <Globe className="mr-2 h-5 w-5" />
                     Visite nosso site
                     </Link>
                 )}
                 {instagramUrl && instagramUrl.trim() !== "" && (
                     <Link href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                    <InstagramIcon className="mr-2 h-5 w-5" />
+                    <Instagram className="mr-2 h-5 w-5" />
                     Siga-nos no Instagram
                     </Link>
                 )}
@@ -703,7 +704,7 @@ export default function QuizForm({
               {displayMode === 'step-by-step' ? (
                 <>
                   <Button type="button" variant="outline" onClick={handlePrev} disabled={currentStep === 0 || submissionStatus === 'pending'} className="px-6 py-3 text-base">
-                      {IconComponents.ChevronLeft && <IconComponents.ChevronLeft className="mr-2 h-5 w-5" />} Voltar
+                      <ChevronLeft className="mr-2 h-5 w-5" /> Voltar
                   </Button>
                   <Button
                       key={`next-btn-${currentStep === activeQuestions.length - 1}`}
@@ -713,9 +714,9 @@ export default function QuizForm({
                       style={{ animationDelay: '300ms' }}
                       disabled={submissionStatus === 'pending'}
                   >
-                      {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                      {submissionStatus === 'pending' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                       {submissionStatus === 'pending' ? 'Enviando...' : (currentStep === activeQuestions.length - 1 ? 'Finalizar e Enviar' : 'Próximo')}
-                      {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? (IconComponents.Send && <IconComponents.Send className="ml-2 h-5 w-5" />) : (IconComponents.ChevronRight && <IconComponents.ChevronRight className="ml-2 h-5 w-5" />))}
+                      {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? <Send className="ml-2 h-5 w-5" /> : <ChevronRight className="ml-2 h-5 w-5" />)}
                   </Button>
                 </>
               ) : (
@@ -724,9 +725,9 @@ export default function QuizForm({
                       className="w-full px-6 py-3 text-base"
                       disabled={submissionStatus === 'pending'}
                   >
-                      {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                      {submissionStatus === 'pending' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                       {submissionStatus === 'pending' ? 'Enviando...' : 'Finalizar e Enviar'}
-                      {submissionStatus !== 'pending' && IconComponents.Send && <IconComponents.Send className="ml-2 h-5 w-5" />}
+                      {submissionStatus !== 'pending' && <Send className="ml-2 h-5 w-5" />}
                   </Button>
               )}
             </CardFooter>

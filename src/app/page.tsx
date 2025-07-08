@@ -7,14 +7,9 @@ import { Button } from '@/components/ui/button';
 import { AlertTriangle, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { QuizConfig } from '@/types/quiz';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
-import dynamic from 'next/dynamic';
-import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
 import TrackingScriptsWrapper from '@/components/TrackingScriptsWrapper';
-
-const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
-  loading: () => <QuizFormLoading />,
-});
+import QuizClientWrapper from '@/components/quiz/QuizClientWrapper';
 
 const DEFAULT_QUIZ_SLUG = "default";
 const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas para nos ajudar a entender suas preferências.";
@@ -109,7 +104,7 @@ export default async function HomePage() {
   return (
     <>
       <main className="bg-background text-foreground">
-        <QuizForm 
+        <QuizClientWrapper 
           quizQuestions={defaultQuizConfig.questions} 
           quizSlug={defaultQuizConfig.slug} 
           quizTitle={defaultQuizConfig.title || whitelabelConfig.projectName || "Quiz Interativo"} 

@@ -36,7 +36,7 @@ import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from './settings/actions';
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LineChart, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Bar, TooltipProps } from 'recharts';
+import { LineChart, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Bar } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig as ChartConfigType } from "@/components/ui/chart";
 
 
@@ -689,6 +689,7 @@ export default function DashboardPage() {
                 isPreview={true}
                 useCustomTheme={previewQuizConfig.useCustomTheme}
                 customTheme={previewQuizConfig.customTheme}
+                displayMode={previewQuizConfig.displayMode}
               />
             ) : (
               <div className="p-4 text-center text-muted-foreground">Não foi possível carregar a pré-visualização do quiz.</div>

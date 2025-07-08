@@ -535,7 +535,7 @@ export default function CreateQuizPage() {
                 footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview. Todos os direitos reservados.`}
                 websiteUrl={whitelabelSettings.websiteUrl}
                 instagramUrl={whitelabelSettings.instagramUrl}
-                facebookPixelId="" 
+                finalFacebookPixelIds={[]}
                 googleAnalyticsId="" 
                 onSubmitOverride={mockSubmitOverride}
                 onAbandonmentOverride={async () => { console.log("Preview abandonment") }}
