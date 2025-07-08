@@ -1,13 +1,8 @@
-
 {
   "title": "Quiz de Exemplo",
   "slug": "default",
-  "dashboardName": "Quiz Padrão (Modelo)",
   "description": "Responda algumas perguntas para nos ajudar a entender suas preferências. Este é um quiz modelo.",
-  "isActive": true,
-  "useCustomTheme": false,
-  "customTheme": {},
-  "displayMode": "step-by-step",
+  "dashboardName": "Quiz Padrão (Modelo)",
   "questions": [
     {
       "id": "q1_generic_experience",
@@ -89,5 +84,9 @@
       ]
     }
   ],
-  "successIcon": "CheckCircle"
+  "successIcon": "CheckCircle",
+  "isActive": true,
+  "useCustomTheme": false,
+  "customTheme": {},
+  "displayMode": "single-page"
 }

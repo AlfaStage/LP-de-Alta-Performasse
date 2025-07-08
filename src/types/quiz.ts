@@ -1,6 +1,8 @@
 
+
 import type { LucideIcon } from 'lucide-react';
 import type { DateRange as ReactDayPickerDateRange } from 'react-day-picker';
+import type { IconName } from '@/lib/lucide-icons';
 
 
 export interface DateRange extends ReactDayPickerDateRange {}
@@ -8,7 +10,7 @@ export interface DateRange extends ReactDayPickerDateRange {}
 export interface QuizOption {
   value: string;
   label: string;
-  icon?: keyof typeof import('lucide-react');
+  icon?: IconName;
   explanation?: string;
   imageUrl?: string;
   dataAiHint?: string;
@@ -19,7 +21,7 @@ export interface FormFieldConfig {
   label: string;
   type: 'text' | 'tel' | 'email';
   placeholder?: string;
-  icon?: keyof typeof import('lucide-react');
+  icon?: IconName;
 }
 
 export interface QuizQuestion {
@@ -31,7 +33,7 @@ export interface QuizQuestion {
   options?: QuizOption[];
   fields?: FormFieldConfig[];
   condition?: (formData: Record<string, any>) => boolean; 
-  icon?: keyof typeof import('lucide-react');
+  icon?: IconName;
 }
 
 export interface QuizConfig {
@@ -40,7 +42,7 @@ export interface QuizConfig {
   description?: string;
   dashboardName?: string;
   questions: QuizQuestion[];
-  successIcon?: keyof typeof import('lucide-react');
+  successIcon?: IconName;
   isActive?: boolean;
   useCustomTheme?: boolean;
   customTheme?: {
@@ -82,7 +84,7 @@ export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'descriptio
   slug: string;
   description?: string;
   dashboardName?: string;
-  successIcon?: keyof typeof import('lucide-react');
+  successIcon?: IconName;
   isActive?: boolean;
   startedCount?: number;
   completedCount?: number;
@@ -144,3 +146,5 @@ export interface QuizEditData {
   };
   displayMode?: 'step-by-step' | 'single-page';
 }
+
+    
