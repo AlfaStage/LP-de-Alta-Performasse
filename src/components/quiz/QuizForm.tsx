@@ -98,7 +98,7 @@ export default function QuizForm({
 }: QuizFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
-  const [animationClass, setAnimationClass] = useState('animate-slide-in');
+  const [animationClass, setAnimationClass] = useState('animate-question-slide-in');
   const [isQuizCompleted, setIsQuizCompleted] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [themeStyles, setThemeStyles] = useState<React.CSSProperties>({});
@@ -307,10 +307,10 @@ export default function QuizForm({
     }
 
     if (currentStep < activeQuestions.length - 1) {
-        setAnimationClass('animate-slide-out');
+        setAnimationClass('animate-question-slide-out');
         setTimeout(() => {
             setCurrentStep(prev => prev + 1);
-            setAnimationClass('animate-slide-in');
+            setAnimationClass('animate-question-slide-in');
         }, 300);
     } else { 
         await handleSubmit(onSubmit)();
@@ -319,10 +319,10 @@ export default function QuizForm({
 
   const handlePrev = () => {
     if (currentStep > 0 && submissionStatus !== 'pending') {
-      setAnimationClass('animate-slide-out');
+      setAnimationClass('animate-question-slide-out');
       setTimeout(() => {
         setCurrentStep(prev => prev - 1);
-        setAnimationClass('animate-slide-in');
+        setAnimationClass('animate-question-slide-in');
       }, 300);
     }
   };
@@ -483,12 +483,13 @@ export default function QuizForm({
                 value={field.value}
                 className="space-y-2"
               >
-                {question.options!.map(option => {
+                {question.options!.map((option, index) => {
                   const OptionIconComponent = getIconComponent(option.icon);
                   return (
                   <div
                     key={option.value}
-                    className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80"
+                    className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80 animate-staggered-fade-in-up"
+                    style={{ animationFillMode: 'backwards', animationDelay: `${150 + index * 100}ms` }}
                   >
                     {OptionIconComponent && <OptionIconComponent className="h-5 w-5 text-muted-foreground group-has-[:checked]:text-primary" />}
                     <RadioGroupItem value={option.value} id={`${question.name}-${option.value}`} className="border-muted-foreground text-primary focus:ring-primary"/>
@@ -512,7 +513,7 @@ export default function QuizForm({
             rules={{ validate: value => (Array.isArray(value) && value.length > 0) || 'Selecione ao menos uma opção.' }}
             render={({ field }) => (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {question.options!.map(option => {
+                {question.options!.map((option, index) => {
                   const isSelected = field.value?.includes(option.value);
                   const OptionIconComponent = getIconComponent(option.icon);
                   const CheckCircleIcon = IconComponents.CheckCircle || 'span';
@@ -525,8 +526,9 @@ export default function QuizForm({
                           : [...(field.value || []), option.value];
                         handleValueChange(question.name, newValue);
                       }}
-                      className={`relative p-3 border rounded-lg cursor-pointer transition-all group hover:shadow-lg
+                      className={`relative p-3 border rounded-lg cursor-pointer transition-all group hover:shadow-lg animate-staggered-fade-in-up
                         ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10' : 'border-input hover:border-primary/50'}`}
+                        style={{ animationFillMode: 'backwards', animationDelay: `${150 + index * 100}ms` }}
                     >
                       {option.imageUrl && (
                         <div className="relative w-full h-24 mb-2 rounded-md overflow-hidden">
@@ -554,10 +556,14 @@ export default function QuizForm({
   
         {question.type === 'textFields' && question.fields && (
           <div className="space-y-4">
-            {question.fields.map(f => {
+            {question.fields.map((f, index) => {
               const FieldIconComponent = getIconComponent(f.icon);
               return (
-              <div key={f.name} className="space-y-1">
+              <div
+                key={f.name}
+                className="space-y-1 animate-staggered-fade-in-up"
+                style={{ animationFillMode: 'backwards', animationDelay: `${150 + index * 100}ms` }}
+              >
                  <Label htmlFor={f.name} className="font-medium flex items-center text-card-foreground">
                    {FieldIconComponent && <FieldIconComponent className="h-4 w-4 mr-2 text-primary" />}
                    {f.label}
@@ -658,7 +664,7 @@ export default function QuizForm({
   return (
     <FormProvider {...methods}>
       <div style={themeStyles} className={`flex flex-col items-center justify-center min-h-screen p-4 text-foreground ${isPreview ? 'h-full overflow-y-auto' : 'bg-background'}`}>
-        <Card className={`w-full max-w-xl shadow-2xl rounded-xl overflow-hidden ${animationClass} mt-8 mb-8 bg-card text-card-foreground`}>
+        <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden mt-8 mb-8 bg-card text-card-foreground">
           <CardHeader className="p-6 bg-card">
              <div className="flex items-center space-x-3">
                 <Image
@@ -682,12 +688,20 @@ export default function QuizForm({
             <QuizProgressBar currentStep={currentStep} totalSteps={activeQuestions.length} />
           )}
           <form onSubmit={handleSubmit(onSubmit)}>
-            <CardContent className="p-6 md:p-8 space-y-6 bg-card">
-              {displayMode === 'step-by-step' && currentQuestion && (
-                 <QuestionRenderer question={currentQuestion} />
-              )}
-              {displayMode === 'single-page' && activeQuestions.map((q) => (
-                <QuestionRenderer key={q.id} question={q} />
+            <CardContent className="p-6 md:p-8 space-y-6 bg-card relative min-h-[300px] overflow-hidden">
+              <div key={currentStep} className={`w-full ${animationClass}`}>
+                {displayMode === 'step-by-step' && currentQuestion && (
+                  <QuestionRenderer question={currentQuestion} />
+                )}
+              </div>
+              {displayMode === 'single-page' && activeQuestions.map((q, index) => (
+                 <div
+                    key={q.id}
+                    className="animate-staggered-fade-in-up"
+                    style={{ animationFillMode: 'backwards', animationDelay: `${index * 200}ms` }}
+                  >
+                    <QuestionRenderer question={q} />
+                 </div>
               ))}
             </CardContent>
             
@@ -698,9 +712,11 @@ export default function QuizForm({
                       {IconComponents.ChevronLeft && <IconComponents.ChevronLeft className="mr-2 h-5 w-5" />} Voltar
                   </Button>
                   <Button
+                      key={`next-btn-${currentStep === activeQuestions.length - 1}`}
                       type="button"
                       onClick={handleNext}
-                      className="px-6 py-3 text-base"
+                      className={`px-6 py-3 text-base ${currentStep === activeQuestions.length - 1 ? 'animate-staggered-fade-in-up' : ''}`}
+                      style={{ animationDelay: '300ms' }}
                       disabled={submissionStatus === 'pending'}
                   >
                       {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
