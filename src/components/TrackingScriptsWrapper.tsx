@@ -4,57 +4,45 @@
 import { useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
-import { getActivePixelIds } from '@/lib/fpixel'; // trackFbPageView não é mais chamada daqui diretamente para FB.
-import { trackGaPageView, trackGaEvent } from '@/lib/gtag'; // trackGaEvent não é usada aqui diretamente.
+import { trackGaPageView, trackGaEvent } from '@/lib/gtag'; 
 
 interface TrackingScriptsWrapperProps {
-  facebookPixelId?: string;
-  facebookPixelIdSecondary?: string;
+  finalFacebookPixelIds: string[];
   googleAnalyticsId?: string;
 }
 
 const PLACEHOLDER_GA_ID = "YOUR_GA_ID";
 
 export default function TrackingScriptsWrapper({
-  facebookPixelId,
-  facebookPixelIdSecondary,
+  finalFacebookPixelIds,
   googleAnalyticsId,
 }: TrackingScriptsWrapperProps) {
   const pathname = usePathname();
-  const isQuizPage = !pathname.startsWith('/config');
 
-  const activeFbPixelIds = useMemo(
-    () => getActivePixelIds(facebookPixelId, facebookPixelIdSecondary),
-    [facebookPixelId, facebookPixelIdSecondary]
-  );
-  
-  const isAnyFbPixelConfigured = activeFbPixelIds.length > 0;
+  const isAnyFbPixelConfigured = finalFacebookPixelIds.length > 0;
   const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== PLACEHOLDER_GA_ID;
 
   // Effect for handling SPA navigations after initial load
   useEffect(() => {
-    if (!isQuizPage) return;
-
+    // This effect is more relevant if the wrapper lives in a layout that persists across navigations.
+    // If it's rendered per-page, the initial script execution handles the first PageView.
+    // However, keeping it handles potential complex SPA routing where the component might not re-mount.
+    
     // Subsequent PageViews for Facebook
     if (isAnyFbPixelConfigured && typeof window.fbq === 'function') {
-      window.fbq('track', 'PageView'); // Global PageView for all initialized FB pixels on SPA navigation
+      window.fbq('track', 'PageView');
     }
 
     // Subsequent PageViews for Google Analytics
     if (isGaConfigured && typeof window.gtag === 'function' && googleAnalyticsId) {
       trackGaPageView(new URL(pathname, window.location.origin), googleAnalyticsId);
     }
-  }, [pathname, isQuizPage, isAnyFbPixelConfigured, isGaConfigured, googleAnalyticsId]);
-
-
-  if (!isQuizPage) {
-    return null; 
-  }
+  }, [pathname, isAnyFbPixelConfigured, isGaConfigured, googleAnalyticsId]);
 
   // Construct FB Pixel initialization script
   let fbPixelBaseCode = "";
   if (isAnyFbPixelConfigured) {
-    const initCalls = activeFbPixelIds.map(id => `fbq('init', '${id}');`).join('\n      ');
+    const initCalls = finalFacebookPixelIds.map(id => `fbq('init', '${id}');`).join('\n      ');
     fbPixelBaseCode = `
       !function(f,b,e,v,n,t,s)
       {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -77,10 +65,10 @@ export default function TrackingScriptsWrapper({
           <Script
             strategy="afterInteractive"
             src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId.trim()}`}
-            id="gtag-js-loader" // Changed ID to be more specific
+            id="gtag-js-loader"
           />
           <Script
-            id="gtag-init-config" // Changed ID
+            id="gtag-init-config"
             strategy="afterInteractive"
             dangerouslySetInnerHTML={{
               __html: `
@@ -99,7 +87,7 @@ export default function TrackingScriptsWrapper({
       {/* Facebook Pixel Base Code, Initialization & Initial PageView */}
       {isAnyFbPixelConfigured && fbPixelBaseCode && (
         <Script 
-          id="fb-pixel-base-code" // Changed ID
+          id="fb-pixel-base-code"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: fbPixelBaseCode }}
         />
@@ -107,4 +95,3 @@ export default function TrackingScriptsWrapper({
     </>
   );
 }
-    

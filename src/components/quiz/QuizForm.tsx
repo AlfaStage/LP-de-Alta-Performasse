@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getSuccessIcon } from '@/config/quizConfig';
 import QuizProgressBar from './QuizProgressBar';
-import { getActivePixelIds, trackFbCustomEvent, trackFbEvent } from '@/lib/fpixel';
+import { trackFbCustomEvent, trackFbEvent } from '@/lib/fpixel';
 import { trackGaEvent } from '@/lib/gtag';
 import { logQuizAbandonment as serverLogQuizAbandonment, submitQuizData as serverSubmitQuizData } from '@/app/actions';
 import { recordQuizStartedAction, recordQuestionAnswerAction, recordFirstQuestionAnsweredAction } from '@/app/config/dashboard/quiz/actions';
@@ -32,8 +32,7 @@ interface QuizFormProps {
   quizTitle?: string;
   quizDescription?: string;
   logoUrl: string;
-  facebookPixelId?: string;
-  facebookPixelIdSecondary?: string;
+  finalFacebookPixelIds: string[];
   googleAnalyticsId?: string;
   clientAbandonmentWebhookUrl?: string;
   footerCopyrightText?: string;
@@ -82,8 +81,7 @@ export default function QuizForm({
   quizTitle = "Quiz",
   quizDescription = DEFAULT_GENERIC_QUIZ_DESCRIPTION,
   logoUrl,
-  facebookPixelId,
-  facebookPixelIdSecondary,
+  finalFacebookPixelIds,
   googleAnalyticsId,
   clientAbandonmentWebhookUrl,
   footerCopyrightText = `© ${new Date().getFullYear()} Seu Projeto. Todos os direitos reservados.`,
@@ -124,10 +122,6 @@ export default function QuizForm({
 
   const currentQuestion = activeQuestions[currentStep];
 
-  const configuredFbPixelIds = useMemo(
-    () => getActivePixelIds(facebookPixelId, facebookPixelIdSecondary),
-    [facebookPixelId, facebookPixelIdSecondary]
-  );
   const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== "YOUR_GA_ID";
 
   useEffect(() => {
@@ -158,8 +152,8 @@ export default function QuizForm({
     
     recordQuizStartedAction(quizSlug).catch(err => console.error("Failed to record quiz started:", err));
 
-    if (configuredFbPixelIds.length > 0) {
-      trackFbCustomEvent('QuizStart', { quiz_slug: quizSlug, quiz_title: quizTitle }, configuredFbPixelIds);
+    if (finalFacebookPixelIds.length > 0) {
+      trackFbCustomEvent('QuizStart', { quiz_slug: quizSlug, quiz_title: quizTitle }, finalFacebookPixelIds);
     }
     if(isGaConfigured && googleAnalyticsId) {
         trackGaEvent({ action: 'quiz_start', category: 'Quiz', label: `${quizSlug}_Start`, quiz_title: quizTitle }, googleAnalyticsId);
@@ -298,8 +292,8 @@ export default function QuizForm({
             step_number: currentStep + 1,
         };
 
-        if (configuredFbPixelIds.length > 0) {
-          trackFbCustomEvent('QuestionAnswered', eventDataFb, configuredFbPixelIds);
+        if (finalFacebookPixelIds.length > 0) {
+          trackFbCustomEvent('QuestionAnswered', eventDataFb, finalFacebookPixelIds);
         }
         if(isGaConfigured && googleAnalyticsId){
           trackGaEvent(eventDataGa, googleAnalyticsId);
@@ -410,9 +404,9 @@ export default function QuizForm({
             };
 
 
-            if (configuredFbPixelIds.length > 0) {
-                trackFbCustomEvent('QuizComplete', quizCompleteDataFb, configuredFbPixelIds);
-                trackFbEvent('Lead', leadDataFb, configuredFbPixelIds); 
+            if (finalFacebookPixelIds.length > 0) {
+                trackFbCustomEvent('QuizComplete', quizCompleteDataFb, finalFacebookPixelIds);
+                trackFbEvent('Lead', leadDataFb, finalFacebookPixelIds); 
             }
             if(isGaConfigured && googleAnalyticsId){
                 trackGaEvent(quizCompleteDataGa, googleAnalyticsId);

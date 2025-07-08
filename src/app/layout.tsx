@@ -3,7 +3,6 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { hexToHslString } from '@/lib/whitelabel';
-import TrackingScriptsWrapper from '@/components/TrackingScriptsWrapper'; 
 import { ClientOnlyToaster } from '@/components/ClientOnlyToaster';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -106,11 +105,6 @@ export default async function RootLayout({
       <body className="font-body antialiased">
         {children}
         <ClientOnlyToaster />
-        <TrackingScriptsWrapper
-          facebookPixelId={whitelabelConfig.facebookPixelId}
-          facebookPixelIdSecondary={whitelabelConfig.facebookPixelIdSecondary}
-          googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
-        />
       </body>
     </html>
   );

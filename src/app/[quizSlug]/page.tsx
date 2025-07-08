@@ -9,6 +9,7 @@ import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig'; 
+import TrackingScriptsWrapper from '@/components/TrackingScriptsWrapper';
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   loading: () => <QuizFormLoading />,
@@ -41,6 +42,7 @@ async function getQuizConfigFromFile(slug: string): Promise<QuizConfig | null> {
     quizData.useCustomTheme = quizData.useCustomTheme ?? false;
     quizData.customTheme = quizData.customTheme || {};
     quizData.displayMode = quizData.displayMode || 'step-by-step';
+    quizData.pixelSettings = quizData.pixelSettings || {};
     
     return quizData;
   } catch (error: any) {
@@ -94,30 +96,56 @@ export default async function QuizPage({ params }: QuizPageProps) {
     return renderQuizUnavailable(`Este quiz está temporariamente indisponível.`);
   }
 
+  // --- Pixel Logic ---
+  const finalPixelIds: string[] = [];
+  if (quizConfigFromFile.pixelSettings) {
+    const { ignoreGlobalPrimaryPixel, ignoreGlobalSecondaryPixel, quizSpecificPixelId } = quizConfigFromFile.pixelSettings;
+    
+    if (!ignoreGlobalPrimaryPixel && whitelabelConfig.facebookPixelId) {
+      finalPixelIds.push(whitelabelConfig.facebookPixelId);
+    }
+    if (!ignoreGlobalSecondaryPixel && whitelabelConfig.facebookPixelIdSecondary) {
+      finalPixelIds.push(whitelabelConfig.facebookPixelIdSecondary);
+    }
+    if (quizSpecificPixelId) {
+      finalPixelIds.push(quizSpecificPixelId);
+    }
+  } else { // Fallback for quizzes created before this feature
+    if (whitelabelConfig.facebookPixelId) finalPixelIds.push(whitelabelConfig.facebookPixelId);
+    if (whitelabelConfig.facebookPixelIdSecondary) finalPixelIds.push(whitelabelConfig.facebookPixelIdSecondary);
+  }
+  const uniquePixelIds = [...new Set(finalPixelIds.filter(id => id && id.trim() !== ''))];
+  // --- End Pixel Logic ---
+
   const logoUrlToUse = whitelabelConfig.logoUrl || "https://placehold.co/150x50.png?text=Sua+Logo";
   const clientAbandonmentWebhook = ENV_CLIENT_SIDE_ABANDONMENT_WEBHOOK_URL;
   const footerText = whitelabelConfig.footerCopyrightText || `© ${new Date().getFullYear()} ${whitelabelConfig.projectName || 'Seu Projeto'}. Todos os direitos reservados.`;
 
 
   return (
-    <main className="bg-background text-foreground">
-      <QuizForm 
-        quizQuestions={quizConfigFromFile.questions} 
-        quizSlug={quizConfigFromFile.slug} 
-        quizTitle={quizConfigFromFile.title || whitelabelConfig.projectName || "Quiz Interativo"} 
-        quizDescription={quizConfigFromFile.description}
-        logoUrl={logoUrlToUse}
-        facebookPixelId={whitelabelConfig.facebookPixelId}
-        facebookPixelIdSecondary={whitelabelConfig.facebookPixelIdSecondary}
+    <>
+      <main className="bg-background text-foreground">
+        <QuizForm 
+          quizQuestions={quizConfigFromFile.questions} 
+          quizSlug={quizConfigFromFile.slug} 
+          quizTitle={quizConfigFromFile.title || whitelabelConfig.projectName || "Quiz Interativo"} 
+          quizDescription={quizConfigFromFile.description}
+          logoUrl={logoUrlToUse}
+          finalFacebookPixelIds={uniquePixelIds}
+          googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
+          clientAbandonmentWebhookUrl={clientAbandonmentWebhook}
+          footerCopyrightText={footerText}
+          websiteUrl={whitelabelConfig.websiteUrl}
+          instagramUrl={whitelabelConfig.instagramUrl}
+          useCustomTheme={quizConfigFromFile.useCustomTheme}
+          customTheme={quizConfigFromFile.customTheme}
+          displayMode={quizConfigFromFile.displayMode}
+        />
+      </main>
+      <TrackingScriptsWrapper
+        finalFacebookPixelIds={uniquePixelIds}
         googleAnalyticsId={whitelabelConfig.googleAnalyticsId}
-        clientAbandonmentWebhookUrl={clientAbandonmentWebhook}
-        footerCopyrightText={footerText}
-        websiteUrl={whitelabelConfig.websiteUrl}
-        instagramUrl={whitelabelConfig.instagramUrl}
-        useCustomTheme={quizConfigFromFile.useCustomTheme}
-        customTheme={quizConfigFromFile.customTheme}
-        displayMode={quizConfigFromFile.displayMode}
       />
-    </main>
+    </>
   );
 }

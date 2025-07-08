@@ -52,6 +52,11 @@ export interface QuizConfig {
     quizBackgroundColorHex?: string;
   };
   displayMode?: 'step-by-step' | 'single-page';
+  pixelSettings?: {
+    ignoreGlobalPrimaryPixel?: boolean;
+    ignoreGlobalSecondaryPixel?: boolean;
+    quizSpecificPixelId?: string;
+  };
 }
 
 export interface WhitelabelConfig {
@@ -80,7 +85,7 @@ export interface WhitelabelConfig {
 }
 
 // Statistics types
-export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'description' | 'dashboardName' | 'customTheme' | 'useCustomTheme'> {
+export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'description' | 'dashboardName' | 'customTheme' | 'useCustomTheme' | 'pixelSettings'> {
   title: string;
   slug: string;
   description?: string;
@@ -92,11 +97,22 @@ export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'descriptio
   firstAnswerCount?: number;
 }
 
+export interface ChartDataPoint {
+  date: string; // "dd/MM"
+  Iniciados: number;
+  Finalizados: number;
+}
+
 export interface OverallQuizStats {
   totalStarted: number;
   totalCompleted: number;
   totalFirstAnswers?: number;
-  mostEngagingQuiz?: QuizListItem & { conversionRate?: number };
+  totalQuizzes: number;
+  overallConversionRate: number;
+  mostEngagingQuiz?: QuizListItem & { conversionRate: number };
+  mostAbandonedQuiz?: QuizListItem & { abandonmentCount: number, abandonmentRate: number };
+  performanceOverTime: ChartDataPoint[];
+  topPerformingQuizzes: (QuizListItem & { conversionRate: number })[];
 }
 
 export interface QuizAnalyticsData extends QuizListItem {
@@ -146,4 +162,9 @@ export interface QuizEditData {
     quizBackgroundColorHex?: string;
   };
   displayMode?: 'step-by-step' | 'single-page';
+  pixelSettings?: {
+    ignoreGlobalPrimaryPixel?: boolean;
+    ignoreGlobalSecondaryPixel?: boolean;
+    quizSpecificPixelId?: string;
+  };
 }

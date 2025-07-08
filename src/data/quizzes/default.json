@@ -88,5 +88,10 @@
   "isActive": true,
   "useCustomTheme": false,
   "customTheme": {},
-  "displayMode": "single-page"
+  "displayMode": "single-page",
+  "pixelSettings": {
+    "ignoreGlobalPrimaryPixel": false,
+    "ignoreGlobalSecondaryPixel": false,
+    "quizSpecificPixelId": ""
+  }
 }
