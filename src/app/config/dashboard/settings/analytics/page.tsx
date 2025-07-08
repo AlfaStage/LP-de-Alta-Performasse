@@ -196,7 +196,7 @@ export default function AnalyticsSettingsPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" disabled={isSaving || isFetching || !isDirty} className="text-base py-3">
+            <Button type="submit" size="lg" disabled={isSaving || isFetching || !isDirty}>
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Salvando...

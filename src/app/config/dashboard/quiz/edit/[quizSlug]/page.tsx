@@ -501,7 +501,7 @@ export default function EditQuizPage() {
                               </AccordionItem>
                               ))}
                           </Accordion>
-                          <Button type="button" onClick={addQuestion} variant="outline" size="lg" className="w-full mt-6 shadow-sm"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Nova Pergunta</Button>
+                          <Button type="button" onClick={addQuestion} variant="outline" className="w-full mt-6 shadow-sm"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Nova Pergunta</Button>
                         </TabsContent>
 
                         <TabsContent value="json" className="pt-4">

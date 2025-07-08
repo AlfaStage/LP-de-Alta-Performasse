@@ -277,12 +277,13 @@ export default function DashboardPage() {
           </Select>
           <Button 
             variant="outline" 
-            size="lg" 
+            size="icon"
             onClick={fetchData} 
             disabled={isFetchingData}
-            className="whitespace-nowrap"
+            title="Recarregar dados"
           >
-            {isFetchingData ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCcw className="h-5 w-5" />}
+            {isFetchingData ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+            <span className="sr-only">Recarregar</span>
           </Button>
           <Link href="/config/dashboard/quiz/create">
             <Button size="lg" className="flex items-center gap-2 shadow-sm whitespace-nowrap">

@@ -1,1 +1,38 @@
-{}
+{
+  "q1_generic_experience": {
+    "id": "q1_generic_experience",
+    "type": "radio",
+    "answers": [
+      {
+        "date": "2025-07-08T13:57:39.192Z",
+        "value": "no"
+      },
+      {
+        "date": "2025-07-08T13:57:43.960Z",
+        "value": "no"
+      },
+      {
+        "date": "2025-07-08T13:59:50.739Z",
+        "value": "no"
+      }
+    ]
+  },
+  "q2_generic_interest": {
+    "id": "q2_generic_interest",
+    "type": "checkbox",
+    "answers": [
+      {
+        "date": "2025-07-08T13:57:46.804Z",
+        "value": [
+          "topic_b"
+        ]
+      },
+      {
+        "date": "2025-07-08T13:59:52.429Z",
+        "value": [
+          "topic_b"
+        ]
+      }
+    ]
+  }
+}

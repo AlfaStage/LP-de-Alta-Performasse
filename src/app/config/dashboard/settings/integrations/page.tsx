@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -168,7 +169,7 @@ export default function IntegrationsSettingsPage() {
           </Card>
 
           <CardFooter className="px-0">
-              <Button type="submit" disabled={isLoading || isFetching || !isDirty} className="text-base py-3">
+              <Button type="submit" size="lg" disabled={isLoading || isFetching || !isDirty}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
