@@ -6,6 +6,9 @@ import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnal
 import { revalidatePath } from 'next/cache';
 import { isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
+import { generateQuizFromTopic } from '@/ai/flows/quizGeneratorFlow';
+import type { QuizGenerationInput } from '@/ai/flows/quizGeneratorFlow';
+
 
 const quizzesDirectory = path.join(process.cwd(), 'src', 'data', 'quizzes');
 const analyticsDirectory = path.join(process.cwd(), 'src', 'data', 'analytics');
@@ -657,5 +660,44 @@ export async function resetSingleQuizAnalyticsAction(quizSlug: string): Promise<
     console.error(`Error resetting statistics for quiz "${quizSlug}":`, error);
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return { success: false, message: `Falha ao resetar estatísticas do quiz: ${errorMessage}` };
+  }
+}
+
+export async function generateAndCreateQuizAction(topic: string): Promise<{ success: boolean; message?: string; slug?: string }> {
+  try {
+    const input: QuizGenerationInput = { topic };
+    const { quizJson } = await generateQuizFromTopic(input);
+
+    if (!quizJson) {
+      return { success: false, message: 'A IA não conseguiu gerar um quiz para este tópico. Tente novamente.' };
+    }
+    
+    // The AI might sometimes wrap the JSON in ```json ... ```, so we need to clean it.
+    const cleanedJson = quizJson.replace(/^```json\n/, '').replace(/\n```$/, '');
+
+    const quizData: QuizConfig = JSON.parse(cleanedJson);
+
+    // Validate that the AI-generated data has the essentials
+    if (!quizData.title || !quizData.slug || !Array.isArray(quizData.questions)) {
+       return { success: false, message: 'O JSON gerado pela IA é inválido ou está incompleto.' };
+    }
+
+    // Now, create the quiz using the existing action
+    return await createQuizAction({
+      title: quizData.title,
+      slug: quizData.slug,
+      description: quizData.description,
+      dashboardName: quizData.dashboardName || quizData.title,
+      questions: quizData.questions,
+      displayMode: quizData.displayMode || 'step-by-step',
+    });
+
+  } catch (error) {
+    console.error("Error in generateAndCreateQuizAction:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao processar a geração do quiz.";
+    if (error instanceof SyntaxError) {
+        return { success: false, message: 'Erro: A IA retornou um JSON mal formatado. Por favor, tente gerar novamente.' };
+    }
+    return { success: false, message: `Falha na geração do quiz por IA: ${errorMessage}` };
   }
 }
