@@ -339,8 +339,8 @@ export default function CreateQuizPage() {
                     {error && (<Alert variant="destructive" className="w-full"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erro na Geração</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>)}
                 </CardContent>
                 <CardFooter>
-                     <Button type="submit" className="text-base py-3 px-6 shadow-md" disabled={isGenerating}>
-                        {isGenerating ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Gerando Quiz...</>) : (<><BrainCircuit className="mr-2 h-5 w-5" />Gerar Quiz com IA</>)}
+                     <Button type="submit" size="lg" className="shadow-md" disabled={isGenerating}>
+                        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Gerando Quiz...</>) : (<><BrainCircuit className="mr-2 h-4 w-4" />Gerar Quiz com IA</>)}
                     </Button>
                 </CardFooter>
             </form>
@@ -409,9 +409,6 @@ export default function CreateQuizPage() {
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
                                       {/* Coluna de Edição */}
                                       <div className="space-y-4">
-                                         <div className="flex justify-end">
-                                              <Button variant="ghost" size="icon" onClick={() => removeQuestion(qIndex)} className="text-destructive hover:text-destructive/80"><Trash2 className="h-5 w-5" /><span className="sr-only">Remover Pergunta</span></Button>
-                                          </div>
                                           <Card>
                                             <CardContent className="p-4 space-y-4">
                                               <div className="space-y-2"><Label htmlFor={`q-${qIndex}-text`}>Texto da Pergunta</Label><Textarea id={`q-${qIndex}-text`} placeholder="Qual o seu tipo de pele?" value={q.text} onChange={(e) => updateQuestion(qIndex, 'text', e.target.value)} /></div>
@@ -467,6 +464,9 @@ export default function CreateQuizPage() {
                                               </CardContent>
                                           </Card>
                                           )}
+                                          <div className="flex justify-end pt-2">
+                                              <Button variant="ghost" size="sm" onClick={() => removeQuestion(qIndex)} className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Remover Pergunta</Button>
+                                          </div>
                                       </div>
                                       {/* Coluna de Preview */}
                                       <div className="lg:sticky lg:top-4">
@@ -482,7 +482,7 @@ export default function CreateQuizPage() {
                               </AccordionItem>
                               ))}
                           </Accordion>
-                          <Button type="button" onClick={addQuestion} variant="outline" className="w-full mt-6 py-3 text-base shadow-sm"><PlusCircle className="mr-2 h-5 w-5" /> Adicionar Nova Pergunta</Button>
+                          <Button type="button" onClick={addQuestion} variant="outline" size="lg" className="w-full mt-6 shadow-sm"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Nova Pergunta</Button>
                       </TabsContent>
                       <TabsContent value="json" className="pt-4">
                           <Textarea
@@ -507,8 +507,8 @@ export default function CreateQuizPage() {
                   <CardFooter className="flex flex-col items-start gap-4 p-6">
                       {error && (<Alert variant="destructive" className="w-full"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erro</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>)}
                       {success && (<Alert variant="default" className="w-full bg-green-50 border-green-300 text-green-700 dark:bg-green-900/30 dark:border-green-700 dark:text-green-400"><Save className="h-4 w-4 text-green-600 dark:text-green-400" /><AlertTitle>Sucesso!</AlertTitle><AlertDescription>{success}</AlertDescription></Alert>)}
-                      <Button type="submit" className="text-base py-3 px-6 shadow-md" disabled={isLoadingManual}>
-                      {isLoadingManual ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />Salvando...</>) : (<><Save className="mr-2 h-5 w-5" />Criar Quiz</>)}
+                      <Button type="submit" size="lg" className="shadow-md" disabled={isLoadingManual}>
+                      {isLoadingManual ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>) : (<><Save className="mr-2 h-4 w-4" />Criar Quiz</>)}
                       </Button>
                   </CardFooter>
               </Card>
