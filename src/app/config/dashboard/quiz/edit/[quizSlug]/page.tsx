@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, File, BookOpen } from 'lucide-react';
 import { getQuizForEdit, updateQuizAction, type QuizEditData, getQuizAnalyticsBySlug } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData } from '@/types/quiz';
 import Link from 'next/link';
@@ -22,7 +22,7 @@ import type { WhitelabelConfig } from '@/types/quiz';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
@@ -31,21 +31,6 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
 });
 
 const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas para nos ajudar a entender suas preferências.";
-
-const exampleQuestion: QuizQuestion = {
-  id: "q_example_edit",
-  name: "exampleQuestionEdit",
-  icon: "HelpCircle",
-  text: "Esta é uma pergunta de exemplo para edição?",
-  explanation: "Explicação adicional para a pergunta de exemplo editada.",
-  type: "radio",
-  options: [
-    { value: "yes_edit", label: "Sim (editado)", icon: "ThumbsUp", explanation:"Explicação para sim." },
-    { value: "no_edit", label: "Não (editado)", icon: "ThumbsDown", explanation:"Explicação para não." }
-  ]
-};
-const exampleQuizJson = JSON.stringify([exampleQuestion], null, 2);
-
 
 export default function EditQuizPage() {
   const router = useRouter();
@@ -62,6 +47,7 @@ export default function EditQuizPage() {
   const [isActive, setIsActive] = useState(true);
   const [useCustomTheme, setUseCustomTheme] = useState(false);
   const [customTheme, setCustomTheme] = useState<QuizEditData['customTheme']>({});
+  const [displayMode, setDisplayMode] = useState<'step-by-step' | 'single-page'>('step-by-step');
 
   const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive'); 
   const [originalQuizData, setOriginalQuizData] = useState<QuizEditData | null>(null);
@@ -121,6 +107,7 @@ export default function EditQuizPage() {
         setIsActive(data.isActive ?? true);
         setUseCustomTheme(data.useCustomTheme ?? false);
         setCustomTheme(data.customTheme || {});
+        setDisplayMode(data.displayMode || 'step-by-step');
         try {
             const parsedForInteractive = JSON.parse(data.questionsJson);
             if (Array.isArray(parsedForInteractive)) {
@@ -348,7 +335,8 @@ export default function EditQuizPage() {
         questions: parsedQuestions,
         isActive: isActive,
         useCustomTheme: useCustomTheme,
-        customTheme: customTheme
+        customTheme: customTheme,
+        displayMode: displayMode,
       });
       if (result.success) {
         setSuccess(`Quiz "${title}" atualizado com sucesso!`);
@@ -577,7 +565,7 @@ export default function EditQuizPage() {
                         </TabsContent>
 
                         <TabsContent value="json" className="pt-4">
-                            <Textarea
+                             <Textarea
                                 id="questionsJson"
                                 value={questionsJson}
                                 onChange={(e) => setQuestionsJson(e.target.value)}
@@ -586,19 +574,11 @@ export default function EditQuizPage() {
                                 required
                                 className="font-mono text-xs bg-muted/20"
                             />
-                            <Alert variant="default" className="mt-4">
-                                <Info className="h-4 w-4" />
-                                <AlertTitle>Estrutura JSON para Perguntas</AlertTitle>
-                                <AlertDescription>
-                                <p className="mb-2">Edite o array de objetos das perguntas. Nomes de ícones devem ser de `lucide-react`.</p>
-                                <details>
-                                    <summary className="cursor-pointer text-primary hover:underline">Ver exemplo JSON</summary>
-                                    <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-x-auto">
-                                    {exampleQuizJson}
-                                    </pre>
-                                </details>
-                                </AlertDescription>
-                            </Alert>
+                            <Button asChild variant="outline" className="mt-4">
+                               <Link href="/config/dashboard/documentation/quiz-json" target="_blank">
+                                   <BookOpen className="mr-2 h-4 w-4" /> Abrir Guia de Criação JSON
+                               </Link>
+                            </Button>
                         </TabsContent>
                     </Tabs>
                 </CardContent>
@@ -644,6 +624,27 @@ export default function EditQuizPage() {
                           </Label>
                           <Switch id="isActive-switch" checked={isActive} onCheckedChange={setIsActive} aria-label="Ativar ou desativar quiz" />
                       </div>
+
+                       <div className="space-y-3 p-4 border rounded-lg">
+                         <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
+                            <LayoutDashboard className="h-5 w-5 text-primary" />
+                            Formato do Quiz
+                         </Label>
+                          <RadioGroup
+                            value={displayMode}
+                            onValueChange={(value) => setDisplayMode(value as 'step-by-step' | 'single-page')}
+                            className="flex gap-4 pt-2"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="step-by-step" id="mode-step" />
+                              <Label htmlFor="mode-step" className="font-normal flex items-center gap-1.5"><ListChecks className="h-4 w-4" /> Passo a Passo</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="single-page" id="mode-single" />
+                              <Label htmlFor="mode-single" className="font-normal flex items-center gap-1.5"><File className="h-4 w-4" /> Página Única</Label>
+                            </div>
+                          </RadioGroup>
+                       </div>
 
                        <div className="space-y-4 rounded-lg border p-4">
                           <div className="flex items-center justify-between space-x-2">
@@ -745,6 +746,7 @@ export default function EditQuizPage() {
                 isPreview={true}
                 useCustomTheme={useCustomTheme}
                 customTheme={customTheme}
+                displayMode={displayMode}
               />
             ) : <div className="p-4 text-center text-muted-foreground">Não foi possível carregar a pré-visualização do quiz.</div>}
           </div>

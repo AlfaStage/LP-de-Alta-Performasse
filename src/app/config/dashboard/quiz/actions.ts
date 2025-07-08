@@ -205,12 +205,13 @@ interface CreateQuizPayload {
   slug: string;
   description?: string;
   dashboardName?: string;
-  questions: QuizQuestion[]; 
+  questions: QuizQuestion[];
+  displayMode?: 'step-by-step' | 'single-page';
 }
 
 export async function createQuizAction(payload: CreateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, description, dashboardName, questions } = payload;
+  const { title, slug, description, dashboardName, questions, displayMode } = payload;
 
   if (!title || !slug ) { 
     return { success: false, message: "Título e slug são obrigatórios." };
@@ -245,6 +246,7 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
     isActive: true,
     useCustomTheme: false,
     customTheme: {},
+    displayMode: displayMode || 'step-by-step',
   };
 
   try {
@@ -277,6 +279,7 @@ export interface QuizEditData {
     buttonPrimaryBgColorHex?: string;
     quizBackgroundColorHex?: string;
   };
+  displayMode?: 'step-by-step' | 'single-page';
 }
 
 export async function getQuizForEdit(slug: string): Promise<QuizEditData | null> {
@@ -295,6 +298,7 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
       isActive: quizData.isActive ?? true,
       useCustomTheme: quizData.useCustomTheme ?? false,
       customTheme: quizData.customTheme || {},
+      displayMode: quizData.displayMode || 'step-by-step',
     };
   } catch (error) {
     console.error(`Failed to read quiz config for editing (slug ${slug}):`, error);
@@ -316,6 +320,7 @@ export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig 
     quizData.isActive = quizData.isActive ?? true;
     quizData.useCustomTheme = quizData.useCustomTheme ?? false;
     quizData.customTheme = quizData.customTheme || {};
+    quizData.displayMode = quizData.displayMode || 'step-by-step';
 
     return quizData;
   } catch (error) {
@@ -339,11 +344,12 @@ interface UpdateQuizPayload {
     buttonPrimaryBgColorHex?: string;
     quizBackgroundColorHex?: string;
   };
+  displayMode?: 'step-by-step' | 'single-page';
 }
 
 export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, description, dashboardName, questions, isActive, useCustomTheme, customTheme } = payload;
+  const { title, slug, description, dashboardName, questions, isActive, useCustomTheme, customTheme, displayMode } = payload;
 
   if (!title || !slug) {
     return { success: false, message: "Título e slug são obrigatórios." };
@@ -370,6 +376,7 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
     isActive: isActive ?? true,
     useCustomTheme: useCustomTheme ?? false,
     customTheme: customTheme || {},
+    displayMode: displayMode || 'step-by-step',
   };
 
   try {
@@ -465,6 +472,7 @@ export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListIte
           dashboardName: quizData.dashboardName || quizData.title,
           successIcon: quizData.successIcon,
           isActive: quizData.isActive ?? true,
+          displayMode: quizData.displayMode || 'step-by-step',
           startedCount: startedCount,
           completedCount: completedCount,
           firstAnswerCount: firstAnswerCount,
@@ -478,6 +486,7 @@ export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListIte
           dashboardName: `Erro: ${filename}`,
           successIcon: undefined, 
           isActive: false,
+          displayMode: 'step-by-step',
           startedCount: filterEventsByDate(analytics.started, dateRange).length,
           completedCount: filterEventsByDate(analytics.completed, dateRange).length,
           firstAnswerCount: filterEventsByDate(analytics.firstAnswer || [], dateRange).length,
@@ -560,6 +569,7 @@ export async function getQuizAnalyticsBySlug(slug: string, dateRange?: DateRange
       dashboardName: quizData.dashboardName || quizData.title,
       successIcon: quizData.successIcon,
       isActive: quizData.isActive ?? true,
+      displayMode: quizData.displayMode || 'step-by-step',
       startedCount: startedCount,
       completedCount: completedCount,
       firstAnswerCount: firstAnswerCount,
@@ -573,6 +583,7 @@ export async function getQuizAnalyticsBySlug(slug: string, dateRange?: DateRange
             dashboardName: `Quiz ${slug} (Arquivo não encontrado)`,
             successIcon: undefined,
             isActive: false,
+            displayMode: 'step-by-step',
             startedCount: filterEventsByDate(quizAggStats.started, dateRange).length,
             completedCount: filterEventsByDate(quizAggStats.completed, dateRange).length,
             firstAnswerCount: filterEventsByDate(quizAggStats.firstAnswer || [], dateRange).length,
@@ -639,7 +650,7 @@ export async function resetSingleQuizAnalyticsAction(quizSlug: string): Promise<
     revalidatePath('/config/dashboard', 'layout');
     revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`, 'page');
     revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`, 'page');
-    revalidatePath(`/${quizSlug}`);
+    revalidatePath(`/${slug}`);
 
     return { success: true, message: `Estatísticas do quiz "${quizSlug}" foram resetadas com sucesso.` };
   } catch (error) {

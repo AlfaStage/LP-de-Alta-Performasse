@@ -49,6 +49,7 @@ export interface QuizConfig {
     buttonPrimaryBgColorHex?: string;
     quizBackgroundColorHex?: string;
   };
+  displayMode?: 'step-by-step' | 'single-page';
 }
 
 export interface WhitelabelConfig {
@@ -141,4 +142,5 @@ export interface QuizEditData {
     buttonPrimaryBgColorHex?: string;
     quizBackgroundColorHex?: string;
   };
+  displayMode?: 'step-by-step' | 'single-page';
 }

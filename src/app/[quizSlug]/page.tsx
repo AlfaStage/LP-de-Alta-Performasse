@@ -40,6 +40,7 @@ async function getQuizConfigFromFile(slug: string): Promise<QuizConfig | null> {
     quizData.isActive = quizData.isActive ?? true;
     quizData.useCustomTheme = quizData.useCustomTheme ?? false;
     quizData.customTheme = quizData.customTheme || {};
+    quizData.displayMode = quizData.displayMode || 'step-by-step';
     
     return quizData;
   } catch (error: any) {
@@ -115,6 +116,7 @@ export default async function QuizPage({ params }: QuizPageProps) {
         instagramUrl={whitelabelConfig.instagramUrl}
         useCustomTheme={quizConfigFromFile.useCustomTheme}
         customTheme={quizConfigFromFile.customTheme}
+        displayMode={quizConfigFromFile.displayMode}
       />
     </main>
   );

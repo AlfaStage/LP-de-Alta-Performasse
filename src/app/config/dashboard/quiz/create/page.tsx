@@ -11,13 +11,15 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide } from 'lucide-react'; 
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen } from 'lucide-react'; 
 import { createQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig } from '@/types/quiz';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
 import type { WhitelabelConfig } from '@/types/quiz';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { LayoutDashboard, File } from 'lucide-react';
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   ssr: false,
@@ -25,21 +27,6 @@ const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
 });
 
 const DEFAULT_QUIZ_DESCRIPTION = "Responda algumas perguntas para nos ajudar a entender suas preferências.";
-
-const exampleQuestion: QuizQuestion = {
-  id: "q_example",
-  name: "exampleQuestion",
-  icon: "HelpCircle",
-  text: "Esta é uma pergunta de exemplo?",
-  explanation: "Esta é uma explicação adicional para a pergunta de exemplo.",
-  type: "radio",
-  options: [
-    { value: "yes", label: "Sim", icon: "ThumbsUp", explanation: "Escolha sim se for verdade." },
-    { value: "no", label: "Não", icon: "ThumbsDown", explanation: "Escolha não se for falso." }
-  ]
-};
-const exampleQuizJson = JSON.stringify([exampleQuestion], null, 2);
-
 
 export default function CreateQuizPage() {
   const router = useRouter();
@@ -49,6 +36,7 @@ export default function CreateQuizPage() {
   const [dashboardName, setDashboardName] = useState('');
   const [questionsJson, setQuestionsJson] = useState('');
   const [interactiveQuestions, setInteractiveQuestions] = useState<QuizQuestion[]>([]);
+  const [displayMode, setDisplayMode] = useState<'step-by-step' | 'single-page'>('step-by-step');
   const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive');
   
   const [error, setError] = useState<string | null>(null);
@@ -253,7 +241,8 @@ export default function CreateQuizPage() {
         slug, 
         description: description || DEFAULT_QUIZ_DESCRIPTION, 
         dashboardName: dashboardName || title, 
-        questions: parsedQuestions 
+        questions: parsedQuestions,
+        displayMode: displayMode,
       });
       if (result.success && result.slug) {
         setSuccess(`Quiz "${title}" criado com sucesso! Acessível em /${result.slug}`);
@@ -322,17 +311,37 @@ export default function CreateQuizPage() {
                   </p>
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug do Quiz (para URL)</Label>
-                <Input
-                    id="slug"
-                    value={slug}
-                    onChange={handleSlugChange}
-                    placeholder="Ex: avaliacao-produto (letras minúsculas, números, hífens)"
-                    required
-                />
-                <p className="text-xs text-muted-foreground">
-                    Será acessível em: {baseUrl}/{slug || "seu-slug"}
-                </p>
+                  <Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug do Quiz (para URL)</Label>
+                  <Input
+                      id="slug"
+                      value={slug}
+                      onChange={handleSlugChange}
+                      placeholder="Ex: avaliacao-produto (letras minúsculas, números, hífens)"
+                      required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                      Será acessível em: {baseUrl}/{slug || "seu-slug"}
+                  </p>
+                </div>
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                  <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
+                    <LayoutDashboard className="h-5 w-5 text-primary" />
+                    Formato do Quiz
+                  </Label>
+                   <RadioGroup
+                      value={displayMode}
+                      onValueChange={(value) => setDisplayMode(value as 'step-by-step' | 'single-page')}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="step-by-step" id="mode-step" />
+                        <Label htmlFor="mode-step" className="font-normal flex items-center gap-1.5"><ListChecks className="h-4 w-4" /> Passo a Passo</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="single-page" id="mode-single" />
+                        <Label htmlFor="mode-single" className="font-normal flex items-center gap-1.5"><File className="h-4 w-4" /> Página Única</Label>
+                      </div>
+                    </RadioGroup>
                 </div>
             </CardContent>
         </Card>
@@ -479,19 +488,11 @@ export default function CreateQuizPage() {
                             rows={15}
                             className="font-mono text-xs bg-muted/20"
                         />
-                        <Alert variant="default" className="mt-2">
-                            <Info className="h-4 w-4" />
-                            <AlertTitle>Exemplo de Estrutura JSON para Perguntas</AlertTitle>
-                            <AlertDescription>
-                            <p className="mb-2">Cada pergunta deve ser um objeto com `id`, `name`, `text`, `type`, `icon` (opcional), `explanation` (opcional), e `options` (para radio/checkbox) ou `fields` (para textFields). Nomes de ícones devem ser de `lucide-react`.</p>
-                            <details>
-                                <summary className="cursor-pointer text-primary hover:underline">Ver exemplo JSON</summary>
-                                <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-x-auto">
-                                {exampleQuizJson}
-                                </pre>
-                            </details>
-                            </AlertDescription>
-                        </Alert>
+                        <Button asChild variant="outline" className="mt-4">
+                            <Link href="/config/dashboard/documentation/quiz-json" target="_blank">
+                                <BookOpen className="mr-2 h-4 w-4" /> Abrir Guia de Criação JSON
+                            </Link>
+                        </Button>
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -551,6 +552,7 @@ export default function CreateQuizPage() {
                 onSubmitOverride={mockSubmitOverride}
                 onAbandonmentOverride={async () => { console.log("Preview abandonment") }}
                 isPreview={true}
+                displayMode={displayMode}
               />
             ) : <div className="p-4"><QuizFormLoading /></div> }
           </div>

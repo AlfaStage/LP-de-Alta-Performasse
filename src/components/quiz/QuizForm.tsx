@@ -44,11 +44,36 @@ interface QuizFormProps {
   isPreview?: boolean;
   useCustomTheme?: boolean;
   customTheme?: QuizConfig['customTheme'];
+  displayMode?: 'step-by-step' | 'single-page';
 }
 
 const IconComponents = LucideIcons;
 
 const DEFAULT_GENERIC_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas para nos ajudar a entender suas preferências.";
+
+const generateFormSchema = (questions: QuizQuestion[]) => {
+    const schemaFields: Record<string, z.ZodTypeAny> = {};
+    questions.forEach(q => {
+        if (q.type === 'textFields' && q.fields) {
+            q.fields.forEach(field => {
+                let fieldSchema: z.ZodString = z.string().min(1, `${field.label} é obrigatório.`);
+                 if (field.type === 'email') {
+                    fieldSchema = fieldSchema.email('Formato de email inválido.');
+                } else if (field.type === 'tel') {
+                    fieldSchema = fieldSchema.min(10, "Telefone inválido. Inclua o DDD.").regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, "Formato de telefone inválido. Use (XX) XXXXX-XXXX ou apenas números.");
+                } else { // 'text'
+                    fieldSchema = fieldSchema.min(3, `${field.label} deve ter pelo menos 3 caracteres.`);
+                }
+                schemaFields[field.name] = fieldSchema;
+            });
+        } else if (q.type === 'radio') {
+            schemaFields[q.name] = z.string({ required_error: "Por favor, selecione uma opção." }).min(1, "Por favor, selecione uma opção.");
+        } else if (q.type === 'checkbox') {
+            schemaFields[q.name] = z.array(z.string()).nonempty({ message: "Selecione ao menos uma opção."});
+        }
+    });
+    return z.object(schemaFields);
+};
 
 
 export default function QuizForm({
@@ -69,6 +94,7 @@ export default function QuizForm({
   isPreview = false,
   useCustomTheme = false,
   customTheme,
+  displayMode = 'step-by-step',
 }: QuizFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
@@ -79,8 +105,11 @@ export default function QuizForm({
   const { toast } = useToast();
 
   const SuccessIcon = getSuccessIcon();
-
+  
+  const formSchema = useMemo(() => generateFormSchema(quizQuestions), [quizQuestions]);
+  
   const methods = useForm<FormData>({
+    resolver: displayMode === 'single-page' ? zodResolver(formSchema) : undefined,
     mode: 'onChange',
   });
 
@@ -88,8 +117,10 @@ export default function QuizForm({
 
   const activeQuestions = useMemo(() => {
     if (!quizQuestions) return [];
+    if (displayMode === 'single-page') return quizQuestions;
+    // Step-by-step mode might have conditional logic in the future
     return quizQuestions.filter(q => !q.condition || q.condition(formData));
-  }, [formData, quizQuestions]);
+  }, [formData, quizQuestions, displayMode]);
 
   const currentQuestion = activeQuestions[currentStep];
 
@@ -324,6 +355,15 @@ export default function QuizForm({
       submittedAt: new Date().toISOString()
     };
     
+    if (displayMode === 'single-page' && !isPreview) {
+      activeQuestions.forEach(q => {
+        const answer = finalData[q.name];
+        if (answer !== undefined) {
+           recordQuestionAnswerAction(quizSlug, q.id, q.type, answer);
+        }
+      });
+      recordFirstQuestionAnsweredAction(quizSlug);
+    }
 
     if (isPreview && onSubmitOverride) {
         await onSubmitOverride(finalData);
@@ -415,30 +455,147 @@ export default function QuizForm({
     return IconComponents[iconName];
   }, []);
 
-  const loadingJsx = (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
-      <Alert className="bg-card text-card-foreground">
-        {IconComponents.Info && <IconComponents.Info className="h-4 w-4" />}
-        <AlertTitle>Carregando Quiz...</AlertTitle>
-        <AlertDescription>
-          Por favor, aguarde enquanto preparamos as perguntas.
-        </AlertDescription>
-      </Alert>
-    </div>
-  );
-
+  const QuestionRenderer = ({ question }: { question: QuizQuestion }) => {
+    const QuestionIcon = question?.icon ? getIconComponent(question.icon) : null;
+  
+    return (
+      <div className="space-y-4 mb-8">
+        <div className="flex items-start space-x-3">
+          {QuestionIcon && React.createElement(QuestionIcon, { className: "h-8 w-8 text-primary mt-1 flex-shrink-0" })}
+          <div>
+            <Label htmlFor={question.name} className="text-xl font-semibold text-card-foreground mb-1 block font-headline">
+              {question.text}
+            </Label>
+            {question.explanation && (
+              <p className="text-sm text-muted-foreground mb-3">{question.explanation}</p>
+            )}
+          </div>
+        </div>
+  
+        {question.type === 'radio' && question.options && (
+          <Controller
+            name={question.name}
+            control={control}
+            rules={{ required: 'Por favor, selecione uma opção.' }}
+            render={({ field }) => (
+              <RadioGroup
+                onValueChange={(value) => handleValueChange(question.name, value)}
+                value={field.value}
+                className="space-y-2"
+              >
+                {question.options!.map(option => {
+                  const OptionIconComponent = getIconComponent(option.icon);
+                  return (
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80"
+                  >
+                    {OptionIconComponent && <OptionIconComponent className="h-5 w-5 text-muted-foreground group-has-[:checked]:text-primary" />}
+                    <RadioGroupItem value={option.value} id={`${question.name}-${option.value}`} className="border-muted-foreground text-primary focus:ring-primary"/>
+                    <Label htmlFor={`${question.name}-${option.value}`} className="font-normal flex-1 cursor-pointer text-card-foreground group-has-[:checked]:text-primary">
+                      {option.label}
+                      {option.explanation && <p className="text-xs text-muted-foreground mt-1 group-has-[:checked]:text-primary/80">{option.explanation}</p>}
+                    </Label>
+                  </div>
+                );
+              })}
+              </RadioGroup>
+            )}
+          />
+        )}
+  
+        {question.type === 'checkbox' && question.options && (
+          <Controller
+            name={question.name}
+            control={control}
+            defaultValue={[]}
+            rules={{ validate: value => (Array.isArray(value) && value.length > 0) || 'Selecione ao menos uma opção.' }}
+            render={({ field }) => (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {question.options!.map(option => {
+                  const isSelected = field.value?.includes(option.value);
+                  const OptionIconComponent = getIconComponent(option.icon);
+                  const CheckCircleIcon = IconComponents.CheckCircle || 'span';
+                  return (
+                    <div
+                      key={option.value}
+                      onClick={() => {
+                        const newValue = isSelected
+                          ? (field.value || []).filter((v: string) => v !== option.value)
+                          : [...(field.value || []), option.value];
+                        handleValueChange(question.name, newValue);
+                      }}
+                      className={`relative p-3 border rounded-lg cursor-pointer transition-all group hover:shadow-lg
+                        ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10' : 'border-input hover:border-primary/50'}`}
+                    >
+                      {option.imageUrl && (
+                        <div className="relative w-full h-24 mb-2 rounded-md overflow-hidden">
+                          <Image src={option.imageUrl} alt={option.label} data-ai-hint={option.dataAiHint || 'quiz option'} layout="fill" objectFit="cover" className="transition-transform group-hover:scale-105" />
+                        </div>
+                      )}
+                      <div className="text-center">
+                        <Label htmlFor={`${question.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-primary font-bold' : 'text-card-foreground'}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                          <CheckCircleIcon className="h-4 w-4" />
+                        </div>
+                      )}
+                      {OptionIconComponent && !option.imageUrl && <OptionIconComponent className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          />
+        )}
+  
+        {question.type === 'textFields' && question.fields && (
+          <div className="space-y-4">
+            {question.fields.map(f => {
+              const FieldIconComponent = getIconComponent(f.icon);
+              return (
+              <div key={f.name} className="space-y-1">
+                 <Label htmlFor={f.name} className="font-medium flex items-center text-card-foreground">
+                   {FieldIconComponent && <FieldIconComponent className="h-4 w-4 mr-2 text-primary" />}
+                   {f.label}
+                </Label>
+                <Controller
+                  name={f.name}
+                  control={control}
+                  defaultValue=""
+                  render={({ field: controllerField }) => (
+                    <Input
+                      {...controllerField}
+                      id={f.name}
+                      type={f.type}
+                      placeholder={f.placeholder}
+                      onChange={(e) => handleValueChange(f.name, e.target.value)}
+                      className="bg-muted/30 border-input focus:border-primary focus:ring-primary text-card-foreground placeholder:text-muted-foreground"
+                    />
+                  )}
+                />
+                {errors[f.name] && <p className="text-sm text-destructive">{errors[f.name]?.message as string}</p>}
+              </div>
+            );
+            })}
+          </div>
+        )}
+        {errors[question.name] && !question.fields && <p className="text-sm text-destructive mt-2">{errors[question.name]?.message as string}</p>}
+      </div>
+    );
+  };
+  
   if ((!quizQuestions || quizQuestions.length === 0) && !isQuizCompleted) {
-    return loadingJsx;
-  }
-
-  if (!currentQuestion && !isQuizCompleted && quizQuestions && quizQuestions.length > 0) {
-      return (
+    return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
-          <Alert variant="destructive" className="bg-card text-card-foreground">
-            {IconComponents.AlertTriangle && <IconComponents.AlertTriangle className="h-4 w-4" />}
-            <AlertTitle>Erro no Quiz</AlertTitle>
+          <Alert className="bg-card text-card-foreground">
+            {IconComponents.Info && <IconComponents.Info className="h-4 w-4" />}
+            <AlertTitle>Carregando Quiz...</AlertTitle>
             <AlertDescription>
-              Não foi possível carregar as perguntas do quiz. Tente recarregar a página.
+              Por favor, aguarde enquanto preparamos as perguntas.
             </AlertDescription>
           </Alert>
         </div>
@@ -498,8 +655,6 @@ export default function QuizForm({
     );
   }
 
-  const QuestionIcon = currentQuestion?.icon ? getIconComponent(currentQuestion.icon) : null;
-
   return (
     <FormProvider {...methods}>
       <div style={themeStyles} className={`flex flex-col items-center justify-center min-h-screen p-4 text-foreground ${isPreview ? 'h-full overflow-y-auto' : 'bg-background'}`}>
@@ -523,155 +678,49 @@ export default function QuizForm({
                 </div>
             </div>
           </CardHeader>
-          {currentQuestion && <QuizProgressBar currentStep={currentStep} totalSteps={activeQuestions.length} />}
-          <CardContent className="p-6 md:p-8 space-y-6 bg-card">
-            {currentQuestion && (
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <div className="space-y-4 mb-6">
-                  <div className="flex items-start space-x-3">
-                    {QuestionIcon && React.createElement(QuestionIcon, { className: "h-8 w-8 text-primary mt-1 flex-shrink-0" })}
-                    <div>
-                      <Label htmlFor={currentQuestion.name} className="text-xl font-semibold text-card-foreground mb-1 block font-headline">
-                        {currentQuestion.text}
-                      </Label>
-                      {currentQuestion.explanation && (
-                        <p className="text-sm text-muted-foreground mb-3">{currentQuestion.explanation}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {currentQuestion.type === 'radio' && currentQuestion.options && (
-                    <Controller
-                      name={currentQuestion.name}
-                      control={control}
-                      rules={{ required: 'Por favor, selecione uma opção.' }}
-                      render={({ field }) => (
-                        <RadioGroup
-                          onValueChange={(value) => handleValueChange(currentQuestion.name, value)}
-                          value={field.value}
-                          className="space-y-2"
-                        >
-                          {currentQuestion.options!.map(option => {
-                            const OptionIconComponent = getIconComponent(option.icon);
-                            return (
-                            <div
-                              key={option.value}
-                              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80"
-                            >
-                              {OptionIconComponent && <OptionIconComponent className="h-5 w-5 text-muted-foreground group-has-[:checked]:text-primary" />}
-                              <RadioGroupItem value={option.value} id={`${currentQuestion.name}-${option.value}`} className="border-muted-foreground text-primary focus:ring-primary"/>
-                              <Label htmlFor={`${currentQuestion.name}-${option.value}`} className="font-normal flex-1 cursor-pointer text-card-foreground group-has-[:checked]:text-primary">
-                                {option.label}
-                                {option.explanation && <p className="text-xs text-muted-foreground mt-1 group-has-[:checked]:text-primary/80">{option.explanation}</p>}
-                              </Label>
-                            </div>
-                          );
-                        })}
-                        </RadioGroup>
-                      )}
-                    />
-                  )}
-
-                 {currentQuestion.type === 'checkbox' && currentQuestion.options && (
-                     <Controller
-                        name={currentQuestion.name}
-                        control={control}
-                        defaultValue={[]}
-                        rules={{ validate: value => (Array.isArray(value) && value.length > 0) || 'Selecione ao menos uma opção.' }}
-                        render={({ field }) => (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {currentQuestion.options!.map(option => {
-                              const isSelected = field.value?.includes(option.value);
-                              const OptionIconComponent = getIconComponent(option.icon);
-                              const CheckCircleIcon = IconComponents.CheckCircle || 'span';
-                              return (
-                                <div
-                                  key={option.value}
-                                  onClick={() => {
-                                    const newValue = isSelected
-                                      ? (field.value || []).filter((v: string) => v !== option.value)
-                                      : [...(field.value || []), option.value];
-                                    handleValueChange(currentQuestion.name, newValue);
-                                  }}
-                                  className={`relative p-3 border rounded-lg cursor-pointer transition-all group hover:shadow-lg
-                                    ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10' : 'border-input hover:border-primary/50'}`}
-                                >
-                                  {option.imageUrl && (
-                                    <div className="relative w-full h-24 mb-2 rounded-md overflow-hidden">
-                                      <Image src={option.imageUrl} alt={option.label} data-ai-hint={option.dataAiHint || 'quiz option'} layout="fill" objectFit="cover" className="transition-transform group-hover:scale-105" />
-                                    </div>
-                                  )}
-                                  <div className="text-center">
-                                    <Label htmlFor={`${currentQuestion.name}-${option.value}`} className={`font-semibold text-sm ${isSelected ? 'text-primary font-bold' : 'text-card-foreground'}`}>
-                                      {option.label}
-                                    </Label>
-                                  </div>
-                                  {isSelected && (
-                                    <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                                      <CheckCircleIcon className="h-4 w-4" />
-                                    </div>
-                                  )}
-                                  {OptionIconComponent && !option.imageUrl && <OptionIconComponent className={`h-5 w-5 mx-auto mt-1 mb-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      />
-                  )}
-
-                  {currentQuestion.type === 'textFields' && currentQuestion.fields && (
-                    <div className="space-y-4">
-                      {currentQuestion.fields.map(f => {
-                        const FieldIconComponent = getIconComponent(f.icon);
-                        return (
-                        <div key={f.name} className="space-y-1">
-                           <Label htmlFor={f.name} className="font-medium flex items-center text-card-foreground">
-                             {FieldIconComponent && <FieldIconComponent className="h-4 w-4 mr-2 text-primary" />}
-                             {f.label}
-                          </Label>
-                          <Controller
-                            name={f.name}
-                            control={control}
-                            defaultValue=""
-                            render={({ field: controllerField }) => (
-                              <Input
-                                {...controllerField}
-                                id={f.name}
-                                type={f.type}
-                                placeholder={f.placeholder}
-                                onChange={(e) => handleValueChange(f.name, e.target.value)}
-                                className="bg-muted/30 border-input focus:border-primary focus:ring-primary text-card-foreground placeholder:text-muted-foreground"
-                              />
-                            )}
-                          />
-                          {errors[f.name] && <p className="text-sm text-destructive">{errors[f.name]?.message as string}</p>}
-                        </div>
-                      );
-                      })}
-                    </div>
-                  )}
-                  {errors[currentQuestion.name] && !currentQuestion.fields && <p className="text-sm text-destructive mt-2">{errors[currentQuestion.name]?.message as string}</p>}
-                </div>
-              </form>
-            )}
-          </CardContent>
-          {currentQuestion && (
-             <CardFooter className="flex justify-between p-6 bg-muted/30">
-                <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0 || submissionStatus === 'pending'} className="px-6 py-3 text-base">
-                    {IconComponents.ChevronLeft && <IconComponents.ChevronLeft className="mr-2 h-5 w-5" />} Voltar
-                </Button>
-                <Button
-                    onClick={handleNext}
-                    className="px-6 py-3 text-base"
-                    disabled={submissionStatus === 'pending'}
-                >
-                    {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                    {submissionStatus === 'pending' ? 'Enviando...' : (currentStep === activeQuestions.length - 1 ? 'Finalizar e Enviar' : 'Próximo')}
-                    {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? (IconComponents.Send && <IconComponents.Send className="ml-2 h-5 w-5" />) : (IconComponents.ChevronRight && <IconComponents.ChevronRight className="ml-2 h-5 w-5" />))}
-                </Button>
-            </CardFooter>
+          {displayMode === 'step-by-step' && (
+            <QuizProgressBar currentStep={currentStep} totalSteps={activeQuestions.length} />
           )}
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <CardContent className="p-6 md:p-8 space-y-6 bg-card">
+              {displayMode === 'step-by-step' && currentQuestion && (
+                 <QuestionRenderer question={currentQuestion} />
+              )}
+              {displayMode === 'single-page' && activeQuestions.map((q) => (
+                <QuestionRenderer key={q.id} question={q} />
+              ))}
+            </CardContent>
+            
+            <CardFooter className="flex justify-between p-6 bg-muted/30">
+              {displayMode === 'step-by-step' ? (
+                <>
+                  <Button type="button" variant="outline" onClick={handlePrev} disabled={currentStep === 0 || submissionStatus === 'pending'} className="px-6 py-3 text-base">
+                      {IconComponents.ChevronLeft && <IconComponents.ChevronLeft className="mr-2 h-5 w-5" />} Voltar
+                  </Button>
+                  <Button
+                      type="button"
+                      onClick={handleNext}
+                      className="px-6 py-3 text-base"
+                      disabled={submissionStatus === 'pending'}
+                  >
+                      {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                      {submissionStatus === 'pending' ? 'Enviando...' : (currentStep === activeQuestions.length - 1 ? 'Finalizar e Enviar' : 'Próximo')}
+                      {submissionStatus !== 'pending' && (currentStep === activeQuestions.length - 1 ? (IconComponents.Send && <IconComponents.Send className="ml-2 h-5 w-5" />) : (IconComponents.ChevronRight && <IconComponents.ChevronRight className="ml-2 h-5 w-5" />))}
+                  </Button>
+                </>
+              ) : (
+                  <Button
+                      type="submit"
+                      className="w-full px-6 py-3 text-base"
+                      disabled={submissionStatus === 'pending'}
+                  >
+                      {submissionStatus === 'pending' && IconComponents.Loader2 && <IconComponents.Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                      {submissionStatus === 'pending' ? 'Enviando...' : 'Finalizar e Enviar'}
+                      {submissionStatus !== 'pending' && IconComponents.Send && <IconComponents.Send className="ml-2 h-5 w-5" />}
+                  </Button>
+              )}
+            </CardFooter>
+          </form>
         </Card>
         {!isPreview && (
             <p className="text-xs text-center mt-4 text-foreground/60">

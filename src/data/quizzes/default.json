@@ -7,6 +7,7 @@
   "isActive": true,
   "useCustomTheme": false,
   "customTheme": {},
+  "displayMode": "step-by-step",
   "questions": [
     {
       "id": "q1_generic_experience",
