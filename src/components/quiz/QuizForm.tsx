@@ -489,7 +489,7 @@ export default function QuizForm({
                   <div
                     key={option.value}
                     className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-primary/10 transition-colors cursor-pointer has-[:checked]:bg-primary/20 has-[:checked]:border-primary has-[:checked]:text-primary has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:[&_svg]:text-primary has-[:checked]:[&>label]:text-primary has-[:checked]:[&>label>p]:text-primary/80 animate-staggered-fade-in-up"
-                    style={{ animationFillMode: 'backwards', animationDelay: `${200 + index * 120}ms` }}
+                    style={{ animationFillMode: 'backwards', animationDelay: `${400 + index * 150}ms` }}
                   >
                     {OptionIconComponent && <OptionIconComponent className="h-5 w-5 text-muted-foreground group-has-[:checked]:text-primary" />}
                     <RadioGroupItem value={option.value} id={`${question.name}-${option.value}`} className="border-muted-foreground text-primary focus:ring-primary"/>
@@ -528,7 +528,7 @@ export default function QuizForm({
                       }}
                       className={`relative p-3 border rounded-lg cursor-pointer transition-all group hover:shadow-lg animate-staggered-fade-in-up
                         ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10' : 'border-input hover:border-primary/50'}`}
-                        style={{ animationFillMode: 'backwards', animationDelay: `${200 + index * 120}ms` }}
+                        style={{ animationFillMode: 'backwards', animationDelay: `${400 + index * 150}ms` }}
                     >
                       {option.imageUrl && (
                         <div className="relative w-full h-24 mb-2 rounded-md overflow-hidden">
@@ -562,7 +562,7 @@ export default function QuizForm({
               <div
                 key={f.name}
                 className="space-y-1 animate-staggered-fade-in-up"
-                style={{ animationFillMode: 'backwards', animationDelay: `${200 + index * 120}ms` }}
+                style={{ animationFillMode: 'backwards', animationDelay: `${400 + index * 150}ms` }}
               >
                  <Label htmlFor={f.name} className="font-medium flex items-center text-card-foreground">
                    {FieldIconComponent && <FieldIconComponent className="h-4 w-4 mr-2 text-primary" />}
