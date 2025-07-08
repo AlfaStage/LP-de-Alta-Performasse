@@ -392,10 +392,10 @@ export default function CreateQuizPage() {
                 <CardContent>
                   <Tabs value={currentManualTab} onValueChange={(value) => handleManualTabChange(value as 'json' | 'interactive')}>
                       <TabsList className="grid w-full grid-cols-2 h-12">
-                          <TabsTrigger value="interactive" className="text-base data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-inner">
+                          <TabsTrigger value="interactive" className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
                             <Wand2 className="mr-2 h-5 w-5" />Construtor Interativo
                           </TabsTrigger>
-                          <TabsTrigger value="json" className="text-base data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-inner">
+                          <TabsTrigger value="json" className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
                             <FileJson className="mr-2 h-5 w-5" />Editor JSON
                           </TabsTrigger>
                       </TabsList>
