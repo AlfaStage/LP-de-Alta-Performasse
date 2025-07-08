@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Save, Loader2, Link2, Facebook, HelpCircle, BrainCircuit } from 'lucide-react';
+import { Save, Loader2, Link2, Facebook, HelpCircle, BrainCircuit, Key } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from '../actions';
 import type { WhitelabelConfig } from '@/types/quiz';
@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const integrationsSettingsSchema = z.object({
   quizSubmissionWebhookUrl: z.string().url({ message: "URL do webhook de submissão inválida." }).min(1, "Webhook de submissão é obrigatório."),
   facebookDomainVerification: z.string().optional(),
+  googleApiKey: z.string().optional(),
 });
 
 // Schema completo para manter a estrutura de dados ao salvar
@@ -87,48 +88,86 @@ export default function IntegrationsSettingsPage() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-8">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl text-foreground">
-              <Link2 className="h-6 w-6" />
-              Integrações e Webhooks
-            </CardTitle>
-            <CardDescription>
-              Gerencie webhooks e outras integrações externas.
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="space-y-8">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-2xl text-foreground">
+                <Link2 className="h-6 w-6" />
+                Integrações e Webhooks
+              </CardTitle>
+              <CardDescription>
+                Gerencie webhooks e outras integrações externas.
+              </CardDescription>
+            </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="quizSubmissionWebhookUrl" className="flex items-center gap-1"><Link2 className="h-4 w-4 text-muted-foreground" />Webhook de Submissão do Quiz</Label>
-                <Controller
-                  name="quizSubmissionWebhookUrl"
-                  control={control}
-                  render={({ field }) => <Input id="quizSubmissionWebhookUrl" {...field} placeholder="https://webhook.exemplo.com/..." />}
-                />
-                {errors.quizSubmissionWebhookUrl && <p className="text-sm text-destructive">{errors.quizSubmissionWebhookUrl.message}</p>}
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quizSubmissionWebhookUrl" className="flex items-center gap-1"><Link2 className="h-4 w-4 text-muted-foreground" />Webhook de Submissão do Quiz</Label>
+                  <Controller
+                    name="quizSubmissionWebhookUrl"
+                    control={control}
+                    render={({ field }) => <Input id="quizSubmissionWebhookUrl" {...field} placeholder="https://webhook.exemplo.com/..." />}
+                  />
+                  {errors.quizSubmissionWebhookUrl && <p className="text-sm text-destructive">{errors.quizSubmissionWebhookUrl.message}</p>}
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="facebookDomainVerification" className="flex items-center gap-1">
-                  <Facebook className="h-4 w-4 text-muted-foreground" />Código de Verificação de Domínio do Facebook
-                  <Tooltip>
-                      <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                          <p>Insira o conteúdo da meta tag de verificação de domínio do Facebook. Ex: "abcdef123456xyz". (opcional)</p>
-                      </TooltipContent>
-                  </Tooltip>
-                </Label>
-                <Controller
-                  name="facebookDomainVerification"
-                  control={control}
-                  render={({ field }) => <Input id="facebookDomainVerification" {...field} value={field.value || ""} placeholder="Conteúdo da meta tag (opcional)" />}
-                />
-                {errors.facebookDomainVerification && <p className="text-sm text-destructive">{errors.facebookDomainVerification.message}</p>}
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="facebookDomainVerification" className="flex items-center gap-1">
+                    <Facebook className="h-4 w-4 text-muted-foreground" />Código de Verificação de Domínio do Facebook
+                    <Tooltip>
+                        <TooltipTrigger type="button"><HelpCircle className="h-3 w-3 text-muted-foreground hover:text-foreground" /></TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                            <p>Insira o conteúdo da meta tag de verificação de domínio do Facebook. Ex: "abcdef123456xyz". (opcional)</p>
+                        </TooltipContent>
+                    </Tooltip>
+                  </Label>
+                  <Controller
+                    name="facebookDomainVerification"
+                    control={control}
+                    render={({ field }) => <Input id="facebookDomainVerification" {...field} value={field.value || ""} placeholder="Conteúdo da meta tag (opcional)" />}
+                  />
+                  {errors.facebookDomainVerification && <p className="text-sm text-destructive">{errors.facebookDomainVerification.message}</p>}
+                </div>
             </CardContent>
-            <CardFooter>
+          </Card>
+          
+          <Card className="shadow-lg">
+              <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl text-foreground">
+                      <BrainCircuit className="h-5 w-5" />
+                      Configurações de IA (Genkit)
+                  </CardTitle>
+                   <CardDescription>
+                      Configure a chave de API para funcionalidades de IA, como a geração de quizzes.
+                  </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="googleApiKey" className="flex items-center gap-1">
+                    <Key className="h-4 w-4 text-muted-foreground" />Chave de API do Google (Gemini)
+                  </Label>
+                  <Controller
+                    name="googleApiKey"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        id="googleApiKey"
+                        type="password"
+                        {...field}
+                        value={field.value || ""}
+                        placeholder="Cole sua chave de API aqui"
+                      />
+                    )}
+                  />
+                  {errors.googleApiKey && <p className="text-sm text-destructive">{errors.googleApiKey.message}</p>}
+                  <p className="text-xs text-muted-foreground">
+                    Sua chave é armazenada de forma segura. Em ambientes de produção, pode ser necessário reiniciar o servidor para que uma nova chave entre em vigor.
+                  </p>
+                </div>
+              </CardContent>
+          </Card>
+
+          <CardFooter className="px-0">
               <Button type="submit" disabled={isLoading || isFetching || !isDirty} className="text-base py-3">
                 {isLoading ? (
                   <>
@@ -143,24 +182,8 @@ export default function IntegrationsSettingsPage() {
                 )}
               </Button>
             </CardFooter>
-          </form>
-        </Card>
-        
-        <Card className="shadow-lg">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl text-foreground">
-                    <BrainCircuit className="h-5 w-5" />
-                    Configurações de IA (Genkit)
-                </CardTitle>
-                 <CardDescription>
-                    Configure a chave de API e prompts do sistema para funcionalidades de IA.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">Em breve: Campos para adicionar a `GOOGLE_API_KEY` e editar o "System Prompt" padrão para a geração de quizzes por IA.</p>
-            </CardContent>
-        </Card>
-      </div>
+        </div>
+      </form>
     </TooltipProvider>
   );
 }

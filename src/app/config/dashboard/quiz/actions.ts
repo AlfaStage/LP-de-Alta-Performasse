@@ -665,6 +665,11 @@ export async function resetSingleQuizAnalyticsAction(quizSlug: string): Promise<
 
 export async function generateAndCreateQuizAction(topic: string): Promise<{ success: boolean; message?: string; slug?: string }> {
   try {
+    const whitelabelConfig = await getWhitelabelConfig();
+    if (!whitelabelConfig.googleApiKey || whitelabelConfig.googleApiKey.trim() === "") {
+        return { success: false, message: 'A chave de API do Google não está configurada. Por favor, adicione-a em Configurações > Integrações.' };
+    }
+
     const input: QuizGenerationInput = { topic };
     const { quizJson } = await generateQuizFromTopic(input);
 

@@ -69,6 +69,7 @@ export interface WhitelabelConfig {
   facebookPixelId?: string;
   facebookPixelIdSecondary?: string;
   googleAnalyticsId?: string;
+  googleApiKey?: string;
   footerCopyrightText?: string;
   apiStatsAccessToken?: string;
   websiteUrl?: string;
@@ -146,5 +147,3 @@ export interface QuizEditData {
   };
   displayMode?: 'step-by-step' | 'single-page';
 }
-
-    

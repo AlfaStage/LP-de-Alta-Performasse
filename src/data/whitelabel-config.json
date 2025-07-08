@@ -17,5 +17,6 @@
   "apiStatsAccessToken": "",
   "websiteUrl": "",
   "instagramUrl": "",
-  "facebookDomainVerification": ""
+  "facebookDomainVerification": "",
+  "googleApiKey": ""
 }
