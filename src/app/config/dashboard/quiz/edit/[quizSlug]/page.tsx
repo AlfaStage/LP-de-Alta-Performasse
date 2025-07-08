@@ -11,14 +11,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, Users, CheckCircle2, Target, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, File, BookOpen, ChevronsUpDown } from 'lucide-react';
-import { getQuizForEdit, updateQuizAction, type QuizEditData, getQuizAnalyticsBySlug } from '@/app/config/dashboard/quiz/actions';
-import type { QuizQuestion, QuizOption, FormFieldConfig, QuizAnalyticsData, WhitelabelConfig } from '@/types/quiz';
+import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, PlusCircle, Trash2, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, File, BookOpen, ChevronsUpDown } from 'lucide-react';
+import { getQuizForEdit, updateQuizAction, type QuizEditData } from '@/app/config/dashboard/quiz/actions';
+import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig } from '@/types/quiz';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -51,13 +50,11 @@ export default function EditQuizPage() {
 
   const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive'); 
   const [originalQuizData, setOriginalQuizData] = useState<QuizEditData | null>(null);
-  const [quizAggregatedAnalytics, setQuizAggregatedAnalytics] = useState<QuizAnalyticsData | null>(null);
   
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [isFetchingAnalytics, setIsFetchingAnalytics] = useState(true);
 
   const [previewQuizData, setPreviewQuizData] = useState<QuizQuestion[] | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -82,19 +79,14 @@ export default function EditQuizPage() {
     if (!quizSlugFromParams) {
         setError("Slug do quiz não encontrado na URL.");
         setIsFetching(false);
-        setIsFetchingAnalytics(false);
         return;
     }
     setIsFetching(true);
-    setIsFetchingAnalytics(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const [data, aggAnalyticsData] = await Promise.all([
-        getQuizForEdit(quizSlugFromParams),
-        getQuizAnalyticsBySlug(quizSlugFromParams),
-      ]);
+      const data = await getQuizForEdit(quizSlugFromParams);
 
       if (data) {
         setOriginalQuizData(data);
@@ -121,19 +113,12 @@ export default function EditQuizPage() {
       } else {
         setError(`Quiz com slug "${quizSlugFromParams}" não encontrado ou falha ao carregar.`);
       }
-
-      if (aggAnalyticsData) {
-        setQuizAggregatedAnalytics(aggAnalyticsData);
-      } else {
-        console.warn(`Aggregate analytics data for quiz "${quizSlugFromParams}" not found.`);
-      }
       
     } catch (err) {
       setError("Erro ao buscar dados do quiz para edição.");
       console.error(err);
     } finally {
       setIsFetching(false);
-      setIsFetchingAnalytics(false);
     }
   }, [quizSlugFromParams]);
 
@@ -334,10 +319,6 @@ export default function EditQuizPage() {
       setIsLoading(false);
     }
   };
-  
-  const quizConversionRate = quizAggregatedAnalytics && quizAggregatedAnalytics.startedCount && quizAggregatedAnalytics.startedCount > 0 
-    ? ((quizAggregatedAnalytics.completedCount || 0) / quizAggregatedAnalytics.startedCount * 100) 
-    : 0;
 
   if (isFetching) {
     return (
@@ -383,22 +364,6 @@ export default function EditQuizPage() {
             </Button>
         </div>
       </div>
-
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle className="text-xl">Estatísticas Agregadas deste Quiz (Todos os Tempos)</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {isFetchingAnalytics ? (<>[...Array(3)].map((_, i) => <div key={i}><Skeleton className="h-6 w-24 mb-1" /><Skeleton className="h-8 w-12" /></div>)</>
-          ) : quizAggregatedAnalytics ? (
-            <>
-              <div className="flex flex-col p-3 rounded-md border bg-muted/50"><span className="text-sm text-muted-foreground flex items-center"><Users className="h-4 w-4 mr-2" />Iniciados</span><span className="text-2xl font-bold text-card-foreground">{quizAggregatedAnalytics.startedCount || 0}</span></div>
-              <div className="flex flex-col p-3 rounded-md border bg-muted/50"><span className="text-sm text-muted-foreground flex items-center"><CheckCircle2 className="h-4 w-4 mr-2" />Finalizados</span><span className="text-2xl font-bold text-card-foreground">{quizAggregatedAnalytics.completedCount || 0}</span></div>
-              <div className="flex flex-col p-3 rounded-md border bg-muted/50"><span className="text-sm text-muted-foreground flex items-center"><Target className="h-4 w-4 mr-2" />Taxa de Conversão</span><span className="text-2xl font-bold text-card-foreground">{quizConversionRate.toFixed(1)}%</span><Progress value={quizConversionRate} className="h-1.5 mt-1" /></div>
-            </>
-          ) : <p className="text-sm text-muted-foreground col-span-full">Não foi possível carregar as estatísticas.</p>}
-        </CardContent>
-      </Card>
       
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
