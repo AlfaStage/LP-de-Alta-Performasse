@@ -108,7 +108,7 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'question-slide-in': 'question-slide-in 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
         'question-slide-out': 'question-slide-out 0.3s ease-out forwards',
-        'staggered-fade-in-up': 'fade-in-up 0.4s ease-out',
+        'staggered-fade-in-up': 'fade-in-up 0.5s ease-out',
       },
     },
   },
