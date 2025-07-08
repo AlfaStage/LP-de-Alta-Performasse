@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, ExternalLink, Copy, BarChart3, MousePointerClick } from 'lucide-react';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, ExternalLink, Copy, BarChart3, MousePointerClick, LineChart as LineChartIcon, BarChart as BarChartIcon } from 'lucide-react';
 import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, getQuizConfigForPreview } from './quiz/actions';
-import type { QuizListItem, OverallQuizStats, QuizConfig, WhitelabelConfig, DateRange } from '@/types/quiz';
-import { useEffect, useState, useCallback } from 'react';
+import type { QuizListItem, OverallQuizStats, QuizConfig, WhitelabelConfig, DateRange, ChartDataPoint } from '@/types/quiz';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { addDays } from "date-fns";
 import {
   AlertDialog,
@@ -36,6 +36,8 @@ import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from './settings/actions';
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LineChart, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Bar, TooltipProps } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig as ChartConfigType } from "@/components/ui/chart";
 
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
@@ -66,6 +68,131 @@ function StatCard({ title, value, icon: Icon, description, trendValue, trendUnit
   );
 }
 
+const engagementChartConfig = {
+  iniciados: { label: "Iniciados", color: "hsl(var(--primary))" },
+  finalizados: { label: "Finalizados", color: "hsl(var(--chart-2))" },
+} satisfies ChartConfigType;
+
+function EngagementEvolutionChart({ data }: { data: ChartDataPoint[] }) {
+  return (
+     <Card className="shadow-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><LineChartIcon className="h-5 w-5" /> Evolução do Engajamento</CardTitle>
+        <CardDescription>Quizzes iniciados vs. finalizados no período selecionado.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={engagementChartConfig} className="min-h-[250px] w-full">
+          <LineChart
+            accessibilityLayer
+            data={data}
+            margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+          >
+            <CartesianGrid vertical={false} strokeDasharray="3 3" />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => value.slice(0, 5)} // Show "dd/MM"
+            />
+             <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              allowDecimals={false}
+            />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="iniciados"
+              stroke="var(--color-iniciados)"
+              strokeWidth={2}
+              dot={{ r: 4, fill: "var(--color-iniciados)" }}
+              activeDot={{ r: 6 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="finalizados"
+              stroke="var(--color-finalizados)"
+              strokeWidth={2}
+              dot={{ r: 4, fill: "var(--color-finalizados)" }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  )
+}
+
+const topQuizzesChartConfig = {
+  conversionRate: { label: "Taxa de Conversão", color: "hsl(var(--primary))" },
+} satisfies ChartConfigType;
+
+
+function TopQuizzesChart({ quizzes, conversionMetric }: { quizzes: QuizListItem[], conversionMetric: 'start_vs_complete' | 'first_answer_vs_complete' }) {
+    const topQuizzesData = useMemo(() => {
+        return quizzes
+            .map(quiz => {
+                const denominator = conversionMetric === 'first_answer_vs_complete'
+                    ? (quiz.firstAnswerCount || 0)
+                    : (quiz.startedCount || 0);
+                const rate = denominator > 0 ? ((quiz.completedCount || 0) / denominator) * 100 : 0;
+                return {
+                    name: quiz.dashboardName || quiz.title,
+                    conversionRate: parseFloat(rate.toFixed(1)),
+                };
+            })
+            .filter(q => q.conversionRate > 0)
+            .sort((a, b) => b.conversionRate - a.conversionRate)
+            .slice(0, 5);
+    }, [quizzes, conversionMetric]);
+    
+  if (topQuizzesData.length === 0) {
+    return null; // Don't render if no data
+  }
+
+  return (
+    <Card className="shadow-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><BarChartIcon className="h-5 w-5" /> Top 5 Quizzes por Conversão</CardTitle>
+        <CardDescription>Ranking dos quizzes com maior taxa de conversão no período.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={topQuizzesChartConfig} className="min-h-[250px] w-full">
+          <BarChart
+            accessibilityLayer
+            data={topQuizzesData}
+            layout="vertical"
+            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+          >
+            <CartesianGrid horizontal={false} />
+            <YAxis
+              dataKey="name"
+              type="category"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              width={120}
+              tick={{ fontSize: 12 }}
+            />
+            <XAxis dataKey="conversionRate" type="number" suffix="%" />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent indicator="line" />}
+            />
+            <Bar
+              dataKey="conversionRate"
+              fill="var(--color-conversionRate)"
+              radius={4}
+            />
+          </BarChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function DashboardPage() {
   const [quizzes, setQuizzes] = useState<QuizListItem[]>([]);
@@ -356,6 +483,11 @@ export default function DashboardPage() {
               </CardFooter>
             </Card>
           )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+            {overallStats.chartData && <EngagementEvolutionChart data={overallStats.chartData} />}
+            {quizzes.length > 0 && <TopQuizzesChart quizzes={quizzes} conversionMetric={conversionMetric} />}
+          </div>
         </>
       ) : <p>Nenhum dado de estatística encontrado para o período selecionado.</p>}
 

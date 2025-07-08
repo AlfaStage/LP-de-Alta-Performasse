@@ -98,9 +98,9 @@ export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'descriptio
 }
 
 export interface ChartDataPoint {
-  date: string; // "dd/MM"
-  Iniciados: number;
-  Finalizados: number;
+  date: string; // "dd/MM/yyyy"
+  iniciados: number;
+  finalizados: number;
 }
 
 export interface OverallQuizStats {
@@ -108,6 +108,7 @@ export interface OverallQuizStats {
   totalCompleted: number;
   totalFirstAnswers?: number;
   mostEngagingQuiz?: QuizListItem & { conversionRate: number };
+  chartData?: ChartDataPoint[];
 }
 
 export interface QuizAnalyticsData extends QuizListItem {

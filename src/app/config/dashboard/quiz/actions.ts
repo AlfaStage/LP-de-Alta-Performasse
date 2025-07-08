@@ -2,9 +2,9 @@
 "use server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption, AggregateQuizStats, AnalyticsEvent, QuestionAnswerEvent, QuestionSpecificAnalytics, DateRange } from '@/types/quiz';
+import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption, AggregateQuizStats, AnalyticsEvent, QuestionAnswerEvent, QuestionSpecificAnalytics, DateRange, ChartDataPoint } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
-import { isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { isWithinInterval, parseISO, startOfDay, endOfDay, eachDayOfInterval, format } from 'date-fns';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { generateQuizFromTopic } from '@/ai/flows/quizGeneratorFlow';
 import type { QuizGenerationInput } from '@/ai/flows/quizGeneratorFlow';
@@ -533,12 +533,40 @@ export async function getOverallQuizAnalytics(dateRange?: DateRange): Promise<Ov
       }
     }
   }
+
+  // Generate chart data
+  const chartData: ChartDataPoint[] = [];
+  if (dateRange && dateRange.from) {
+    const interval = { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to || dateRange.from) };
+    const allEvents = Object.values(aggStatsData).flat();
+    
+    if (interval.end >= interval.start) {
+      const days = eachDayOfInterval(interval);
+      for (const day of days) {
+        const dayString = format(day, 'dd/MM/yyyy');
+        let dailyStarted = 0;
+        let dailyCompleted = 0;
+
+        for (const slug in aggStatsData) {
+            dailyStarted += aggStatsData[slug].started.filter(e => format(parseISO(e.date), 'dd/MM/yyyy') === dayString).length;
+            dailyCompleted += aggStatsData[slug].completed.filter(e => format(parseISO(e.date), 'dd/MM/yyyy') === dayString).length;
+        }
+
+        chartData.push({
+          date: dayString,
+          iniciados: dailyStarted,
+          finalizados: dailyCompleted,
+        });
+      }
+    }
+  }
   
   return {
-    totalStarted: totalStarted, 
-    totalCompleted: totalCompleted,
-    totalFirstAnswers: totalFirstAnswers,
+    totalStarted, 
+    totalCompleted,
+    totalFirstAnswers,
     mostEngagingQuiz: mostEngagingQuizData,
+    chartData,
   };
 }
 
