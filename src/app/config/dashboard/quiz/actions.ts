@@ -2,7 +2,7 @@
 "use server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption, AggregateQuizStats, AnalyticsEvent, QuestionAnswerEvent, QuestionSpecificAnalytics, DateRange, ChartDataPoint } from '@/types/quiz';
+import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption, AggregateQuizStats, AnalyticsEvent, QuestionAnswerEvent, QuestionSpecificAnalytics, DateRange, ChartDataPoint, QuizEditData } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
 import { isWithinInterval, parseISO, startOfDay, endOfDay, eachDayOfInterval, format } from 'date-fns';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
@@ -499,46 +499,42 @@ export async function getQuizzesList(dateRange?: DateRange): Promise<QuizListIte
 export async function getOverallQuizAnalytics(dateRange?: DateRange): Promise<OverallQuizStats> {
   const aggStatsData = await getAggregateQuizStatsData();
   const whitelabelConfig = await getWhitelabelConfig();
+
+  const quizzesList = await getQuizzesList(dateRange);
+
+  const totalQuizzes = quizzesList.length;
+  const activeQuizzes = quizzesList.filter(q => q.isActive).length;
+
   let totalStarted = 0;
   let totalCompleted = 0;
   let totalFirstAnswers = 0;
   let mostEngagingQuizData: (QuizListItem & { conversionRate?: number }) | undefined = undefined;
   let highestConversionRate = -1;
 
-  const quizzesList = await getQuizzesList(dateRange);
-
-  for (const quizSlug in aggStatsData) {
-    const quizStats = aggStatsData[quizSlug];
-    const startedCount = filterEventsByDate(quizStats.started, dateRange).length;
-    const completedCount = filterEventsByDate(quizStats.completed, dateRange).length;
-    const firstAnswerCount = filterEventsByDate(quizStats.firstAnswer || [], dateRange).length;
-    
-    totalStarted += startedCount;
-    totalCompleted += completedCount;
-    totalFirstAnswers += firstAnswerCount;
+  for (const quiz of quizzesList) {
+    totalStarted += quiz.startedCount || 0;
+    totalCompleted += quiz.completedCount || 0;
+    totalFirstAnswers += quiz.firstAnswerCount || 0;
 
     const conversionDenominator = whitelabelConfig.conversionMetric === 'first_answer_vs_complete'
-      ? firstAnswerCount
-      : startedCount;
+      ? (quiz.firstAnswerCount || 0)
+      : (quiz.startedCount || 0);
     
-    const conversionRate = conversionDenominator > 0 ? (completedCount / conversionDenominator) * 100 : 0;
+    const conversionRate = conversionDenominator > 0 ? ((quiz.completedCount || 0) / conversionDenominator) * 100 : 0;
+
     if (conversionRate > highestConversionRate) {
       highestConversionRate = conversionRate;
-      const quizDetails = quizzesList.find(q => q.slug === quizSlug);
-      if (quizDetails) {
-        mostEngagingQuizData = {
-          ...quizDetails,
-          conversionRate: parseFloat(conversionRate.toFixed(1))
-        };
-      }
+      mostEngagingQuizData = {
+        ...quiz,
+        conversionRate: parseFloat(conversionRate.toFixed(1))
+      };
     }
   }
-
+  
   // Generate chart data
   const chartData: ChartDataPoint[] = [];
   if (dateRange && dateRange.from) {
     const interval = { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to || dateRange.from) };
-    const allEvents = Object.values(aggStatsData).flat();
     
     if (interval.end >= interval.start) {
       const days = eachDayOfInterval(interval);
@@ -567,6 +563,8 @@ export async function getOverallQuizAnalytics(dateRange?: DateRange): Promise<Ov
     totalFirstAnswers,
     mostEngagingQuiz: mostEngagingQuizData,
     chartData,
+    totalQuizzes,
+    activeQuizzes,
   };
 }
 
@@ -673,7 +671,7 @@ export async function resetSingleQuizAnalyticsAction(quizSlug: string): Promise<
     revalidatePath('/config/dashboard', 'layout');
     revalidatePath(`/config/dashboard/quiz/stats/${quizSlug}`, 'page');
     revalidatePath(`/config/dashboard/quiz/edit/${quizSlug}`, 'page');
-    revalidatePath(`/${slug}`);
+    revalidatePath(`/${quizSlug}`);
 
     return { success: true, message: `Estatísticas do quiz "${quizSlug}" foram resetadas com sucesso.` };
   } catch (error) {

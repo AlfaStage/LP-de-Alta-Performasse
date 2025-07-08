@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, ExternalLink, Copy, BarChart3, MousePointerClick, LineChart as LineChartIcon, BarChart as BarChartIcon } from 'lucide-react';
+import { FileText, ListPlus, PlusCircle, Edit, Trash2, Loader2, ShieldAlert, Eye, Lock, Users, CheckCircle2, TrendingUp, Target, RefreshCcw, ExternalLink, Copy, BarChart3, MousePointerClick, LineChart as LineChartIcon, BarChart as BarChartIcon, ListChecks, ShieldCheck } from 'lucide-react';
 import { getQuizzesList, deleteQuizAction, getOverallQuizAnalytics, getQuizConfigForPreview } from './quiz/actions';
 import type { QuizListItem, OverallQuizStats, QuizConfig, WhitelabelConfig, DateRange, ChartDataPoint } from '@/types/quiz';
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -81,7 +81,7 @@ function EngagementEvolutionChart({ data }: { data: ChartDataPoint[] }) {
         <CardDescription>Quizzes iniciados vs. finalizados no período selecionado.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={engagementChartConfig} className="min-h-[250px] w-full">
+        <ChartContainer config={engagementChartConfig} className="h-[250px] w-full">
           <LineChart
             accessibilityLayer
             data={data}
@@ -422,8 +422,8 @@ export default function DashboardPage() {
       </div>
 
       {isLoadingStats ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1,2,3,4].map(i => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1,2,3,4,5,6].map(i => (
             <Card key={i} className="shadow-md bg-card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-5 w-24" />
@@ -439,7 +439,7 @@ export default function DashboardPage() {
       ) : overallStats ? (
         <>
           <h2 className="text-2xl font-semibold text-foreground tracking-tight -mb-4">Resumo de Desempenho</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard title="Quizzes Iniciados" value={overallStats.totalStarted} icon={Users} description="No período selecionado." />
             <StatCard title="Quizzes Engajados" value={overallStats.totalFirstAnswers || 0} icon={MousePointerClick} description="Responderam a 1ª pergunta." />
             <StatCard title="Quizzes Finalizados" value={overallStats.totalCompleted} icon={CheckCircle2} description="No período selecionado." />
@@ -449,6 +449,8 @@ export default function DashboardPage() {
               icon={Target} 
               description={conversionDescription} 
             />
+            <StatCard title="Quizzes Cadastrados" value={overallStats.totalQuizzes ?? 0} icon={ListChecks} description="Total de quizzes no sistema." />
+            <StatCard title="Quizzes Ativos" value={overallStats.activeQuizzes ?? 0} icon={ShieldCheck} description="Quizzes disponíveis para o público." />
           </div>
           {overallStats.mostEngagingQuiz && (
             <Card className="shadow-lg bg-card overflow-hidden">
@@ -484,9 +486,13 @@ export default function DashboardPage() {
             </Card>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
-            {overallStats.chartData && <EngagementEvolutionChart data={overallStats.chartData} />}
-            {quizzes.length > 0 && <TopQuizzesChart quizzes={quizzes} conversionMetric={conversionMetric} />}
+          <div className="space-y-6 pt-4">
+            {overallStats.chartData && overallStats.chartData.length > 1 && (
+                <EngagementEvolutionChart data={overallStats.chartData} />
+            )}
+            {quizzes.length > 0 && (
+                <TopQuizzesChart quizzes={quizzes} conversionMetric={conversionMetric} />
+            )}
           </div>
         </>
       ) : <p>Nenhum dado de estatística encontrado para o período selecionado.</p>}

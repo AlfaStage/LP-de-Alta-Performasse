@@ -1,5 +1,4 @@
 
-
 import type { LucideIcon } from 'lucide-react';
 import type { DateRange as ReactDayPickerDateRange } from 'react-day-picker';
 import type { IconName } from '@/lib/lucide-icons';
@@ -109,6 +108,8 @@ export interface OverallQuizStats {
   totalFirstAnswers?: number;
   mostEngagingQuiz?: QuizListItem & { conversionRate: number };
   chartData?: ChartDataPoint[];
+  totalQuizzes?: number;
+  activeQuizzes?: number;
 }
 
 export interface QuizAnalyticsData extends QuizListItem {
