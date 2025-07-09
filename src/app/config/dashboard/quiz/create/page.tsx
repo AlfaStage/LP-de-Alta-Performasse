@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -514,9 +514,9 @@ export default function CreateQuizPage() {
                       <CardContent>
                           <div className="space-y-3">
                               {messages.map((msg, msgIndex) => (
-                                  <Card key={msg.id} className="p-4 bg-muted/30 flex gap-4">
-                                      <div className="flex flex-col items-center gap-1 text-muted-foreground bg-background/50 p-1 rounded-md border h-min">
-                                          <span className="font-bold text-sm select-none p-1">{msgIndex + 1}</span>
+                                  <Card key={msg.id} className="p-4 bg-muted/30">
+                                    <div className="flex gap-4">
+                                      <div className="flex flex-col items-center gap-1 text-muted-foreground">
                                           <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}><ChevronUp className="h-5 w-5" /></Button>
                                           <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'down')} disabled={msgIndex === messages.length - 1}><ChevronDown className="h-5 w-5" /></Button>
                                       </div>
@@ -525,11 +525,35 @@ export default function CreateQuizPage() {
                                               <div className="space-y-2 md:col-span-1"><Label>Tipo da Mensagem</Label><Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}><SelectTrigger><div className="flex items-center gap-2">{msg.type === 'imagem' ? <ImageIconLucide className="h-4 w-4 text-muted-foreground" /> : msg.type === 'audio' ? <AudioWaveform className="h-4 w-4 text-muted-foreground" /> : <MessageSquareText className="h-4 w-4 text-muted-foreground" />}<SelectValue placeholder="Selecione o tipo" /></div></SelectTrigger><SelectContent><SelectItem value="mensagem">Texto</SelectItem><SelectItem value="imagem">Imagem</SelectItem><SelectItem value="audio">Áudio</SelectItem></SelectContent></Select></div>
                                               <div className="space-y-2 md:col-span-2"><Label>Conteúdo</Label>{msg.type === 'mensagem' ? (<Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3} />) : (<div className="flex items-center gap-2"><Label htmlFor={`file-upload-${msg.id}`} className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}><FileUp className="mr-2 h-4 w-4" /><span>{msg.filename ? 'Trocar' : 'Escolher'}</span></Label><Input id={`file-upload-${msg.id}`} type="file" accept={msg.type === 'imagem' ? "image/*" : "audio/*"} onChange={(e) => handleFileChange(e, msgIndex)} className="hidden" />{msg.filename ? (<span className="text-sm text-muted-foreground truncate" title={msg.filename}>{msg.filename}</span>) : (<span className="text-sm text-muted-foreground">Nenhum arquivo</span>)}</div>)}</div>
                                           </div>
-                                          <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-border/30">
-                                              {msg.type === 'mensagem' && (<DropdownMenu><DropdownMenuTrigger asChild><Button type="button" variant="outline" size="sm" disabled={availableVariables.length === 0}><Tags className="mr-2 h-4 w-4" /> Inserir Variável</Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuLabel>Variáveis do Quiz</DropdownMenuLabel><DropdownMenuSeparator />{availableVariables.length > 0 ? availableVariables.map(variable => (<DropdownMenuItem key={variable.value} onSelect={() => handleInsertVariable(variable.value, msgIndex)}>{variable.label}</DropdownMenuItem>)) : (<DropdownMenuItem disabled>Nenhuma variável encontrada</DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>)}
-                                              <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="text-muted-foreground hover:text-destructive h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
-                                          </div>
+                                           <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-border/30">
+                                            {msg.type === 'mensagem' && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button type="button" variant="outline" size="sm" disabled={availableVariables.length === 0}>
+                                                            <Tags className="mr-2 h-4 w-4" /> Inserir Variável
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuLabel>Variáveis do Quiz</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        {availableVariables.length > 0 ? (
+                                                            availableVariables.map(variable => (
+                                                                <DropdownMenuItem key={variable.value} onSelect={() => handleInsertVariable(variable.value, msgIndex)}>
+                                                                    {variable.label}
+                                                                </DropdownMenuItem>
+                                                            ))
+                                                        ) : (
+                                                            <DropdownMenuItem disabled>Nenhuma variável encontrada</DropdownMenuItem>
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
+                                            <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="text-muted-foreground hover:text-destructive h-8 w-8">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                       </div>
+                                    </div>
                                   </Card>
                               ))}
                           </div>
@@ -586,3 +610,5 @@ export default function CreateQuizPage() {
     </div>
   );
 }
+
+    
