@@ -102,6 +102,7 @@ export default function QuizForm({
   const [isQuizCompleted, setIsQuizCompleted] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [themeStyles, setThemeStyles] = useState<React.CSSProperties>({});
+  const [utmParams, setUtmParams] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   const SuccessIcon = getSuccessIcon();
@@ -125,6 +126,18 @@ export default function QuizForm({
   const currentQuestion = activeQuestions[currentStep];
 
   const isGaConfigured = !!googleAnalyticsId && googleAnalyticsId.trim() !== "" && googleAnalyticsId !== "YOUR_GA_ID";
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const capturedUtms: Record<string, string> = {};
+    const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+    utmKeys.forEach(key => {
+      if (params.has(key)) {
+        capturedUtms[key] = params.get(key)!;
+      }
+    });
+    setUtmParams(capturedUtms);
+  }, []);
 
   useEffect(() => {
     if (useCustomTheme && customTheme) {
@@ -176,6 +189,7 @@ export default function QuizForm({
           screenHeight: window.screen.height,
           windowWidth: window.innerWidth,
           windowHeight: window.innerHeight,
+          ...utmParams,
         };
         const dataToLog = {
           ...getValues(),
@@ -213,7 +227,7 @@ export default function QuizForm({
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, currentStep, isQuizCompleted, submissionStatus, quizSlug, clientAbandonmentWebhookUrl, onAbandonmentOverride, isPreview, getValues, currentQuestion]);
+  }, [formData, currentStep, isQuizCompleted, submissionStatus, quizSlug, clientAbandonmentWebhookUrl, onAbandonmentOverride, isPreview, getValues, currentQuestion, utmParams]);
 
   const handleNext = async () => {
     if (submissionStatus === 'pending' || !currentQuestion) return;
@@ -340,6 +354,7 @@ export default function QuizForm({
       screenHeight: window.screen.height,
       windowWidth: window.innerWidth,
       windowHeight: window.innerHeight,
+      ...utmParams,
     };
 
     const finalData = {
