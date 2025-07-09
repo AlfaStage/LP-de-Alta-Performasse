@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, PlusCircle, Trash2, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, BookOpen, ChevronsUpDown, Fingerprint, AudioWaveform, Image as ImageIconLucide, FileUp, ChevronUp, ChevronDown, Tags, UserX, UserCheck, Timer, VenetianMask } from 'lucide-react';
+import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, PlusCircle, Trash2, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, BookOpen, ChevronsUpDown, Fingerprint, AudioWaveform, Image as ImageIconLucide, FileUp, GripVertical, Settings, UserCheck, UserX, Timer, VenetianMask, Tags } from 'lucide-react';
 import { getQuizForEdit, updateQuizAction, type QuizEditData } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage } from '@/types/quiz';
 import Link from 'next/link';
@@ -182,11 +182,12 @@ export default function EditQuizPage() {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
     if (question.options) {
-      question.options[oIndex] = { ...question.options[oIndex], [field]: value };
+      const newOption = { ...question.options[oIndex], [field]: value };
+      question.options[oIndex] = newOption;
       setInteractiveQuestions(newQuestions);
     }
   };
-
+  
   const removeOption = (qIndex: number, oIndex: number) => {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
@@ -195,7 +196,7 @@ export default function EditQuizPage() {
       setInteractiveQuestions(newQuestions);
     }
   };
-  
+
   const addFormField = (qIndex: number) => {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
@@ -466,360 +467,127 @@ export default function EditQuizPage() {
       </div>
       
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle>Perguntas do Quiz</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Tabs value={currentTab} onValueChange={(value) => handleTabChange(value as 'interactive' | 'json')}>
-                        <TabsList className="grid w-full grid-cols-2 h-12">
-                            <TabsTrigger value="interactive" className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-                              <Wand2 className="mr-2 h-5 w-5" />Construtor Interativo
-                            </TabsTrigger>
-                            <TabsTrigger value="json" className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-                              <FileJson className="mr-2 h-5 w-5" />Editor JSON
-                            </TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="interactive" className="pt-4">
-                          <Accordion type="single" collapsible className="w-full space-y-4">
-                              {interactiveQuestions.map((q, qIndex) => (
-                              <AccordionItem key={q.id || `q_interactive_edit_${qIndex}`} value={q.id || `item-${qIndex}`} className="border rounded-lg bg-muted/20 p-0">
-                                  <AccordionTrigger className="px-4 py-3 text-lg font-medium hover:no-underline">
-                                      <div className="flex items-center gap-3">
-                                        <ChevronsUpDown className="h-5 w-5 text-muted-foreground" />
-                                        <span>Pergunta {qIndex + 1}: {q.text || "Nova Pergunta"}</span>
-                                      </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent className="border-t">
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
-                                      {/* Coluna de Edição */}
-                                      <div className="space-y-4">
-                                          <Card>
-                                            <CardContent className="p-4 space-y-4">
-                                              <div className="space-y-2"><Label htmlFor={`q-${qIndex}-text`}>Texto da Pergunta</Label><Textarea id={`q-${qIndex}-text`} placeholder="Qual o seu tipo de pele?" value={q.text} onChange={(e) => updateQuestion(qIndex, 'text', e.target.value)} /></div>
-                                              <div className="space-y-2"><Label htmlFor={`q-${qIndex}-explanation`}>Explicação (Opcional)</Label><Textarea id={`q-${qIndex}-explanation`} placeholder="Ajude o usuário a entender a pergunta." value={q.explanation || ''} onChange={(e) => updateQuestion(qIndex, 'explanation', e.target.value)} rows={2}/></div>
-                                            </CardContent>
-                                          </Card>
-                                          <Card>
-                                            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                              <div className="space-y-2"><Label htmlFor={`q-${qIndex}-id`}>ID da Pergunta</Label><Input id={`q-${qIndex}-id`} placeholder="Ex: q1_pele (único)" value={q.id} onChange={(e) => updateQuestion(qIndex, 'id', e.target.value)} /></div>
-                                              <div className="space-y-2"><Label htmlFor={`q-${qIndex}-name`}>Nome/Chave (form)</Label><Input id={`q-${qIndex}-name`} placeholder="Ex: tipoPele" value={q.name} onChange={(e) => updateQuestion(qIndex, 'name', e.target.value)} /></div>
-                                              <div className="space-y-2"><Label>Ícone da Pergunta</Label><IconPicker value={q.icon} onChange={(iconName) => updateQuestion(qIndex, 'icon', iconName)} /></div>
-                                              <div className="space-y-2"><Label>Tipo</Label><Select value={q.type} onValueChange={(value) => updateQuestion(qIndex, 'type', value)}><SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger><SelectContent><SelectItem value="radio">Escolha Única (Radio)</SelectItem><SelectItem value="checkbox">Múltipla Escolha (Checkbox)</SelectItem><SelectItem value="textFields">Campos de Texto</SelectItem></SelectContent></Select></div>
-                                            </CardContent>
-                                          </Card>
+        <Tabs defaultValue="perguntas" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-4 h-auto">
+                <TabsTrigger value="perguntas" className="py-2">Perguntas</TabsTrigger>
+                <TabsTrigger value="configuracoes" className="py-2">Configurações</TabsTrigger>
+                <TabsTrigger value="mensagens" className="py-2">Mensagens e Resultados</TabsTrigger>
+                <TabsTrigger value="avancado" className="py-2">Aparência e Rastreamento</TabsTrigger>
+            </TabsList>
 
-                                          {(q.type === 'radio' || q.type === 'checkbox') && (
-                                          <Card>
-                                              <CardHeader className="pb-2"><CardTitle className="text-md">Opções de Resposta</CardTitle></CardHeader>
-                                              <CardContent className="space-y-3 p-4">
-                                                  {(q.options || []).map((opt, oIndex) => (
-                                                  <Card key={`q-${qIndex}-opt_edit_${oIndex}`} className="p-3 bg-background/50 relative">
-                                                      <div className="space-y-3">
-                                                        <Label className="text-sm font-medium">Opção {oIndex + 1}</Label>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-value`} className="text-xs">Valor (ID)</Label><Input id={`q-${qIndex}-opt-${oIndex}-value`} placeholder="Ex: opcao_a" value={opt.value} onChange={(e) => updateOption(qIndex, oIndex, 'value', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-opt-${oIndex}-label`} placeholder="Ex: Opção A" value={opt.label} onChange={(e) => updateOption(qIndex, oIndex, 'label', e.target.value)} /></div></div>
-                                                        <div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-text_message`} className="text-xs">Texto para Mensagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-text_message`} placeholder="Ex: 'que já tem experiência'" value={opt.text_message || ''} onChange={(e) => updateOption(qIndex, oIndex, 'text_message', e.target.value)} /></div>
-                                                        <div className="space-y-1"><Label className="text-xs">Ícone</Label><IconPicker value={opt.icon} onChange={(iconName) => updateOption(qIndex, oIndex, 'icon', iconName)} /></div>
-                                                        <div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-imageUrl`} className="text-xs">URL da Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-imageUrl`} placeholder="https://placehold.co/300x200.png" value={opt.imageUrl || ''} onChange={(e) => updateOption(qIndex, oIndex, 'imageUrl', e.target.value)} /></div>
-                                                        <div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-dataAiHint`} className="text-xs">Dica IA para Imagem</Label><Input id={`q-${qIndex}-opt-${oIndex}-dataAiHint`} placeholder="Ex: abstract shape" value={opt.dataAiHint || ''} onChange={(e) => updateOption(qIndex, oIndex, 'dataAiHint', e.target.value)} /></div>
-                                                        <div className="flex items-center space-x-2 pt-2"><Switch id={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} checked={opt.isDisqualifying} onCheckedChange={(checked) => updateOption(qIndex, oIndex, 'isDisqualifying', checked)} /><Label htmlFor={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} className="text-xs font-normal text-destructive">Desqualificar esta resposta</Label></div>
-                                                      </div>
-                                                      <Button variant="ghost" size="icon" onClick={() => removeOption(qIndex, oIndex)} className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7"><Trash2 className="h-4 w-4" /></Button>
-                                                  </Card>
-                                                  ))}
-                                                  <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)} className="mt-2 w-full"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Opção</Button>
-                                              </CardContent>
-                                          </Card>
-                                          )}
-
-                                          {q.type === 'textFields' && (
-                                          <Card>
-                                              <CardHeader className="pb-2"><CardTitle className="text-md">Campos de Entrada</CardTitle></CardHeader>
-                                              <CardContent className="space-y-3 p-4">
-                                                  {(q.fields || []).map((field, fIndex) => (
-                                                  <Card key={`q-${qIndex}-field_edit_${fIndex}`} className="p-3 bg-background/50 relative">
-                                                      <div className="space-y-3">
-                                                        <Label className="text-sm font-medium">Campo {fIndex + 1}</Label>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-name`} className="text-xs">Nome/Chave</Label><Input id={`q-${qIndex}-field-${fIndex}-name`} placeholder="Ex: nomeCompleto" value={field.name} onChange={(e) => updateFormField(qIndex, fIndex, 'name', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-field-${fIndex}-label`} placeholder="Ex: Nome Completo" value={field.label} onChange={(e) => updateFormField(qIndex, fIndex, 'label', e.target.value)} /></div></div>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div><Label className="text-xs">Tipo do Campo</Label><Select value={field.type} onValueChange={(val) => updateFormField(qIndex, fIndex, 'type', val as 'text'|'tel'|'email')}><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger><SelectContent><SelectItem value="text">Texto</SelectItem><SelectItem value="tel">Telefone</SelectItem><SelectItem value="email">Email</SelectItem></SelectContent></Select></div><div><Label className="text-xs">Ícone</Label><IconPicker value={field.icon} onChange={(val) => updateFormField(qIndex, fIndex, 'icon', val)} /></div></div>
-                                                        <div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-placeholder`} className="text-xs">Placeholder</Label><Input id={`q-${qIndex}-field-${fIndex}-placeholder`} placeholder="Ex: Digite seu nome" value={field.placeholder || ''} onChange={(e) => updateFormField(qIndex, fIndex, 'placeholder', e.target.value)} /></div>
-                                                      </div>
-                                                      <Button variant="ghost" size="icon" onClick={() => removeFormField(qIndex, fIndex)} className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7"><Trash2 className="h-4 w-4" /></Button>
-                                                  </Card>
-                                                  ))}
-                                                  <Button type="button" variant="outline" size="sm" onClick={() => addFormField(qIndex)} className="mt-2 w-full"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Campo</Button>
-                                              </CardContent>
-                                          </Card>
-                                          )}
-                                          <div className="flex justify-end pt-2">
-                                              <Button variant="ghost" size="sm" onClick={() => removeQuestion(qIndex)} className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Remover Pergunta</Button>
-                                          </div>
-                                      </div>
-                                      {/* Coluna de Preview */}
-                                      <div className="lg:sticky lg:top-4">
-                                        <Card className="bg-background">
-                                          <CardHeader><CardTitle className="text-md">Pré-visualização da Pergunta</CardTitle></CardHeader>
-                                          <CardContent>
-                                            <QuestionPreview question={q} />
-                                          </CardContent>
-                                        </Card>
-                                      </div>
-                                    </div>
-                                  </AccordionContent>
-                              </AccordionItem>
-                              ))}
-                          </Accordion>
-                          <Button type="button" onClick={addQuestion} variant="outline" className="w-full mt-6 shadow-sm"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Nova Pergunta</Button>
-                        </TabsContent>
-
-                        <TabsContent value="json" className="pt-4">
-                             <Textarea
-                                id="questionsJson"
-                                value={questionsJson}
-                                onChange={(e) => setQuestionsJson(e.target.value)}
-                                placeholder="[]"
-                                rows={25}
-                                className="font-mono text-xs bg-muted/20"
-                            />
-                            <Button asChild variant="outline" className="mt-4">
-                                <Link href="/config/dashboard/documentation/quiz-json" target="_blank">
-                                    <BookOpen className="mr-2 h-4 w-4" /> Abrir Guia de Criação JSON
-                                </Link>
-                            </Button>
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
-            <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle className="flex justify-between items-center">
-                        <span>Mensagens Pós-Quiz</span>
-                        <span className="text-sm font-medium text-muted-foreground">{messages.length} / 5</span>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
-                        {messages.map((msg, msgIndex) => (
-                            <Card key={msg.id} className="p-4 bg-muted/30 relative flex gap-4">
-                                <div className="flex flex-col items-center gap-1 text-muted-foreground bg-background/50 p-2 rounded-md border">
-                                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}>
-                                        <ChevronUp className="h-5 w-5" />
-                                    </Button>
-                                    <span className="font-bold text-sm select-none">{msgIndex + 1}</span>
-                                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'down')} disabled={msgIndex === messages.length - 1}>
-                                        <ChevronDown className="h-5 w-5" />
-                                    </Button>
-                                </div>
-                                <div className="flex-grow flex flex-col">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start flex-grow">
-                                        <div className="space-y-2 md:col-span-1">
-                                            <Label>Tipo da Mensagem</Label>
-                                            <Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}>
-                                                <SelectTrigger>
-                                                    <div className="flex items-center gap-2">
-                                                        {msg.type === 'imagem' ? <ImageIconLucide className="h-4 w-4 text-muted-foreground" /> : msg.type === 'audio' ? <AudioWaveform className="h-4 w-4 text-muted-foreground" /> : <MessageSquareText className="h-4 w-4 text-muted-foreground" />}
-                                                        <SelectValue placeholder="Selecione o tipo" />
-                                                    </div>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="mensagem">Texto</SelectItem>
-                                                    <SelectItem value="imagem">Imagem</SelectItem>
-                                                    <SelectItem value="audio">Áudio</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label>Conteúdo</Label>
-                                            {msg.type === 'mensagem' && (
-                                                <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3} />
-                                            )}
-                                            {(msg.type === 'imagem' || msg.type === 'audio') && (
-                                                <div className="flex items-center gap-2">
-                                                    <Label htmlFor={`file-upload-edit-${msg.id}`} className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}>
-                                                        <FileUp className="mr-2 h-4 w-4" />
-                                                        <span>{msg.filename ? 'Trocar' : 'Escolher'}</span>
-                                                    </Label>
-                                                    <Input id={`file-upload-edit-${msg.id}`} type="file" accept={msg.type === 'imagem' ? "image/*" : "audio/*"} onChange={(e) => handleFileChange(e, msgIndex)} className="hidden" />
-                                                    {msg.filename ? (
-                                                        <span className="text-sm text-muted-foreground truncate" title={msg.filename}>{msg.filename}</span>
-                                                    ) : (
-                                                        <span className="text-sm text-muted-foreground">Nenhum arquivo</span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border/30">
-                                        {msg.type === 'mensagem' && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button type="button" variant="outline" size="sm" disabled={availableVariables.length === 0}>
-                                                        <Tags className="mr-2 h-4 w-4" /> Inserir Variável
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuLabel>Variáveis do Quiz</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    {availableVariables.length > 0 ? availableVariables.map(variable => (
-                                                        <DropdownMenuItem key={variable.value} onSelect={() => handleInsertVariable(variable.value, msgIndex)}>
-                                                            {variable.label}
-                                                        </DropdownMenuItem>
-                                                    )) : (
-                                                        <DropdownMenuItem disabled>Nenhuma variável encontrada</DropdownMenuItem>
-                                                    )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
-                                        <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="text-muted-foreground hover:text-destructive h-8 w-8">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-                    <Button type="button" variant="outline" className="w-full mt-4" onClick={addMessage} disabled={messages.length >= 5}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Mensagem
-                    </Button>
-                </CardContent>
-              </Card>
-          </div>
-
-          <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6">
+            <TabsContent value="perguntas">
               <Card className="shadow-lg">
-                <CardHeader><CardTitle>Detalhes do Quiz</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2"><Label htmlFor="title" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público</Label><Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required /></div>
-                    <div className="space-y-2"><Label htmlFor="dashboardName" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno</Label><Input id="dashboardName" value={dashboardName} onChange={(e) => setDashboardName(e.target.value)} /></div>
-                    <div className="space-y-2"><Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição</Label><Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} /></div>
-                    <div className="space-y-2"><Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug (URL)</Label><Input id="slug" value={slug} readOnly disabled className="bg-muted/50 cursor-not-allowed" /><p className="text-xs text-muted-foreground">Acessível em: {baseUrl ? `${baseUrl}/${slug}`: '...'}</p></div>
-                </CardContent>
-              </Card>
+                  <CardHeader><CardTitle>Perguntas do Quiz</CardTitle></CardHeader>
+                  <CardContent>
+                      <Tabs value={currentTab} onValueChange={(value) => handleTabChange(value as 'interactive' | 'json')}>
+                          <TabsList className="grid w-full grid-cols-2 h-12">
+                              <TabsTrigger value="interactive" className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><Wand2 className="mr-2 h-5 w-5" />Construtor Interativo</TabsTrigger>
+                              <TabsTrigger value="json" className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><FileJson className="mr-2 h-5 w-5" />Editor JSON</TabsTrigger>
+                          </TabsList>
+                          
+                          <TabsContent value="interactive" className="pt-4">
+                            <Accordion type="single" collapsible className="w-full space-y-4">
+                                {interactiveQuestions.map((q, qIndex) => (
+                                <AccordionItem key={q.id || `q_interactive_edit_${qIndex}`} value={q.id || `item-${qIndex}`} className="border rounded-lg bg-muted/20 p-0">
+                                    <AccordionTrigger className="px-4 py-3 text-lg font-medium hover:no-underline"><div className="flex items-center gap-3"><ChevronsUpDown className="h-5 w-5 text-muted-foreground" /><span>Pergunta {qIndex + 1}: {q.text || "Nova Pergunta"}</span></div></AccordionTrigger>
+                                    <AccordionContent className="border-t"><div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4"><div className="space-y-4"><Card><CardContent className="p-4 space-y-4"><div className="space-y-2"><Label htmlFor={`q-${qIndex}-text`}>Texto da Pergunta</Label><Textarea id={`q-${qIndex}-text`} placeholder="Qual o seu tipo de pele?" value={q.text} onChange={(e) => updateQuestion(qIndex, 'text', e.target.value)} /></div><div className="space-y-2"><Label htmlFor={`q-${qIndex}-explanation`}>Explicação (Opcional)</Label><Textarea id={`q-${qIndex}-explanation`} placeholder="Ajude o usuário a entender a pergunta." value={q.explanation || ''} onChange={(e) => updateQuestion(qIndex, 'explanation', e.target.value)} rows={2}/></div></CardContent></Card><Card><CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor={`q-${qIndex}-id`}>ID da Pergunta</Label><Input id={`q-${qIndex}-id`} placeholder="Ex: q1_pele (único)" value={q.id} onChange={(e) => updateQuestion(qIndex, 'id', e.target.value)} /></div><div className="space-y-2"><Label htmlFor={`q-${qIndex}-name`}>Nome/Chave (form)</Label><Input id={`q-${qIndex}-name`} placeholder="Ex: tipoPele" value={q.name} onChange={(e) => updateQuestion(qIndex, 'name', e.target.value)} /></div><div className="space-y-2"><Label>Ícone da Pergunta</Label><IconPicker value={q.icon} onChange={(iconName) => updateQuestion(qIndex, 'icon', iconName)} /></div><div className="space-y-2"><Label>Tipo</Label><Select value={q.type} onValueChange={(value) => updateQuestion(qIndex, 'type', value)}><SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger><SelectContent><SelectItem value="radio">Escolha Única (Radio)</SelectItem><SelectItem value="checkbox">Múltipla Escolha (Checkbox)</SelectItem><SelectItem value="textFields">Campos de Texto</SelectItem></SelectContent></Select></div></CardContent></Card>
+                                        {(q.type === 'radio' || q.type === 'checkbox') && (<Card><CardHeader className="pb-2"><CardTitle className="text-md">Opções de Resposta</CardTitle></CardHeader><CardContent className="space-y-3 p-4">{(q.options || []).map((opt, oIndex) => (<Card key={`q-${qIndex}-opt_edit_${oIndex}`} className="p-3 bg-background/50 relative"><div className="space-y-3"><Label className="text-sm font-medium">Opção {oIndex + 1}</Label><div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-value`} className="text-xs">Valor (ID)</Label><Input id={`q-${qIndex}-opt-${oIndex}-value`} placeholder="Ex: opcao_a" value={opt.value} onChange={(e) => updateOption(qIndex, oIndex, 'value', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-opt-${oIndex}-label`} placeholder="Ex: Opção A" value={opt.label} onChange={(e) => updateOption(qIndex, oIndex, 'label', e.target.value)} /></div></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-text_message`} className="text-xs">Texto para Mensagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-text_message`} placeholder="Ex: 'que já tem experiência'" value={opt.text_message || ''} onChange={(e) => updateOption(qIndex, oIndex, 'text_message', e.target.value)} /></div><div className="space-y-1"><Label className="text-xs">Ícone</Label><IconPicker value={opt.icon} onChange={(iconName) => updateOption(qIndex, oIndex, 'icon', iconName)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-imageUrl`} className="text-xs">URL da Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-imageUrl`} placeholder="https://placehold.co/300x200.png" value={opt.imageUrl || ''} onChange={(e) => updateOption(qIndex, oIndex, 'imageUrl', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-dataAiHint`} className="text-xs">Dica IA para Imagem</Label><Input id={`q-${qIndex}-opt-${oIndex}-dataAiHint`} placeholder="Ex: abstract shape" value={opt.dataAiHint || ''} onChange={(e) => updateOption(qIndex, oIndex, 'dataAiHint', e.target.value)} /></div><div className="flex items-center space-x-2 pt-2"><Switch id={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} checked={opt.isDisqualifying} onCheckedChange={(checked) => updateOption(qIndex, oIndex, 'isDisqualifying', checked)} /><Label htmlFor={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} className="text-xs font-normal text-destructive">Desqualificar esta resposta</Label></div></div><Button variant="ghost" size="icon" onClick={() => removeOption(qIndex, oIndex)} className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7"><Trash2 className="h-4 w-4" /></Button></Card>))}<Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)} className="mt-2 w-full"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Opção</Button></CardContent></Card>)}
+                                        {q.type === 'textFields' && (<Card><CardHeader className="pb-2"><CardTitle className="text-md">Campos de Entrada</CardTitle></CardHeader><CardContent className="space-y-3 p-4">{(q.fields || []).map((field, fIndex) => (<Card key={`q-${qIndex}-field_edit_${fIndex}`} className="p-3 bg-background/50 relative"><div className="space-y-3"><Label className="text-sm font-medium">Campo {fIndex + 1}</Label><div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-name`} className="text-xs">Nome/Chave</Label><Input id={`q-${qIndex}-field-${fIndex}-name`} placeholder="Ex: nomeCompleto" value={field.name} onChange={(e) => updateFormField(qIndex, fIndex, 'name', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-field-${fIndex}-label`} placeholder="Ex: Nome Completo" value={field.label} onChange={(e) => updateFormField(qIndex, fIndex, 'label', e.target.value)} /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div><Label className="text-xs">Tipo do Campo</Label><Select value={field.type} onValueChange={(val) => updateFormField(qIndex, fIndex, 'type', val as 'text'|'tel'|'email')}><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger><SelectContent><SelectItem value="text">Texto</SelectItem><SelectItem value="tel">Telefone</SelectItem><SelectItem value="email">Email</SelectItem></SelectContent></Select></div><div><Label className="text-xs">Ícone</Label><IconPicker value={field.icon} onChange={(val) => updateFormField(qIndex, fIndex, 'icon', val)} /></div></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-placeholder`} className="text-xs">Placeholder</Label><Input id={`q-${qIndex}-field-${fIndex}-placeholder`} placeholder="Ex: Digite seu nome" value={field.placeholder || ''} onChange={(e) => updateFormField(qIndex, fIndex, 'placeholder', e.target.value)} /></div></div><Button variant="ghost" size="icon" onClick={() => removeFormField(qIndex, fIndex)} className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7"><Trash2 className="h-4 w-4" /></Button></Card>))}<Button type="button" variant="outline" size="sm" onClick={() => addFormField(qIndex)} className="mt-2 w-full"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Campo</Button></CardContent></Card>)}
+                                        <div className="flex justify-end pt-2"><Button variant="ghost" size="sm" onClick={() => removeQuestion(qIndex)} className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Remover Pergunta</Button></div></div>
+                                    <div className="lg:sticky lg:top-4"><Card className="bg-background"><CardHeader><CardTitle className="text-md">Pré-visualização da Pergunta</CardTitle></CardHeader><CardContent><QuestionPreview question={q} /></CardContent></Card></div></div></AccordionContent></AccordionItem>))}
+                            </Accordion>
+                            <Button type="button" onClick={addQuestion} variant="outline" className="w-full mt-6 shadow-sm"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Nova Pergunta</Button>
+                          </TabsContent>
 
-              <Card className="shadow-lg">
-                <CardHeader><CardTitle>Páginas de Resultado</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2"><Label htmlFor="successPageText" className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-muted-foreground" />Texto (Qualificado)</Label><Textarea id="successPageText" value={successPageText} onChange={(e) => setSuccessPageText(e.target.value)} rows={3}/></div>
-                    <div className="space-y-2"><Label htmlFor="disqualifiedPageText" className="flex items-center gap-1.5"><UserX className="h-4 w-4 text-muted-foreground" />Texto (Desqualificado)</Label><Textarea id="disqualifiedPageText" value={disqualifiedPageText} onChange={(e) => setDisqualifiedPageText(e.target.value)} rows={3}/></div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-lg">
-                  <CardHeader><CardTitle>Redirecionamento (Desqualificado)</CardTitle></CardHeader>
-                  <CardContent className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2"><Label htmlFor="disqualifiedRedirectUrl" className="flex items-center gap-1.5"><VenetianMask className="h-4 w-4 text-muted-foreground" />URL de Redirecionamento</Label><Input id="disqualifiedRedirectUrl" value={disqualifiedRedirectUrl} onChange={(e) => setDisqualifiedRedirectUrl(e.target.value)} placeholder="https://... (opcional)" /></div>
-                      <div className="space-y-2"><Label htmlFor="disqualifiedRedirectDelaySeconds" className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-muted-foreground" />Atraso (segundos)</Label><Input type="number" id="disqualifiedRedirectDelaySeconds" value={disqualifiedRedirectDelaySeconds} onChange={(e) => setDisqualifiedRedirectDelaySeconds(Number(e.target.value) || 0)} /></div>
+                          <TabsContent value="json" className="pt-4">
+                               <Textarea id="questionsJson" value={questionsJson} onChange={(e) => setQuestionsJson(e.target.value)} placeholder="[]" rows={25} className="font-mono text-xs bg-muted/20"/>
+                              <Button asChild variant="outline" className="mt-4"><Link href="/config/dashboard/documentation/quiz-json" target="_blank"><BookOpen className="mr-2 h-4 w-4" /> Abrir Guia de Criação JSON</Link></Button>
+                          </TabsContent>
+                      </Tabs>
                   </CardContent>
               </Card>
+            </TabsContent>
 
-               <Card className="shadow-lg">
-                  <CardHeader><CardTitle>Configurações do Quiz</CardTitle></CardHeader>
+            <TabsContent value="configuracoes" className="space-y-6">
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle>Detalhes do Quiz</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
-                        <div className='flex items-start gap-3'>
-                          <ToggleLeft className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                          <div className='flex flex-col'>
-                            <Label htmlFor="isActive-switch" className="font-medium">Status</Label>
-                            <span className="text-xs font-normal text-muted-foreground">Quiz acessível ao público.</span>
-                          </div>
-                        </div>
-                        <Switch id="isActive-switch" checked={isActive} onCheckedChange={setIsActive} />
-                      </div>
+                      <div className="space-y-2"><Label htmlFor="title" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público</Label><Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required /></div>
+                      <div className="space-y-2"><Label htmlFor="dashboardName" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno</Label><Input id="dashboardName" value={dashboardName} onChange={(e) => setDashboardName(e.target.value)} /></div>
+                      <div className="space-y-2"><Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug (URL)</Label><Input id="slug" value={slug} readOnly disabled className="bg-muted/50 cursor-not-allowed" /><p className="text-xs text-muted-foreground">Acessível em: {baseUrl ? `${baseUrl}/${slug}`: '...'}</p></div>
+                      <div className="space-y-2"><Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição</Label><Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} /></div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle>Configurações Gerais</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4"><div className='flex items-start gap-3'><ToggleLeft className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" /><div className='flex flex-col'><Label htmlFor="isActive-switch" className="font-medium">Status</Label><span className="text-xs font-normal text-muted-foreground">Quiz acessível ao público.</span></div></div><Switch id="isActive-switch" checked={isActive} onCheckedChange={setIsActive} /></div>
+                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4"><div className='flex items-start gap-3'><LayoutDashboard className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" /><div className='flex flex-col'><p className="font-medium">Formato</p><span className="text-xs font-normal text-muted-foreground">Como as perguntas são exibidas.</span></div></div><RadioGroup value={displayMode} onValueChange={(value) => setDisplayMode(value as 'step-by-step' | 'single-page')} className="flex gap-4"><div className="flex items-center space-x-2"><RadioGroupItem value="step-by-step" id="mode-step" /><Label htmlFor="mode-step" className="font-normal text-sm">Passo a Passo</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="single-page" id="mode-single" /><Label htmlFor="mode-single" className="font-normal text-sm">Página Única</Label></div></RadioGroup></div>
+                  </CardContent>
+              </Card>
+            </TabsContent>
 
-                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
-                        <div className='flex items-start gap-3'>
-                          <LayoutDashboard className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                           <div className='flex flex-col'>
-                            <p className="font-medium">Formato</p>
-                            <span className="text-xs font-normal text-muted-foreground">Como as perguntas são exibidas.</span>
-                          </div>
-                        </div>
-                        <RadioGroup value={displayMode} onValueChange={(value) => setDisplayMode(value as 'step-by-step' | 'single-page')} className="flex gap-4">
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="step-by-step" id="mode-step" />
-                                <Label htmlFor="mode-step" className="font-normal text-sm">Passo a Passo</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="single-page" id="mode-single" />
-                                <Label htmlFor="mode-single" className="font-normal text-sm">Página Única</Label>
-                            </div>
-                        </RadioGroup>
-                      </div>
-
-                      <div className="space-y-4 rounded-lg border p-4">
-                          <div className="flex items-center justify-between space-x-2">
-                            <div className='flex items-start gap-3'>
-                              <Palette className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                              <div className='flex flex-col'>
-                                <Label htmlFor="useCustomTheme-switch" className="font-medium">Tema Customizado</Label>
-                                <span className="text-xs font-normal text-muted-foreground">Sobrescrever cores globais.</span>
+            <TabsContent value="mensagens" className="space-y-6">
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle>Mensagens Pós-Quiz</CardTitle></CardHeader>
+                  <CardContent>
+                      <div className="space-y-3">
+                        {messages.map((msg, msgIndex) => (
+                          <Card key={msg.id} className="p-4 bg-muted/30 flex gap-4">
+                              <div className="flex flex-col items-center gap-1 text-muted-foreground bg-background/50 p-1 rounded-md border h-min">
+                                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}><ChevronUp className="h-5 w-5" /></Button>
+                                  <span className="font-bold text-sm select-none">{msgIndex + 1}</span>
+                                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'down')} disabled={msgIndex === messages.length - 1}><ChevronDown className="h-5 w-5" /></Button>
                               </div>
-                            </div>
-                            <Switch id="useCustomTheme-switch" checked={useCustomTheme} onCheckedChange={setUseCustomTheme} />
-                          </div>
+                              <div className="flex-grow flex flex-col gap-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                                      <div className="space-y-2 md:col-span-1"><Label>Tipo da Mensagem</Label><Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}><SelectTrigger><div className="flex items-center gap-2">{msg.type === 'imagem' ? <ImageIconLucide className="h-4 w-4 text-muted-foreground" /> : msg.type === 'audio' ? <AudioWaveform className="h-4 w-4 text-muted-foreground" /> : <MessageSquareText className="h-4 w-4 text-muted-foreground" />}<SelectValue placeholder="Selecione o tipo" /></div></SelectTrigger><SelectContent><SelectItem value="mensagem">Texto</SelectItem><SelectItem value="imagem">Imagem</SelectItem><SelectItem value="audio">Áudio</SelectItem></SelectContent></Select></div>
+                                      <div className="space-y-2 md:col-span-2"><Label>Conteúdo</Label>{msg.type === 'mensagem' ? (<Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3} />) : (<div className="flex items-center gap-2"><Label htmlFor={`file-upload-edit-${msg.id}`} className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}><FileUp className="mr-2 h-4 w-4" /><span>{msg.filename ? 'Trocar' : 'Escolher'}</span></Label><Input id={`file-upload-edit-${msg.id}`} type="file" accept={msg.type === 'imagem' ? "image/*" : "audio/*"} onChange={(e) => handleFileChange(e, msgIndex)} className="hidden" />{msg.filename ? (<span className="text-sm text-muted-foreground truncate" title={msg.filename}>{msg.filename}</span>) : (<span className="text-sm text-muted-foreground">Nenhum arquivo</span>)}</div>)}</div>
+                                  </div>
+                                  <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-border/30">
+                                      {msg.type === 'mensagem' && (<DropdownMenu><DropdownMenuTrigger asChild><Button type="button" variant="outline" size="sm" disabled={availableVariables.length === 0}><Tags className="mr-2 h-4 w-4" /> Inserir Variável</Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuLabel>Variáveis do Quiz</DropdownMenuLabel><DropdownMenuSeparator />{availableVariables.length > 0 ? availableVariables.map(variable => (<DropdownMenuItem key={variable.value} onSelect={() => handleInsertVariable(variable.value, msgIndex)}>{variable.label}</DropdownMenuItem>)) : (<DropdownMenuItem disabled>Nenhuma variável encontrada</DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>)}
+                                      <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="text-muted-foreground hover:text-destructive h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
+                                  </div>
+                              </div>
+                          </Card>
+                        ))}
+                      </div>
+                      <Button type="button" variant="outline" className="w-full mt-4" onClick={addMessage} disabled={messages.length >= 5}><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Mensagem</Button>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle>Páginas de Resultado</CardTitle></CardHeader>
+                  <CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="successPageText" className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-muted-foreground" />Texto (Qualificado)</Label><Textarea id="successPageText" value={successPageText} onChange={(e) => setSuccessPageText(e.target.value)} rows={3}/></div><div className="space-y-2"><Label htmlFor="disqualifiedPageText" className="flex items-center gap-1.5"><UserX className="h-4 w-4 text-muted-foreground" />Texto (Desqualificado)</Label><Textarea id="disqualifiedPageText" value={disqualifiedPageText} onChange={(e) => setDisqualifiedPageText(e.target.value)} rows={3}/></div></CardContent>
+                </Card>
+                <Card className="shadow-lg">
+                    <CardHeader><CardTitle>Redirecionamento (Desqualificado)</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="disqualifiedRedirectUrl" className="flex items-center gap-1.5"><VenetianMask className="h-4 w-4 text-muted-foreground" />URL de Redirecionamento</Label><Input id="disqualifiedRedirectUrl" value={disqualifiedRedirectUrl} onChange={(e) => setDisqualifiedRedirectUrl(e.target.value)} placeholder="https://... (opcional)" /></div><div className="space-y-2"><Label htmlFor="disqualifiedRedirectDelaySeconds" className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-muted-foreground" />Atraso (segundos)</Label><Input type="number" id="disqualifiedRedirectDelaySeconds" value={disqualifiedRedirectDelaySeconds} onChange={(e) => setDisqualifiedRedirectDelaySeconds(Number(e.target.value) || 0)} /></div></CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="avancado" className="space-y-6">
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle>Aparência</CardTitle></CardHeader>
+                  <CardContent>
+                      <div className="space-y-4 rounded-lg border p-4">
+                          <div className="flex items-center justify-between space-x-2"><div className='flex items-start gap-3'><Palette className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" /><div className='flex flex-col'><Label htmlFor="useCustomTheme-switch" className="font-medium">Tema Customizado</Label><span className="text-xs font-normal text-muted-foreground">Sobrescrever cores globais.</span></div></div><Switch id="useCustomTheme-switch" checked={useCustomTheme} onCheckedChange={setUseCustomTheme} /></div>
                           {useCustomTheme && (
                               <div className="space-y-4 pt-4 border-t animate-in fade-in-0 zoom-in-95">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="custom-primaryColorHex">Cor Primária</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input id="custom-primaryColorHex" placeholder="#1D4ED8" value={customTheme?.primaryColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))}/>
-                                        <Input id="custom-primaryColorHexPicker" type="color" value={customTheme?.primaryColorHex || '#1D4ED8'} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="custom-secondaryColorHex">Cor Secundária</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input id="custom-secondaryColorHex" placeholder="#A5B4FC" value={customTheme?.secondaryColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))}/>
-                                        <Input id="custom-secondaryColorHexPicker" type="color" value={customTheme?.secondaryColorHex || '#A5B4FC'} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="custom-quizBackgroundColorHex">Fundo do Quiz</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input id="custom-quizBackgroundColorHex" placeholder="#FFFFFF" value={customTheme?.quizBackgroundColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))}/>
-                                        <Input id="custom-quizBackgroundColorHexPicker" type="color" value={customTheme?.quizBackgroundColorHex || '#FFFFFF'} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="custom-buttonPrimaryBgColorHex">Fundo do Botão</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input id="custom-buttonPrimaryBgColorHex" placeholder="#1E40AF" value={customTheme?.buttonPrimaryBgColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))}/>
-                                        <Input id="custom-buttonPrimaryBgColorHexPicker" type="color" value={customTheme?.buttonPrimaryBgColorHex || '#1E40AF'} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/>
-                                    </div>
-                                  </div>
+                                  <div className="space-y-2"><Label htmlFor="custom-primaryColorHex">Cor Primária</Label><div className="flex items-center gap-2"><Input id="custom-primaryColorHex" placeholder="#1D4ED8" value={customTheme?.primaryColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))}/><Input id="custom-primaryColorHexPicker" type="color" value={customTheme?.primaryColorHex || '#1D4ED8'} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
+                                  <div className="space-y-2"><Label htmlFor="custom-secondaryColorHex">Cor Secundária</Label><div className="flex items-center gap-2"><Input id="custom-secondaryColorHex" placeholder="#A5B4FC" value={customTheme?.secondaryColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))}/><Input id="custom-secondaryColorHexPicker" type="color" value={customTheme?.secondaryColorHex || '#A5B4FC'} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
+                                  <div className="space-y-2"><Label htmlFor="custom-quizBackgroundColorHex">Fundo do Quiz</Label><div className="flex items-center gap-2"><Input id="custom-quizBackgroundColorHex" placeholder="#FFFFFF" value={customTheme?.quizBackgroundColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))}/><Input id="custom-quizBackgroundColorHexPicker" type="color" value={customTheme?.quizBackgroundColorHex || '#FFFFFF'} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
+                                  <div className="space-y-2"><Label htmlFor="custom-buttonPrimaryBgColorHex">Fundo do Botão</Label><div className="flex items-center gap-2"><Input id="custom-buttonPrimaryBgColorHex" placeholder="#1E40AF" value={customTheme?.buttonPrimaryBgColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))}/><Input id="custom-buttonPrimaryBgColorHexPicker" type="color" value={customTheme?.buttonPrimaryBgColorHex || '#1E40AF'} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
                               </div>
                           )}
                       </div>
                   </CardContent>
-              </Card>
-
-              <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-md">
-                        <Fingerprint className="h-5 w-5 text-muted-foreground" />
-                        Rastreamento (Pixel)
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                   <div className="flex items-center justify-between space-x-2 rounded-lg border p-3">
-                        <Label htmlFor="pixel-ignore-primary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Primário</Label>
-                        <Switch id="pixel-ignore-primary" checked={pixelSettings?.ignoreGlobalPrimaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalPrimaryPixel: checked}))} />
-                   </div>
-                    <div className="flex items-center justify-between space-x-2 rounded-lg border p-3">
-                        <Label htmlFor="pixel-ignore-secondary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Secundário</Label>
-                        <Switch id="pixel-ignore-secondary" checked={pixelSettings?.ignoreGlobalSecondaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalSecondaryPixel: checked}))} />
-                   </div>
-                   <div className="space-y-2">
-                        <Label htmlFor="pixel-specific" className="text-sm">Pixel Exclusivo do Quiz</Label>
-                        <Input id="pixel-specific" placeholder="ID do Pixel (opcional)" value={pixelSettings?.quizSpecificPixelId || ''} onChange={(e) => setPixelSettings(prev => ({...prev, quizSpecificPixelId: e.target.value}))} />
-                   </div>
-                </CardContent>
-              </Card>
-          </div>
-        </div>
+                </Card>
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle className="flex items-center gap-2 text-md"><Fingerprint className="h-5 w-5 text-muted-foreground" />Rastreamento (Pixel)</CardTitle></CardHeader>
+                  <CardContent className="space-y-4"><div className="flex items-center justify-between space-x-2 rounded-lg border p-3"><Label htmlFor="pixel-ignore-primary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Primário</Label><Switch id="pixel-ignore-primary" checked={pixelSettings?.ignoreGlobalPrimaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalPrimaryPixel: checked}))} /></div><div className="flex items-center justify-between space-x-2 rounded-lg border p-3"><Label htmlFor="pixel-ignore-secondary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Secundário</Label><Switch id="pixel-ignore-secondary" checked={pixelSettings?.ignoreGlobalSecondaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalSecondaryPixel: checked}))} /></div><div className="space-y-2"><Label htmlFor="pixel-specific" className="text-sm">Pixel Exclusivo do Quiz</Label><Input id="pixel-specific" placeholder="ID do Pixel (opcional)" value={pixelSettings?.quizSpecificPixelId || ''} onChange={(e) => setPixelSettings(prev => ({...prev, quizSpecificPixelId: e.target.value}))} /></div></CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
 
         <div className="mt-6">
             <Card className="shadow-lg">
