@@ -227,7 +227,7 @@ export default function CreateQuizPage() {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
     if (question.options) {
-      question.options = question.options.filter((_, i) => i !== index);
+      question.options = question.options.filter((_, i) => i !== oIndex);
       setInteractiveQuestions(newQuestions);
     }
   };
