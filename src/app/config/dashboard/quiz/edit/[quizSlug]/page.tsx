@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -586,9 +585,6 @@ export default function EditQuizPage() {
                         <span>Mensagens Pós-Quiz</span>
                         <span className="text-sm font-medium text-muted-foreground">{messages.length} / 5</span>
                     </CardTitle>
-                    <CardDescription>
-                        Configure e ordene mensagens de texto, imagem ou áudio para serem enviadas via webhook. Você pode usar variáveis das respostas, como `{{nomeCompleto}}`.
-                    </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
