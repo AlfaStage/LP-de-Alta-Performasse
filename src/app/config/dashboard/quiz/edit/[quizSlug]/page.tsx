@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -589,7 +590,7 @@ export default function EditQuizPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     {messages.map((msg, msgIndex) => (
-                        <Card key={msg.id} className="p-4 bg-muted/30 relative border-border/60 pl-14">
+                        <Card key={msg.id} className="p-4 bg-muted/30 relative border-border/60 pl-14 flex flex-col">
                             <div className="absolute left-2 top-4 flex flex-col items-center gap-1 text-muted-foreground">
                                 <span className="font-bold text-sm">{msgIndex + 1}</span>
                                 <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}>
@@ -600,11 +601,7 @@ export default function EditQuizPage() {
                                 </Button>
                             </div>
                                         
-                            <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="absolute top-2 right-2 text-muted-foreground hover:text-destructive z-10 h-8 w-8">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start flex-grow">
                                 <div className="space-y-2 md:col-span-1">
                                     <Label>Tipo da Mensagem</Label>
                                     <Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}>
@@ -624,33 +621,13 @@ export default function EditQuizPage() {
                                 <div className="space-y-2 md:col-span-2">
                                     <Label>Conteúdo</Label>
                                     {msg.type === 'mensagem' && (
-                                        <div className="space-y-2">
-                                          <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3} />
-                                          <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                              <Button type="button" variant="outline" size="sm" disabled={availableVariables.length === 0}>
-                                                <Tags className="mr-2 h-4 w-4" /> Inserir Variável
-                                              </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                              <DropdownMenuLabel>Variáveis do Quiz</DropdownMenuLabel>
-                                              <DropdownMenuSeparator />
-                                              {availableVariables.length > 0 ? availableVariables.map(variable => (
-                                                  <DropdownMenuItem key={variable.value} onSelect={() => handleInsertVariable(variable.value, msgIndex)}>
-                                                      {variable.label}
-                                                  </DropdownMenuItem>
-                                              )) : (
-                                                  <DropdownMenuItem disabled>Nenhuma variável encontrada</DropdownMenuItem>
-                                              )}
-                                            </DropdownMenuContent>
-                                          </DropdownMenu>
-                                        </div>
+                                      <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3} />
                                     )}
                                     {(msg.type === 'imagem' || msg.type === 'audio') && (
                                         <div className="flex items-center gap-2">
                                         <Label htmlFor={`file-upload-edit-${msg.id}`} className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}>
                                             <FileUp className="mr-2 h-4 w-4" />
-                                            Escolher
+                                            <span>{msg.filename ? 'Trocar' : 'Escolher'}</span>
                                         </Label>
                                         <Input id={`file-upload-edit-${msg.id}`} type="file" accept={msg.type === 'imagem' ? "image/*" : "audio/*"} onChange={(e) => handleFileChange(e, msgIndex)} className="hidden" />
                                         {msg.filename ? (
@@ -661,6 +638,32 @@ export default function EditQuizPage() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border/30">
+                                <div className="flex-grow"></div>
+                                {msg.type === 'mensagem' && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button type="button" variant="outline" size="sm" disabled={availableVariables.length === 0}>
+                                        <Tags className="mr-2 h-4 w-4" /> Inserir Variável
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      <DropdownMenuLabel>Variáveis do Quiz</DropdownMenuLabel>
+                                      <DropdownMenuSeparator />
+                                      {availableVariables.length > 0 ? availableVariables.map(variable => (
+                                          <DropdownMenuItem key={variable.value} onSelect={() => handleInsertVariable(variable.value, msgIndex)}>
+                                              {variable.label}
+                                          </DropdownMenuItem>
+                                      )) : (
+                                          <DropdownMenuItem disabled>Nenhuma variável encontrada</DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                                <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="text-muted-foreground hover:text-destructive h-8 w-8">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                             </div>
                         </Card>
                     ))}
