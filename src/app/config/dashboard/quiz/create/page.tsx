@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit, AudioWaveform, Image as ImageIconLucide } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit, AudioWaveform, Image as ImageIconLucide, FileUp } from 'lucide-react';
 import { createQuizAction, generateAndCreateQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage } from '@/types/quiz';
 import dynamic from 'next/dynamic';
@@ -23,6 +23,7 @@ import IconPicker from '@/components/dashboard/IconPicker';
 import QuestionPreview from '@/components/dashboard/QuestionPreview';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
@@ -549,46 +550,75 @@ export default function CreateQuizPage() {
                         <span className="text-sm font-medium text-muted-foreground">{messages.length} / 5</span>
                     </CardTitle>
                     <CardDescription>
-                        Configure mensagens de texto, imagem ou áudio para serem enviadas via webhook após a conclusão do quiz.
+                        Configure mensagens de texto, imagem ou áudio para serem enviadas via webhook.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {messages.map((msg, msgIndex) => (
-                        <Card key={msg.id} className="p-4 bg-muted/30 relative">
-                            <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="absolute top-2 right-2 text-destructive hover:text-destructive/80 h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    {messages.map((msg, msgIndex) => {
+                      const MessageIcon =
+                        msg.type === 'imagem' ? ImageIconLucide :
+                        msg.type === 'audio' ? AudioWaveform :
+                        MessageSquareText;
+
+                      return (
+                        <Card key={msg.id} className="p-4 bg-muted/30 relative border-border/60">
+                            <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="absolute top-2 right-2 text-muted-foreground hover:text-destructive z-10 h-8 w-8">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                                 <div className="space-y-2 md:col-span-1">
                                     <Label>Tipo da Mensagem</Label>
                                     <Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}>
-                                        <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+                                        <SelectTrigger>
+                                          <div className="flex items-center gap-2">
+                                            <MessageIcon className="h-4 w-4 text-muted-foreground" />
+                                            <SelectValue placeholder="Selecione o tipo" />
+                                          </div>
+                                        </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="mensagem"><MessageSquareText className="mr-2 h-4 w-4" />Texto</SelectItem>
-                                            <SelectItem value="imagem"><ImageIconLucide className="mr-2 h-4 w-4" />Imagem</SelectItem>
-                                            <SelectItem value="audio"><AudioWaveform className="mr-2 h-4 w-4" />Áudio</SelectItem>
+                                            <SelectItem value="mensagem">Texto</SelectItem>
+                                            <SelectItem value="imagem">Imagem</SelectItem>
+                                            <SelectItem value="audio">Áudio</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
                                     <Label>Conteúdo</Label>
                                     {msg.type === 'mensagem' && (
-                                        <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} />
+                                        <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3}/>
                                     )}
-                                    {msg.type === 'imagem' && (
-                                        <div>
-                                            <Input type="file" accept="image/*" onChange={(e) => handleFileChange(e, msgIndex)} />
-                                            {msg.filename && <p className="text-xs text-muted-foreground mt-1 truncate">Arquivo: {msg.filename}</p>}
-                                        </div>
-                                    )}
-                                    {msg.type === 'audio' && (
-                                        <div>
-                                            <Input type="file" accept="audio/*" onChange={(e) => handleFileChange(e, msgIndex)} />
-                                            {msg.filename && <p className="text-xs text-muted-foreground mt-1 truncate">Arquivo: {msg.filename}</p>}
-                                        </div>
+                                    {(msg.type === 'imagem' || msg.type === 'audio') && (
+                                      <div className="flex items-center gap-2">
+                                        <Label
+                                            htmlFor={`file-upload-${msg.id}`}
+                                            className={cn(
+                                                buttonVariants({ variant: "outline" }),
+                                                "cursor-pointer"
+                                            )}
+                                        >
+                                            <FileUp className="mr-2 h-4 w-4" />
+                                            Escolher
+                                        </Label>
+                                        <Input
+                                            id={`file-upload-${msg.id}`}
+                                            type="file"
+                                            accept={msg.type === 'imagem' ? "image/*" : "audio/*"}
+                                            onChange={(e) => handleFileChange(e, msgIndex)}
+                                            className="hidden"
+                                        />
+                                        {msg.filename ? (
+                                            <span className="text-sm text-muted-foreground truncate" title={msg.filename}>
+                                                {msg.filename}
+                                            </span>
+                                        ) : (
+                                             <span className="text-sm text-muted-foreground">Nenhum arquivo</span>
+                                        )}
+                                    </div>
                                     )}
                                 </div>
                             </div>
                         </Card>
-                    ))}
+                    )})}
                     <Button type="button" variant="outline" className="w-full mt-4" onClick={addMessage} disabled={messages.length >= 5}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Mensagem
                     </Button>
