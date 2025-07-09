@@ -1,5 +1,6 @@
+
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit, AudioWaveform, Image as ImageIconLucide, FileUp, ChevronUp, ChevronDown } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit, AudioWaveform, Image as ImageIconLucide, FileUp, ChevronUp, ChevronDown, Tags } from 'lucide-react';
 import { createQuizAction, generateAndCreateQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage } from '@/types/quiz';
 import dynamic from 'next/dynamic';
@@ -23,6 +24,7 @@ import QuestionPreview from '@/components/dashboard/QuestionPreview';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
@@ -349,6 +351,41 @@ export default function CreateQuizPage() {
     alert("Submissão simulada! Verifique o console para os dados.");
   };
 
+  const availableVariables = useMemo(() => {
+    const vars: { label: string; value: string }[] = [];
+    let questionsToParse: QuizQuestion[] = [];
+    try {
+        questionsToParse = currentManualTab === 'interactive' 
+            ? interactiveQuestions 
+            : JSON.parse(questionsJson);
+        if (!Array.isArray(questionsToParse)) questionsToParse = [];
+    } catch {
+        questionsToParse = [];
+    }
+
+    questionsToParse.forEach((q: QuizQuestion) => {
+      if (q.type === 'textFields' && q.fields) {
+        q.fields.forEach(field => {
+          if (field.name) {
+            vars.push({ label: field.label || field.name, value: field.name });
+          }
+        });
+      } else {
+        if (q.name) {
+          vars.push({ label: q.text || q.name, value: q.name });
+        }
+      }
+    });
+    return vars;
+  }, [interactiveQuestions, questionsJson, currentManualTab]);
+
+  const handleInsertVariable = (variableName: string, msgIndex: number) => {
+      const currentMessage = messages[msgIndex];
+      // Append the variable tag to the content
+      const newContent = (currentMessage.content ? currentMessage.content + ' ' : '') + `{{${variableName}}}`;
+      updateMessage(msgIndex, 'content', newContent);
+  };
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -562,14 +599,14 @@ export default function CreateQuizPage() {
                           <span className="text-sm font-medium text-muted-foreground">{messages.length} / 5</span>
                       </CardTitle>
                       <CardDescription>
-                          Configure e ordene mensagens de texto, imagem ou áudio para serem enviadas via webhook.
+                          Configure e ordene mensagens de texto, imagem ou áudio para serem enviadas via webhook. Você pode usar variáveis das respostas, como `{{nomeCompleto}}`.
                       </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
                       {messages.map((msg, msgIndex) => (
                         <Card key={msg.id} className="p-4 bg-muted/30 relative border-border/60 pl-14">
-                          <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col items-center text-muted-foreground">
+                          <div className="absolute left-2 top-4 flex flex-col items-center text-muted-foreground">
                             <span className="font-bold text-sm mb-1">{msgIndex + 1}</span>
                             <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}>
                               <ChevronUp className="h-5 w-5" />
@@ -603,7 +640,27 @@ export default function CreateQuizPage() {
                               <div className="space-y-2 md:col-span-2">
                                   <Label>Conteúdo</Label>
                                   {msg.type === 'mensagem' && (
+                                    <div className="space-y-2">
                                       <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3}/>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button type="button" variant="outline" size="sm" disabled={availableVariables.length === 0}>
+                                            <Tags className="mr-2 h-4 w-4" /> Inserir Variável
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuLabel>Variáveis do Quiz</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            {availableVariables.length > 0 ? availableVariables.map(variable => (
+                                                <DropdownMenuItem key={variable.value} onSelect={() => handleInsertVariable(variable.value, msgIndex)}>
+                                                    {variable.label}
+                                                </DropdownMenuItem>
+                                            )) : (
+                                                <DropdownMenuItem disabled>Nenhuma variável encontrada</DropdownMenuItem>
+                                            )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
                                   )}
                                   {(msg.type === 'imagem' || msg.type === 'audio') && (
                                     <div className="flex items-center gap-2">

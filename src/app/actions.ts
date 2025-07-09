@@ -3,6 +3,7 @@
 import { SERVER_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
 import { recordQuizCompletedAction, getQuizConfigForPreview } from '@/app/config/dashboard/quiz/actions'; // Importar a nova função
+import type { QuizQuestion } from '@/types/quiz';
 
 interface ClientInfo {
   userAgent?: string;
@@ -112,11 +113,50 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
       }
   });
 
-  // 2. Get 'mensagens' array from quiz config and format it
-  const mensagens = (quizConfig.messages || []).map(msg => ({
+  // 2. Get 'mensagens' array from quiz config and perform variable substitution
+  const findQuestionByAnswerKey = (key: string): QuizQuestion | undefined => {
+    for (const q of quizConfig.questions) {
+      if (q.name === key) return q;
+      if (q.fields?.some(f => f.name === key)) return q;
+    }
+    return undefined;
+  };
+
+  const processedMessages = (quizConfig.messages || []).map(msg => {
+    let processedContent = msg.content;
+    if (msg.type === 'mensagem') {
+      processedContent = msg.content.replace(/\{\{\s*([^}]+)\s*\}\}/g, (match, variableName) => {
+        const value = perguntas[variableName];
+        if (value === undefined) {
+          return match; // Variable not found in answers, leave tag as is
+        }
+
+        // For radio or checkbox, try to find the label instead of the value
+        const question = findQuestionByAnswerKey(variableName);
+        if (question && question.options) {
+          if (Array.isArray(value)) { // Checkbox
+            const labels = value.map(v => {
+              const option = question.options?.find(o => o.value === v);
+              return option ? option.label : v;
+            });
+            return labels.join(', ');
+          } else { // Radio
+            const option = question.options.find(o => o.value === value);
+            return option ? option.label : value;
+          }
+        }
+        
+        // For text fields or if no label is found (e.g. legacy data)
+        return String(value);
+      });
+    }
+    return {
       tipo: msg.type,
-      conteúdo: msg.content
-  }));
+      conteúdo: processedContent,
+      ...(msg.filename && { filename: msg.filename }),
+    };
+  });
+
 
   // 3. Construct the final payload with nested body
   const payload = {
@@ -126,7 +166,7 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
       submittedAt,
       body: {
           perguntas,
-          mensagens
+          mensagens: processedMessages
       }
   };
 
