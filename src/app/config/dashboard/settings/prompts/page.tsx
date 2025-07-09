@@ -16,8 +16,10 @@ import type { AiPromptsConfig } from '@/types/quiz';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const promptsSchema = z.object({
-  fullQuizGeneration: z.string().min(50, "O prompt de geração de quiz completo deve ter pelo menos 50 caracteres."),
-  // Add other prompt validations here as they are created
+  generateQuizDetails: z.string().min(50, "O prompt deve ter pelo menos 50 caracteres."),
+  generateQuizQuestions: z.string().min(50, "O prompt deve ter pelo menos 50 caracteres."),
+  generateQuizMessages: z.string().min(50, "O prompt deve ter pelo menos 50 caracteres."),
+  generateQuizResultsPages: z.string().min(50, "O prompt deve ter pelo menos 50 caracteres."),
 });
 
 export default function PromptsSettingsPage() {
@@ -97,23 +99,59 @@ export default function PromptsSettingsPage() {
           </Alert>
 
           <div className="space-y-2">
-            <Label htmlFor="fullQuizGeneration" className="text-lg font-semibold">
-              Prompt de Geração de Quiz Completo
+            <Label htmlFor="generateQuizDetails" className="text-lg font-semibold">
+              Prompt para Detalhes do Quiz (Título, Slug, etc.)
             </Label>
             <Controller
-              name="fullQuizGeneration"
+              name="generateQuizDetails"
               control={control}
               render={({ field }) => (
-                <Textarea
-                  id="fullQuizGeneration"
-                  {...field}
-                  rows={20}
-                  className="font-mono text-xs"
-                  placeholder="Insira o prompt aqui..."
-                />
+                <Textarea id="generateQuizDetails" {...field} rows={8} className="font-mono text-xs"/>
               )}
             />
-            {errors.fullQuizGeneration && <p className="text-sm text-destructive">{errors.fullQuizGeneration.message as string}</p>}
+            {errors.generateQuizDetails && <p className="text-sm text-destructive">{errors.generateQuizDetails.message}</p>}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="generateQuizQuestions" className="text-lg font-semibold">
+              Prompt para Perguntas do Quiz
+            </Label>
+            <Controller
+              name="generateQuizQuestions"
+              control={control}
+              render={({ field }) => (
+                <Textarea id="generateQuizQuestions" {...field} rows={8} className="font-mono text-xs"/>
+              )}
+            />
+            {errors.generateQuizQuestions && <p className="text-sm text-destructive">{errors.generateQuizQuestions.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="generateQuizMessages" className="text-lg font-semibold">
+              Prompt para Mensagens Pós-Quiz
+            </Label>
+            <Controller
+              name="generateQuizMessages"
+              control={control}
+              render={({ field }) => (
+                <Textarea id="generateQuizMessages" {...field} rows={8} className="font-mono text-xs"/>
+              )}
+            />
+            {errors.generateQuizMessages && <p className="text-sm text-destructive">{errors.generateQuizMessages.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="generateQuizResultsPages" className="text-lg font-semibold">
+              Prompt para Páginas de Resultado (Sucesso/Desqualificado)
+            </Label>
+            <Controller
+              name="generateQuizResultsPages"
+              control={control}
+              render={({ field }) => (
+                <Textarea id="generateQuizResultsPages" {...field} rows={8} className="font-mono text-xs"/>
+              )}
+            />
+            {errors.generateQuizResultsPages && <p className="text-sm text-destructive">{errors.generateQuizResultsPages.message}</p>}
           </div>
         </CardContent>
         <CardFooter>

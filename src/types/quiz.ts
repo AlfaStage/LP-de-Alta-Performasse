@@ -99,10 +99,10 @@ export interface WhitelabelConfig {
 }
 
 export interface AiPromptsConfig {
-  fullQuizGeneration: string;
-  // Add other prompts here in the future
-  // e.g., generateDetailsPrompt: string;
-  // e.g., generateMessagesPrompt: string;
+  generateQuizDetails: string;
+  generateQuizQuestions: string;
+  generateQuizMessages: string;
+  generateQuizResultsPages: string;
 }
 
 // Statistics types

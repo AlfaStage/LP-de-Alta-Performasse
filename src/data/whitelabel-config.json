@@ -9,14 +9,17 @@
   "pageBackgroundImageUrl": "",
   "pageBackgroundGradient": "",
   "pageBackgroundType": "color",
-  "quizSubmissionWebhookUrl": "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
+  "quizSubmissionWebhookUrl": "https://6000-firebase-studio-1749477182674.cluster-vpxjqdstfzgs6qeiaf7rdlsqrc.cloudworkstations.dev/config/dashboard/settings/integrations",
+  "disqualifiedSubmissionWebhookUrl": "",
   "facebookPixelId": "",
   "facebookPixelIdSecondary": "",
   "googleAnalyticsId": "",
+  "googleApiKey": "AIzaSyCUSUc8RpYUIIiHBmIez5JSgTTIlXdIWVg",
   "footerCopyrightText": "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   "apiStatsAccessToken": "",
   "websiteUrl": "",
   "instagramUrl": "",
   "facebookDomainVerification": "",
-  "googleApiKey": ""
+  "dashboardDefaultFilter": "last7",
+  "conversionMetric": "start_vs_complete"
 }

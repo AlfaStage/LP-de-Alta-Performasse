@@ -11,9 +11,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, PlusCircle, Trash2, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, BookOpen, GripVertical, Fingerprint, AudioWaveform, Image as ImageIconLucide, FileUp, ChevronUp, ChevronDown, Settings, UserCheck, UserX, Timer, VenetianMask, Tags } from 'lucide-react';
-import { getQuizForEdit, updateQuizAction, type QuizEditData } from '@/app/config/dashboard/quiz/actions';
-import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage } from '@/types/quiz';
+import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, PlusCircle, Trash2, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, BookOpen, GripVertical, Fingerprint, AudioWaveform, Image as ImageIconLucide, FileUp, ChevronUp, ChevronDown, Settings, UserCheck, UserX, Timer, VenetianMask, Tags, BrainCircuit } from 'lucide-react';
+import { getQuizForEdit, updateQuizAction, generateQuizSectionAction } from '@/app/config/dashboard/quiz/actions';
+import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage, QuizEditData } from '@/types/quiz';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
@@ -26,6 +26,8 @@ import IconPicker from '@/components/dashboard/IconPicker';
 import QuestionPreview from '@/components/dashboard/QuestionPreview';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import AiGenerationDialog from '@/components/dashboard/AiGenerationDialog';
+import type { GenerationType } from '@/components/dashboard/AiGenerationDialog';
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   ssr: false,
@@ -70,17 +72,25 @@ export default function EditQuizPage() {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [baseUrl, setBaseUrl] = useState('');
 
+  // AI State
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+  const [currentGenerationType, setCurrentGenerationType] = useState<GenerationType>('details');
+  const [hasApiKey, setHasApiKey] = useState(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setBaseUrl(window.location.origin);
     }
-    async function fetchPreviewConfig() {
+    async function fetchWlConfig() {
       setIsLoadingPreview(true);
       const config = await fetchWhitelabelSettings();
       setWhitelabelSettings(config);
+       if (config.googleApiKey && config.googleApiKey.trim() !== '') {
+        setHasApiKey(true);
+      }
       setIsLoadingPreview(false);
     }
-    fetchPreviewConfig();
+    fetchWlConfig();
   }, []);
 
   const fetchQuizData = useCallback(async () => {
@@ -191,7 +201,8 @@ export default function EditQuizPage() {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
     if (question.options) {
-      question.options = question.options.filter((_, i) => i !== oIndex);
+      const updatedOptions = question.options.filter((_, i) => i !== oIndex);
+      newQuestions[qIndex].options = updatedOptions;
       setInteractiveQuestions(newQuestions);
     }
   };
@@ -420,6 +431,31 @@ export default function EditQuizPage() {
     updateMessage(msgIndex, 'content', newContent);
   };
 
+  const handleOpenAiDialog = (type: GenerationType) => {
+    setCurrentGenerationType(type);
+    setIsAiDialogOpen(true);
+  };
+
+  const handleAiGeneratedData = (data: any) => {
+    if (!data) return;
+
+    if (currentGenerationType === 'details') {
+        setTitle(data.title || title);
+        setSlug(data.slug || slug);
+        setDashboardName(data.dashboardName || dashboardName);
+        setDescription(data.description || description);
+    } else if (currentGenerationType === 'questions') {
+        setInteractiveQuestions(data.questions || interactiveQuestions);
+        setQuestionsJson(JSON.stringify(data.questions || [], null, 2));
+    } else if (currentGenerationType === 'messages') {
+        setMessages(data.messages || messages);
+    } else if (currentGenerationType === 'results') {
+        setSuccessPageText(data.successPageText || successPageText);
+        setDisqualifiedPageText(data.disqualifiedPageText || disqualifiedPageText);
+    }
+  };
+
+
   if (isFetching) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -473,9 +509,82 @@ export default function EditQuizPage() {
                 <TabsTrigger value="mensagens" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Mensagens</TabsTrigger>
             </TabsList>
 
+            <TabsContent value="configuracoes" className="space-y-6">
+                <Card className="shadow-lg">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                      <div className="space-y-1">
+                          <CardTitle>Detalhes do Quiz</CardTitle>
+                      </div>
+                      {hasApiKey && (
+                          <Button type="button" variant="outline" size="sm" onClick={() => handleOpenAiDialog('details')}>
+                              <Wand2 className="mr-2 h-4 w-4"/> Gerar com IA
+                          </Button>
+                      )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="space-y-2"><Label htmlFor="title" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público</Label><Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required /></div>
+                      <div className="space-y-2"><Label htmlFor="dashboardName" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno</Label><Input id="dashboardName" value={dashboardName} onChange={(e) => setDashboardName(e.target.value)} /></div>
+                      <div className="space-y-2"><Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug (URL)</Label><Input id="slug" value={slug} readOnly disabled className="bg-muted/50 cursor-not-allowed" /><p className="text-xs text-muted-foreground">Acessível em: {baseUrl ? `${baseUrl}/${slug}`: '...'}</p></div>
+                      <div className="space-y-2"><Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição</Label><Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} /></div>
+                  </CardContent>
+                </Card>
+                 <Card className="shadow-lg">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Páginas de Resultado e Redirecionamento</CardTitle>
+                        {hasApiKey && (
+                            <Button type="button" variant="outline" size="sm" onClick={() => handleOpenAiDialog('results')}>
+                                <Wand2 className="mr-2 h-4 w-4"/> Gerar com IA
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2"><Label htmlFor="successPageText" className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-muted-foreground" />Texto (Qualificado)</Label><Textarea id="successPageText" value={successPageText} onChange={(e) => setSuccessPageText(e.target.value)} rows={3}/></div>
+                        <div className="space-y-2"><Label htmlFor="disqualifiedPageText" className="flex items-center gap-1.5"><UserX className="h-4 w-4 text-muted-foreground" />Texto (Desqualificado)</Label><Textarea id="disqualifiedPageText" value={disqualifiedPageText} onChange={(e) => setDisqualifiedPageText(e.target.value)} rows={3}/></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                           <div className="space-y-2"><Label htmlFor="disqualifiedRedirectUrl" className="flex items-center gap-1.5"><VenetianMask className="h-4 w-4 text-muted-foreground" />URL de Redirecionamento (Desqualificado)</Label><Input id="disqualifiedRedirectUrl" value={disqualifiedRedirectUrl} onChange={(e) => setDisqualifiedRedirectUrl(e.target.value)} placeholder="https://... (opcional)" /></div>
+                           <div className="space-y-2"><Label htmlFor="disqualifiedRedirectDelaySeconds" className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-muted-foreground" />Atraso (segundos)</Label><Input type="number" id="disqualifiedRedirectDelaySeconds" value={disqualifiedRedirectDelaySeconds} onChange={(e) => setDisqualifiedRedirectDelaySeconds(Number(e.target.value) || 0)} /></div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle>Configurações Gerais</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4"><div className='flex items-start gap-3'><ToggleLeft className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" /><div className='flex flex-col'><Label htmlFor="isActive-switch" className="font-medium">Status</Label><span className="text-xs font-normal text-muted-foreground">Quiz acessível ao público.</span></div></div><Switch id="isActive-switch" checked={isActive} onCheckedChange={setIsActive} /></div>
+                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4"><div className='flex items-start gap-3'><LayoutDashboard className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" /><div className='flex flex-col'><p className="font-medium">Formato</p><span className="text-xs font-normal text-muted-foreground">Como as perguntas são exibidas.</span></div></div><RadioGroup value={displayMode} onValueChange={(value) => setDisplayMode(value as 'step-by-step' | 'single-page')} className="flex gap-4"><div className="flex items-center space-x-2"><RadioGroupItem value="step-by-step" id="mode-step" /><Label htmlFor="mode-step" className="font-normal text-sm">Passo a Passo</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="single-page" id="mode-single" /><Label htmlFor="mode-single" className="font-normal text-sm">Página Única</Label></div></RadioGroup></div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle>Aparência</CardTitle></CardHeader>
+                  <CardContent>
+                      <div className="space-y-4 rounded-lg border p-4">
+                          <div className="flex items-center justify-between space-x-2"><div className='flex items-start gap-3'><Palette className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" /><div className='flex flex-col'><Label htmlFor="useCustomTheme-switch" className="font-medium">Tema Customizado</Label><span className="text-xs font-normal text-muted-foreground">Sobrescrever cores globais.</span></div></div><Switch id="useCustomTheme-switch" checked={useCustomTheme} onCheckedChange={setUseCustomTheme} /></div>
+                          {useCustomTheme && (
+                              <div className="space-y-4 pt-4 border-t animate-in fade-in-0 zoom-in-95">
+                                  <div className="space-y-2"><Label htmlFor="custom-primaryColorHex">Cor Primária</Label><div className="flex items-center gap-2"><Input id="custom-primaryColorHex" placeholder="#1D4ED8" value={customTheme?.primaryColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))}/><Input id="custom-primaryColorHexPicker" type="color" value={customTheme?.primaryColorHex || '#1D4ED8'} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
+                                  <div className="space-y-2"><Label htmlFor="custom-secondaryColorHex">Cor Secundária</Label><div className="flex items-center gap-2"><Input id="custom-secondaryColorHex" placeholder="#A5B4FC" value={customTheme?.secondaryColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))}/><Input id="custom-secondaryColorHexPicker" type="color" value={customTheme?.secondaryColorHex || '#A5B4FC'} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
+                                  <div className="space-y-2"><Label htmlFor="custom-quizBackgroundColorHex">Fundo do Quiz</Label><div className="flex items-center gap-2"><Input id="custom-quizBackgroundColorHex" placeholder="#FFFFFF" value={customTheme?.quizBackgroundColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))}/><Input id="custom-quizBackgroundColorHexPicker" type="color" value={customTheme?.quizBackgroundColorHex || '#FFFFFF'} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
+                                  <div className="space-y-2"><Label htmlFor="custom-buttonPrimaryBgColorHex">Fundo do Botão</Label><div className="flex items-center gap-2"><Input id="custom-buttonPrimaryBgColorHex" placeholder="#1E40AF" value={customTheme?.buttonPrimaryBgColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))}/><Input id="custom-buttonPrimaryBgColorHexPicker" type="color" value={customTheme?.buttonPrimaryBgColorHex || '#1E40AF'} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
+                              </div>
+                          )}
+                      </div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle className="flex items-center gap-2 text-md"><Fingerprint className="h-5 w-5 text-muted-foreground" />Rastreamento (Pixel)</CardTitle></CardHeader>
+                  <CardContent className="space-y-4"><div className="flex items-center justify-between space-x-2 rounded-lg border p-3"><Label htmlFor="pixel-ignore-primary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Primário</Label><Switch id="pixel-ignore-primary" checked={pixelSettings?.ignoreGlobalPrimaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalPrimaryPixel: checked}))} /></div><div className="flex items-center justify-between space-x-2 rounded-lg border p-3"><Label htmlFor="pixel-ignore-secondary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Secundário</Label><Switch id="pixel-ignore-secondary" checked={pixelSettings?.ignoreGlobalSecondaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalSecondaryPixel: checked}))} /></div><div className="space-y-2"><Label htmlFor="pixel-specific" className="text-sm">Pixel Exclusivo do Quiz</Label><Input id="pixel-specific" placeholder="ID do Pixel (opcional)" value={pixelSettings?.quizSpecificPixelId || ''} onChange={(e) => setPixelSettings(prev => ({...prev, quizSpecificPixelId: e.target.value}))} /></div></CardContent>
+                </Card>
+            </TabsContent>
+
             <TabsContent value="perguntas">
               <Card className="shadow-lg">
-                  <CardHeader><CardTitle>Perguntas do Quiz</CardTitle></CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Perguntas do Quiz</CardTitle>
+                     {hasApiKey && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => handleOpenAiDialog('questions')}>
+                            <Wand2 className="mr-2 h-4 w-4"/> Gerar com IA
+                        </Button>
+                    )}
+                  </CardHeader>
                   <CardContent>
                       <Tabs value={currentTab} onValueChange={(value) => handleTabChange(value as 'interactive' | 'json')}>
                           <TabsList className="grid w-full grid-cols-2 h-12">
@@ -506,57 +615,15 @@ export default function EditQuizPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="configuracoes" className="space-y-6">
-                <Card className="shadow-lg">
-                  <CardHeader><CardTitle>Detalhes do Quiz</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                      <div className="space-y-2"><Label htmlFor="title" className="flex items-center gap-1.5"><FileTextIcon className="h-4 w-4 text-muted-foreground" />Título Público</Label><Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required /></div>
-                      <div className="space-y-2"><Label htmlFor="dashboardName" className="flex items-center gap-1.5"><BadgeInfo className="h-4 w-4 text-muted-foreground" />Nome Interno</Label><Input id="dashboardName" value={dashboardName} onChange={(e) => setDashboardName(e.target.value)} /></div>
-                      <div className="space-y-2"><Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug (URL)</Label><Input id="slug" value={slug} readOnly disabled className="bg-muted/50 cursor-not-allowed" /><p className="text-xs text-muted-foreground">Acessível em: {baseUrl ? `${baseUrl}/${slug}`: '...'}</p></div>
-                      <div className="space-y-2"><Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição</Label><Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} /></div>
-                  </CardContent>
-                </Card>
-                <Card className="shadow-lg">
-                  <CardHeader><CardTitle>Configurações Gerais</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4"><div className='flex items-start gap-3'><ToggleLeft className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" /><div className='flex flex-col'><Label htmlFor="isActive-switch" className="font-medium">Status</Label><span className="text-xs font-normal text-muted-foreground">Quiz acessível ao público.</span></div></div><Switch id="isActive-switch" checked={isActive} onCheckedChange={setIsActive} /></div>
-                      <div className="flex items-center justify-between space-x-2 rounded-lg border p-4"><div className='flex items-start gap-3'><LayoutDashboard className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" /><div className='flex flex-col'><p className="font-medium">Formato</p><span className="text-xs font-normal text-muted-foreground">Como as perguntas são exibidas.</span></div></div><RadioGroup value={displayMode} onValueChange={(value) => setDisplayMode(value as 'step-by-step' | 'single-page')} className="flex gap-4"><div className="flex items-center space-x-2"><RadioGroupItem value="step-by-step" id="mode-step" /><Label htmlFor="mode-step" className="font-normal text-sm">Passo a Passo</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="single-page" id="mode-single" /><Label htmlFor="mode-single" className="font-normal text-sm">Página Única</Label></div></RadioGroup></div>
-                  </CardContent>
-                </Card>
-                <Card className="shadow-lg">
-                    <CardHeader><CardTitle>Páginas de Resultado</CardTitle></CardHeader>
-                    <CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="successPageText" className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-muted-foreground" />Texto (Qualificado)</Label><Textarea id="successPageText" value={successPageText} onChange={(e) => setSuccessPageText(e.target.value)} rows={3}/></div><div className="space-y-2"><Label htmlFor="disqualifiedPageText" className="flex items-center gap-1.5"><UserX className="h-4 w-4 text-muted-foreground" />Texto (Desqualificado)</Label><Textarea id="disqualifiedPageText" value={disqualifiedPageText} onChange={(e) => setDisqualifiedPageText(e.target.value)} rows={3}/></div></CardContent>
-                </Card>
-                <Card className="shadow-lg">
-                    <CardHeader><CardTitle>Redirecionamento (Desqualificado)</CardTitle></CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="disqualifiedRedirectUrl" className="flex items-center gap-1.5"><VenetianMask className="h-4 w-4 text-muted-foreground" />URL de Redirecionamento</Label><Input id="disqualifiedRedirectUrl" value={disqualifiedRedirectUrl} onChange={(e) => setDisqualifiedRedirectUrl(e.target.value)} placeholder="https://... (opcional)" /></div><div className="space-y-2"><Label htmlFor="disqualifiedRedirectDelaySeconds" className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-muted-foreground" />Atraso (segundos)</Label><Input type="number" id="disqualifiedRedirectDelaySeconds" value={disqualifiedRedirectDelaySeconds} onChange={(e) => setDisqualifiedRedirectDelaySeconds(Number(e.target.value) || 0)} /></div></CardContent>
-                </Card>
-                <Card className="shadow-lg">
-                  <CardHeader><CardTitle>Aparência</CardTitle></CardHeader>
-                  <CardContent>
-                      <div className="space-y-4 rounded-lg border p-4">
-                          <div className="flex items-center justify-between space-x-2"><div className='flex items-start gap-3'><Palette className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" /><div className='flex flex-col'><Label htmlFor="useCustomTheme-switch" className="font-medium">Tema Customizado</Label><span className="text-xs font-normal text-muted-foreground">Sobrescrever cores globais.</span></div></div><Switch id="useCustomTheme-switch" checked={useCustomTheme} onCheckedChange={setUseCustomTheme} /></div>
-                          {useCustomTheme && (
-                              <div className="space-y-4 pt-4 border-t animate-in fade-in-0 zoom-in-95">
-                                  <div className="space-y-2"><Label htmlFor="custom-primaryColorHex">Cor Primária</Label><div className="flex items-center gap-2"><Input id="custom-primaryColorHex" placeholder="#1D4ED8" value={customTheme?.primaryColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))}/><Input id="custom-primaryColorHexPicker" type="color" value={customTheme?.primaryColorHex || '#1D4ED8'} onChange={(e) => setCustomTheme(prev => ({...prev, primaryColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
-                                  <div className="space-y-2"><Label htmlFor="custom-secondaryColorHex">Cor Secundária</Label><div className="flex items-center gap-2"><Input id="custom-secondaryColorHex" placeholder="#A5B4FC" value={customTheme?.secondaryColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))}/><Input id="custom-secondaryColorHexPicker" type="color" value={customTheme?.secondaryColorHex || '#A5B4FC'} onChange={(e) => setCustomTheme(prev => ({...prev, secondaryColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
-                                  <div className="space-y-2"><Label htmlFor="custom-quizBackgroundColorHex">Fundo do Quiz</Label><div className="flex items-center gap-2"><Input id="custom-quizBackgroundColorHex" placeholder="#FFFFFF" value={customTheme?.quizBackgroundColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))}/><Input id="custom-quizBackgroundColorHexPicker" type="color" value={customTheme?.quizBackgroundColorHex || '#FFFFFF'} onChange={(e) => setCustomTheme(prev => ({...prev, quizBackgroundColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
-                                  <div className="space-y-2"><Label htmlFor="custom-buttonPrimaryBgColorHex">Fundo do Botão</Label><div className="flex items-center gap-2"><Input id="custom-buttonPrimaryBgColorHex" placeholder="#1E40AF" value={customTheme?.buttonPrimaryBgColorHex || ''} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))}/><Input id="custom-buttonPrimaryBgColorHexPicker" type="color" value={customTheme?.buttonPrimaryBgColorHex || '#1E40AF'} onChange={(e) => setCustomTheme(prev => ({...prev, buttonPrimaryBgColorHex: e.target.value}))} className="h-10 w-12 p-1 rounded-md border cursor-pointer min-w-[3rem]"/></div></div>
-                              </div>
-                          )}
-                      </div>
-                  </CardContent>
-                </Card>
-                <Card className="shadow-lg">
-                  <CardHeader><CardTitle className="flex items-center gap-2 text-md"><Fingerprint className="h-5 w-5 text-muted-foreground" />Rastreamento (Pixel)</CardTitle></CardHeader>
-                  <CardContent className="space-y-4"><div className="flex items-center justify-between space-x-2 rounded-lg border p-3"><Label htmlFor="pixel-ignore-primary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Primário</Label><Switch id="pixel-ignore-primary" checked={pixelSettings?.ignoreGlobalPrimaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalPrimaryPixel: checked}))} /></div><div className="flex items-center justify-between space-x-2 rounded-lg border p-3"><Label htmlFor="pixel-ignore-secondary" className="flex-1 font-normal text-sm">Ignorar Pixel Global Secundário</Label><Switch id="pixel-ignore-secondary" checked={pixelSettings?.ignoreGlobalSecondaryPixel} onCheckedChange={(checked) => setPixelSettings(prev => ({...prev, ignoreGlobalSecondaryPixel: checked}))} /></div><div className="space-y-2"><Label htmlFor="pixel-specific" className="text-sm">Pixel Exclusivo do Quiz</Label><Input id="pixel-specific" placeholder="ID do Pixel (opcional)" value={pixelSettings?.quizSpecificPixelId || ''} onChange={(e) => setPixelSettings(prev => ({...prev, quizSpecificPixelId: e.target.value}))} /></div></CardContent>
-                </Card>
-            </TabsContent>
-
             <TabsContent value="mensagens" className="space-y-6">
                 <Card className="shadow-lg">
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Mensagens Pós-Quiz</CardTitle>
+                     {hasApiKey && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => handleOpenAiDialog('messages')}>
+                            <Wand2 className="mr-2 h-4 w-4"/> Gerar com IA
+                        </Button>
+                    )}
                   </CardHeader>
                   <CardContent>
                       <div className="space-y-3">
@@ -598,6 +665,16 @@ export default function EditQuizPage() {
         </div>
       </form>
 
+      {hasApiKey && (
+        <AiGenerationDialog
+          isOpen={isAiDialogOpen}
+          setIsOpen={setIsAiDialogOpen}
+          generationType={currentGenerationType}
+          onGenerate={handleAiGeneratedData}
+          existingData={{}} // Pass existing data for "improve" mode later
+        />
+      )}
+
       <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
         <DialogContent className="max-w-2xl w-[95vw] h-[90vh] flex flex-col p-0 bg-transparent border-0 shadow-none">
           <DialogHeader className="p-4 border-b bg-card rounded-t-lg"><DialogTitle>Pré-visualização: {isLoadingPreview ? "Carregando..." : title || "Quiz"}</DialogTitle></DialogHeader>
@@ -634,5 +711,3 @@ export default function EditQuizPage() {
     </div>
   );
 }
-
-    

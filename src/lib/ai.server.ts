@@ -6,38 +6,12 @@ import type { AiPromptsConfig } from '@/types/quiz';
 const promptsFilePath = path.join(process.cwd(), 'src', 'data', 'ai-prompts.json');
 
 export const defaultPrompts: AiPromptsConfig = {
-  fullQuizGeneration: `Você é um especialista em marketing e criação de conteúdo para geração de leads. Sua tarefa é criar um quiz completo, envolvente e divertido sobre um determinado tópico.
-
-O quiz deve ser estruturado em um formato JSON específico. O resultado final deve ser APENAS o objeto JSON, sem nenhum texto, explicação ou markdown antes ou depois dele.
-
-Tópico do Quiz: {{{topic}}}
-
-Siga estas regras estritamente:
-1.  **Título e Nomes**: Crie um título ('title') e nome para o dashboard ('dashboardName') cativantes para o quiz.
-2.  **Slug**: O 'slug' deve ser uma versão do título otimizada para URL (letras minúsculas, sem espaços, usar hífens).
-3.  **Perguntas**: Crie de 3 a 5 perguntas no total.
-4.  **Etapa de Contato**: A ÚLTIMA pergunta DEVE ser do tipo 'textFields' para coletar o nome, WhatsApp e email do usuário. Use os nomes de campo 'nomeCompleto', 'whatsapp', e 'email'.
-5.  **Tipos de Pergunta**: Varie os tipos de pergunta entre 'radio' (escolha única) e 'checkbox' (múltipla escolha) para as outras perguntas.
-6.  **Ícones**: Use nomes de ícones válidos da biblioteca 'lucide-react' para os campos 'icon'. Escolha ícones que façam sentido para a pergunta ou opção.
-7.  **Validade do JSON**: O JSON deve ser perfeitamente válido e pronto para ser parseado.
-
-Exemplo de uma pergunta de contato:
-{
-  "id": "final_contact_step",
-  "name": "contato",
-  "icon": "MessageSquare",
-  "text": "Excelente! Para finalizarmos e nossa equipe entrar em contato, por favor, deixe seus dados:",
-  "explanation": "Suas informações estão seguras conosco.",
-  "type": "textFields",
-  "fields": [
-    { "name": "nomeCompleto", "label": "Seu nome completo", "type": "text", "placeholder": "Ex: Maria da Silva", "icon": "User" },
-    { "name": "whatsapp", "label": "Seu WhatsApp (com DDD)", "type": "tel", "placeholder": "Ex: (11) 98765-4321", "icon": "Smartphone" },
-    { "name": "email", "label": "Seu melhor email", "type": "email", "placeholder": "Ex: maria.silva@email.com", "icon": "Mail" }
-  ]
-}
-
-Agora, gere o JSON completo para o quiz sobre "{{{topic}}}".`
+  generateQuizDetails: "You are a marketing copywriter. Based on the provided topic, generate a concise and engaging 'title', 'dashboardName', and 'description' for a quiz. The 'slug' should be a URL-friendly version of the title (lowercase, no spaces, use hyphens). The mode is '{{generationMode}}'. The topic is: '{{topic}}'.\n\nIf the mode is 'improve' or 'complete', use the following existing data as a base: {{existingData}}.\n\nReturn ONLY a valid JSON object in the format: {\"title\": \"...\", \"dashboardName\": \"...\", \"slug\": \"...\", \"description\": \"...\"}",
+  generateQuizQuestions: "You are an expert quiz creator. Based on the topic '{{topic}}', create an array of 3 to 5 quiz questions. The final question MUST be of type 'textFields' to collect the user's name, WhatsApp, and email (use field names: 'nomeCompleto', 'whatsapp', 'email'). Vary the other questions between 'radio' and 'checkbox'. Use valid icon names from 'lucide-react' for all icons.\n\nReturn ONLY a valid JSON object with a single key \"questions\" containing the array of question objects. Example: {\"questions\": [ ... ]}",
+  generateQuizMessages: "You are a friendly and engaging chatbot persona specialist. Based on the quiz topic '{{topic}}', create a sequence of 2-3 post-quiz messages to be sent via webhook. The messages can be of type 'mensagem' (text). You can use variables like {{nomeCompleto}} to personalize the message.\n\nReturn ONLY a valid JSON object with a single key \"messages\" containing the array of message objects. Example: {\"messages\": [ ... ]}",
+  generateQuizResultsPages: "You are a skilled UX copywriter. Based on the quiz topic '{{topic}}', write two distinct pieces of text: \n1. 'successPageText': An encouraging message for qualified leads who completed the quiz successfully.\n2. 'disqualifiedPageText': A polite and professional message for users who were disqualified based on their answers.\n\nReturn ONLY a valid JSON object in the format: {\"successPageText\": \"...\", \"disqualifiedPageText\": \"...\"}"
 };
+
 
 async function ensurePromptsFileExists() {
   try {
