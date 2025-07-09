@@ -556,7 +556,7 @@ export default function EditQuizPage() {
                     <DragDropContext onDragEnd={onDragEnd}>
                       <StrictModeDroppable droppableId="messages">
                         {(provided) => (
-                          <div {...provided.droppableProps} ref={provided.innerRef} className="flex flex-col gap-3">
+                          <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                             {messages.map((msg, msgIndex) => (
                               <Draggable key={msg.id} draggableId={msg.id} index={msgIndex}>
                                 {(provided, snapshot) => (
