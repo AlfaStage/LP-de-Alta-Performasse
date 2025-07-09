@@ -20,7 +20,7 @@ interface AiGenerationDialogProps {
   setIsOpen: (open: boolean) => void;
   generationType: GenerationType;
   onGenerate: (data: any) => void;
-  existingData: any; // Used for 'improve' or 'complete' modes in the future
+  existingData: any; 
 }
 
 export default function AiGenerationDialog({
@@ -37,8 +37,12 @@ export default function AiGenerationDialog({
   const { toast } = useToast();
 
   const handleGenerateClick = async () => {
-    if (!topic.trim()) {
-      setError("Por favor, forneça um tópico ou instrução.");
+    if (!topic.trim() && (mode === 'improve' || mode === 'complete')) {
+        setError("Para melhorar ou completar, por favor forneça uma instrução (ex: 'deixe o tom mais profissional' ou 'adicione uma pergunta sobre orçamento').");
+        return;
+    }
+     if (!topic.trim() && mode === 'overwrite') {
+      setError("Por favor, forneça um tópico ou instrução para a geração.");
       return;
     }
     setIsLoading(true);
@@ -55,12 +59,13 @@ export default function AiGenerationDialog({
         onGenerate(result.data);
         toast({
           title: "Conteúdo Gerado!",
-          description: `A seção foi preenchida com base no seu tópico.`,
+          description: `A seção foi atualizada com base no seu tópico.`,
           variant: 'default',
         });
         setIsOpen(false);
+        setTopic(''); // Reset topic on close
       } else {
-        setError(result.message || 'Falha ao gerar conteúdo com IA.');
+        setError(result.message || 'Falha ao gerar conteúdo com IA. O modelo pode ter retornado um formato inválido.');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro inesperado.";
@@ -121,11 +126,15 @@ export default function AiGenerationDialog({
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="overwrite" id="overwrite" />
-                  <Label htmlFor="overwrite" className="font-normal">Gerar do Zero (sobrescrever)</Label>
+                  <Label htmlFor="overwrite" className="font-normal">Gerar do Zero</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="improve" id="improve" disabled />
-                  <Label htmlFor="improve" className="font-normal text-muted-foreground">Melhorar (em breve)</Label>
+                  <RadioGroupItem value="improve" id="improve" />
+                  <Label htmlFor="improve" className="font-normal">Melhorar</Label>
+                </div>
+                 <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="complete" id="complete" />
+                  <Label htmlFor="complete" className="font-normal">Completar</Label>
                 </div>
               </RadioGroup>
           </div>

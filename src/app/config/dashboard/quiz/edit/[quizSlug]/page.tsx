@@ -75,6 +75,7 @@ export default function EditQuizPage() {
   // AI State
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   const [currentGenerationType, setCurrentGenerationType] = useState<GenerationType>('details');
+  const [aiExistingData, setAiExistingData] = useState<any>({});
   const [hasApiKey, setHasApiKey] = useState(false);
 
   useEffect(() => {
@@ -201,8 +202,7 @@ export default function EditQuizPage() {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
     if (question.options) {
-      const updatedOptions = question.options.filter((_, i) => i !== oIndex);
-      newQuestions[qIndex].options = updatedOptions;
+      question.options = question.options.filter((_, i) => i !== oIndex);
       setInteractiveQuestions(newQuestions);
     }
   };
@@ -433,6 +433,22 @@ export default function EditQuizPage() {
 
   const handleOpenAiDialog = (type: GenerationType) => {
     setCurrentGenerationType(type);
+    let dataToPass = {};
+    if (type === 'details') {
+        dataToPass = { title, slug, dashboardName, description };
+    } else if (type === 'questions') {
+        try {
+            const questions = currentTab === 'interactive' ? interactiveQuestions : JSON.parse(questionsJson);
+            dataToPass = { questions };
+        } catch {
+            dataToPass = { questions: interactiveQuestions };
+        }
+    } else if (type === 'messages') {
+        dataToPass = { messages };
+    } else if (type === 'results') {
+        dataToPass = { successPageText, disqualifiedPageText };
+    }
+    setAiExistingData(dataToPass);
     setIsAiDialogOpen(true);
   };
 
@@ -445,8 +461,9 @@ export default function EditQuizPage() {
         setDashboardName(data.dashboardName || dashboardName);
         setDescription(data.description || description);
     } else if (currentGenerationType === 'questions') {
-        setInteractiveQuestions(data.questions || interactiveQuestions);
-        setQuestionsJson(JSON.stringify(data.questions || [], null, 2));
+        const newQuestions = data.questions || interactiveQuestions;
+        setInteractiveQuestions(newQuestions);
+        setQuestionsJson(JSON.stringify(newQuestions, null, 2));
     } else if (currentGenerationType === 'messages') {
         setMessages(data.messages || messages);
     } else if (currentGenerationType === 'results') {
@@ -618,7 +635,9 @@ export default function EditQuizPage() {
             <TabsContent value="mensagens" className="space-y-6">
                 <Card className="shadow-lg">
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Mensagens Pós-Quiz</CardTitle>
+                    <div>
+                        <CardTitle>Mensagens Pós-Quiz</CardTitle>
+                    </div>
                      {hasApiKey && (
                         <Button type="button" variant="outline" size="sm" onClick={() => handleOpenAiDialog('messages')}>
                             <Wand2 className="mr-2 h-4 w-4"/> Gerar com IA
@@ -671,7 +690,7 @@ export default function EditQuizPage() {
           setIsOpen={setIsAiDialogOpen}
           generationType={currentGenerationType}
           onGenerate={handleAiGeneratedData}
-          existingData={{}} // Pass existing data for "improve" mode later
+          existingData={aiExistingData}
         />
       )}
 
