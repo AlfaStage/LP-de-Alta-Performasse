@@ -1,4 +1,3 @@
-
 {
   "title": "Quiz de Exemplo",
   "slug": "default",
@@ -85,7 +84,25 @@
       ]
     }
   ],
-  "successIcon": "CheckCircle",
+  "messages": [
+    {
+      "id": "msg_1752092147872",
+      "type": "mensagem",
+      "content": "Oie {{nomeCompleto}}"
+    },
+    {
+      "id": "msg_1752092148923",
+      "type": "imagem",
+      "content": "",
+      "filename": ""
+    },
+    {
+      "id": "msg_1752092152100",
+      "type": "mensagem",
+      "content": "Test  {{previousExperience}}",
+      "filename": ""
+    }
+  ],
   "isActive": true,
   "useCustomTheme": false,
   "customTheme": {},
@@ -94,5 +111,10 @@
     "ignoreGlobalPrimaryPixel": false,
     "ignoreGlobalSecondaryPixel": false,
     "quizSpecificPixelId": ""
-  }
+  },
+  "successPageText": "Suas respostas foram enviadas com sucesso! Nossa equipe entrará em contato em breve.",
+  "disqualifiedPageText": "Agradecemos seu interesse! No momento, não seguimos com seu perfil, mas guardamos seu contato para futuras oportunidades.",
+  "disqualifiedRedirectUrl": "",
+  "disqualifiedRedirectDelaySeconds": 5,
+  "successIcon": "CheckCircle"
 }

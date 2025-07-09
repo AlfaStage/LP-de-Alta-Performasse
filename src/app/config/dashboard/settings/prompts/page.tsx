@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Save, Loader2, BrainCircuit, AlertCircle, Info } from 'lucide-react';
+import { Save, Loader2, BrainCircuit, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchAiPrompts, savePromptsAction } from './actions';
 import type { AiPromptsConfig } from '@/types/quiz';
@@ -92,7 +92,7 @@ export default function PromptsSettingsPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Atenção ao Editar</AlertTitle>
             <AlertDescription>
-              A IA espera receber um JSON válido como resposta. Mudanças drásticas na estrutura do prompt podem quebrar a funcionalidade de geração. Use as variáveis como `{{{topic}}}` para inserir dados dinâmicos.
+              A IA espera receber um JSON válido como resposta. Mudanças drásticas na estrutura do prompt podem quebrar a funcionalidade de geração. Use as variáveis como `{"{{topic}}"}` para inserir dados dinâmicos.
             </AlertDescription>
           </Alert>
 
@@ -113,7 +113,7 @@ export default function PromptsSettingsPage() {
                 />
               )}
             />
-            {errors.fullQuizGeneration && <p className="text-sm text-destructive">{errors.fullQuizGeneration.message}</p>}
+            {errors.fullQuizGeneration && <p className="text-sm text-destructive">{errors.fullQuizGeneration.message as string}</p>}
           </div>
         </CardContent>
         <CardFooter>
