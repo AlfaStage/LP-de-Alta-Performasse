@@ -2,7 +2,7 @@
 "use server";
 import { SERVER_SIDE_ABANDONMENT_WEBHOOK_URL as ENV_SERVER_SIDE_ABANDONMENT_WEBHOOK_URL } from '@/config/appConfig';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
-import { recordQuizCompletedAction } from '@/app/config/dashboard/quiz/actions'; // Importar a nova função
+import { recordQuizCompletedAction, getQuizConfigForPreview } from '@/app/config/dashboard/quiz/actions'; // Importar a nova função
 
 interface ClientInfo {
   userAgent?: string;
@@ -73,16 +73,58 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
   const whitelabelConfig = await getWhitelabelConfig();
   const webhookUrl = whitelabelConfig.quizSubmissionWebhookUrl;
   
-  const payload = { ...data }; 
+  const { quizSlug, quizTitle, clientInfo, submittedAt } = data;
 
-  if (!payload.quizSlug) {
+  if (!quizSlug) {
     console.warn("Quiz slug is missing in the submission data. This is unexpected.");
+    return { status: 'webhook_error', message: "Identificador do quiz ausente." };
   }
 
   if (!webhookUrl || webhookUrl === "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER" || webhookUrl.trim() === "") {
-    console.warn("Quiz submission webhook URL not properly configured in Whitelabel settings. Data not sent.", { webhookUrl, quizSlug: payload.quizSlug });
+    console.warn("Quiz submission webhook URL not properly configured in Whitelabel settings. Data not sent.", { webhookUrl, quizSlug });
     return { status: 'webhook_error', message: "Webhook de submissão não configurado nas configurações Whitelabel." };
   }
+  
+  const quizConfig = await getQuizConfigForPreview(quizSlug);
+  if (!quizConfig) {
+      console.error("Quiz config not found for slug:", quizSlug);
+      return { status: 'webhook_error', message: `Configuração do quiz '${quizSlug}' não encontrada.` };
+  }
+
+  // 1. Construct 'perguntas' object from form data
+  const perguntas: Record<string, any> = {};
+  quizConfig.questions.forEach(q => {
+      if (q.type === 'textFields' && q.fields) {
+          q.fields.forEach(field => {
+              if (data[field.name] !== undefined) {
+                  perguntas[field.name] = data[field.name];
+              }
+          });
+      } else {
+          if (data[q.name] !== undefined) {
+              perguntas[q.name] = data[q.name];
+          }
+      }
+  });
+
+  // 2. Get 'mensagens' array from quiz config and format it
+  const mensagens = (quizConfig.messages || []).map(msg => ({
+      tipo: msg.type,
+      conteúdo: msg.content
+  }));
+
+  // 3. Construct the final payload with nested body
+  const payload = {
+      quizSlug,
+      quizTitle,
+      clientInfo,
+      submittedAt,
+      body: {
+          perguntas,
+          mensagens
+      }
+  };
+
 
   console.log("Attempting to submit quiz data to webhook. URL:", webhookUrl);
   console.log("Payload being sent to webhook:", JSON.stringify(payload, null, 2));

@@ -11,9 +11,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit, AudioWave, Image as ImageIconLucide } from 'lucide-react';
 import { createQuizAction, generateAndCreateQuizAction } from '../actions';
-import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig } from '@/types/quiz';
+import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage } from '@/types/quiz';
 import dynamic from 'next/dynamic';
 import QuizFormLoading from '@/components/quiz/QuizFormLoading';
 import { fetchWhitelabelSettings } from '@/app/config/dashboard/settings/actions';
@@ -52,6 +52,7 @@ export default function CreateQuizPage() {
   const [dashboardName, setDashboardName] = useState('');
   const [questionsJson, setQuestionsJson] = useState('[\n  \n]');
   const [interactiveQuestions, setInteractiveQuestions] = useState<QuizQuestion[]>([]);
+  const [messages, setMessages] = useState<QuizMessage[]>([]);
   const [displayMode, setDisplayMode] = useState<'step-by-step' | 'single-page'>('step-by-step');
   const [currentManualTab, setCurrentManualTab] = useState<'interactive' | 'json'>('interactive');
   const [isLoadingManual, setIsLoadingManual] = useState(false);
@@ -146,6 +147,7 @@ export default function CreateQuizPage() {
         description: description || DEFAULT_QUIZ_DESCRIPTION, 
         dashboardName: dashboardName || title, 
         questions: parsedQuestions,
+        messages: messages,
         displayMode: displayMode,
       });
       if (result.success && result.slug) {
@@ -251,6 +253,39 @@ export default function CreateQuizPage() {
     if (question.fields) {
       question.fields = question.fields.filter((_, i) => i !== fIndex);
       setInteractiveQuestions(newQuestions);
+    }
+  };
+  
+  const addMessage = () => {
+    if (messages.length < 5) {
+      setMessages([...messages, { id: `msg_${Date.now()}`, type: 'mensagem', content: '' }]);
+    }
+  };
+  const removeMessage = (index: number) => {
+    setMessages(messages.filter((_, i) => i !== index));
+  };
+  const updateMessage = (index: number, field: keyof QuizMessage, value: any) => {
+    const newMessages = [...messages];
+    newMessages[index] = { ...newMessages[index], [field]: value };
+    if (field === 'type') {
+      newMessages[index].content = '';
+      newMessages[index].filename = '';
+    }
+    setMessages(newMessages);
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, msgIndex: number) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        const base64Content = loadEvent.target?.result as string;
+        const newMessages = [...messages];
+        newMessages[msgIndex].content = base64Content;
+        newMessages[msgIndex].filename = file.name;
+        setMessages(newMessages);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -504,6 +539,59 @@ export default function CreateQuizPage() {
                           </Button>
                       </TabsContent>
                   </Tabs>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="flex justify-between items-center">
+                        <span>3. Mensagens Pós-Quiz</span>
+                        <span className="text-sm font-medium text-muted-foreground">{messages.length} / 5</span>
+                    </CardTitle>
+                    <CardDescription>
+                        Configure mensagens de texto, imagem ou áudio para serem enviadas via webhook após a conclusão do quiz.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {messages.map((msg, msgIndex) => (
+                        <Card key={msg.id} className="p-4 bg-muted/30 relative">
+                            <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="absolute top-2 right-2 text-destructive hover:text-destructive/80 h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                <div className="space-y-2 md:col-span-1">
+                                    <Label>Tipo da Mensagem</Label>
+                                    <Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}>
+                                        <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="mensagem"><MessageSquareText className="mr-2 h-4 w-4" />Texto</SelectItem>
+                                            <SelectItem value="imagem"><ImageIconLucide className="mr-2 h-4 w-4" />Imagem</SelectItem>
+                                            <SelectItem value="audio"><AudioWave className="mr-2 h-4 w-4" />Áudio</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label>Conteúdo</Label>
+                                    {msg.type === 'mensagem' && (
+                                        <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} />
+                                    )}
+                                    {msg.type === 'imagem' && (
+                                        <div>
+                                            <Input type="file" accept="image/*" onChange={(e) => handleFileChange(e, msgIndex)} />
+                                            {msg.filename && <p className="text-xs text-muted-foreground mt-1 truncate">Arquivo: {msg.filename}</p>}
+                                        </div>
+                                    )}
+                                    {msg.type === 'audio' && (
+                                        <div>
+                                            <Input type="file" accept="audio/*" onChange={(e) => handleFileChange(e, msgIndex)} />
+                                            {msg.filename && <p className="text-xs text-muted-foreground mt-1 truncate">Arquivo: {msg.filename}</p>}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                    <Button type="button" variant="outline" className="w-full mt-4" onClick={addMessage} disabled={messages.length >= 5}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Mensagem
+                    </Button>
                 </CardContent>
               </Card>
 

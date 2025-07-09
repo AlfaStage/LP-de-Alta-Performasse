@@ -2,7 +2,7 @@
 "use server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption, AggregateQuizStats, AnalyticsEvent, QuestionAnswerEvent, QuestionSpecificAnalytics, DateRange, ChartDataPoint, QuizEditData } from '@/types/quiz';
+import type { QuizConfig, QuizQuestion, QuizListItem, OverallQuizStats, QuizAnalyticsData, QuizQuestionAnalytics, QuizOption, AggregateQuizStats, AnalyticsEvent, QuestionAnswerEvent, QuestionSpecificAnalytics, DateRange, ChartDataPoint, QuizEditData, QuizMessage } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
 import { isWithinInterval, parseISO, startOfDay, endOfDay, eachDayOfInterval, format } from 'date-fns';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
@@ -209,12 +209,13 @@ interface CreateQuizPayload {
   description?: string;
   dashboardName?: string;
   questions: QuizQuestion[];
+  messages?: QuizMessage[];
   displayMode?: 'step-by-step' | 'single-page';
 }
 
 export async function createQuizAction(payload: CreateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, description, dashboardName, questions, displayMode } = payload;
+  const { title, slug, description, dashboardName, questions, messages, displayMode } = payload;
 
   if (!title || !slug ) { 
     return { success: false, message: "Título e slug são obrigatórios." };
@@ -245,6 +246,7 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
     description: description || DEFAULT_QUIZ_DESCRIPTION,
     dashboardName: dashboardName || title,
     questions: questions,
+    messages: messages || [],
     successIcon: 'CheckCircle', 
     isActive: true,
     useCustomTheme: false,
@@ -286,6 +288,7 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
       description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
       dashboardName: quizData.dashboardName || quizData.title,
       questionsJson: JSON.stringify(quizData.questions, null, 2),
+      messages: quizData.messages || [],
       isActive: quizData.isActive ?? true,
       useCustomTheme: quizData.useCustomTheme ?? false,
       customTheme: quizData.customTheme || {},
@@ -309,6 +312,7 @@ export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig 
     quizData.slug = quizData.slug || slug; 
     quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
     quizData.dashboardName = quizData.dashboardName || quizData.title;
+    quizData.messages = quizData.messages || [];
     quizData.isActive = quizData.isActive ?? true;
     quizData.useCustomTheme = quizData.useCustomTheme ?? false;
     quizData.customTheme = quizData.customTheme || {};
@@ -329,6 +333,7 @@ interface UpdateQuizPayload {
   description?: string;
   dashboardName?: string;
   questions: QuizQuestion[];
+  messages?: QuizMessage[];
   isActive?: boolean;
   useCustomTheme?: boolean;
   customTheme?: {
@@ -343,7 +348,7 @@ interface UpdateQuizPayload {
 
 export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, description, dashboardName, questions, isActive, useCustomTheme, customTheme, displayMode, pixelSettings } = payload;
+  const { title, slug, description, dashboardName, questions, messages, isActive, useCustomTheme, customTheme, displayMode, pixelSettings } = payload;
 
   if (!title || !slug) {
     return { success: false, message: "Título e slug são obrigatórios." };
@@ -366,6 +371,7 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
     description: description || DEFAULT_QUIZ_DESCRIPTION,
     dashboardName: dashboardName || title,
     questions: questions,
+    messages: messages || [],
     successIcon: 'CheckCircle', 
     isActive: isActive ?? true,
     useCustomTheme: useCustomTheme ?? false,
@@ -712,6 +718,7 @@ export async function generateAndCreateQuizAction(topic: string): Promise<{ succ
       description: quizData.description,
       dashboardName: quizData.dashboardName || quizData.title,
       questions: quizData.questions,
+      messages: quizData.messages || [],
       displayMode: quizData.displayMode || 'step-by-step',
     });
 

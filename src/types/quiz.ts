@@ -35,12 +35,20 @@ export interface QuizQuestion {
   icon?: IconName;
 }
 
+export interface QuizMessage {
+  id: string;
+  type: 'mensagem' | 'imagem' | 'audio';
+  content: string; // The text content or base64 data URI
+  filename?: string;
+}
+
 export interface QuizConfig {
   title: string;
   slug: string;
   description?: string;
   dashboardName?: string;
   questions: QuizQuestion[];
+  messages?: QuizMessage[];
   successIcon?: IconName;
   isActive?: boolean;
   useCustomTheme?: boolean;
@@ -84,7 +92,7 @@ export interface WhitelabelConfig {
 }
 
 // Statistics types
-export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'description' | 'dashboardName' | 'customTheme' | 'useCustomTheme' | 'pixelSettings'> {
+export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'description' | 'dashboardName' | 'customTheme' | 'useCustomTheme' | 'pixelSettings' | 'messages'> {
   title: string;
   slug: string;
   description?: string;
@@ -150,6 +158,7 @@ export interface QuizEditData {
   description?: string;
   dashboardName?: string;
   questionsJson: string;
+  messages?: QuizMessage[];
   isActive?: boolean;
   useCustomTheme?: boolean;
   customTheme?: {
