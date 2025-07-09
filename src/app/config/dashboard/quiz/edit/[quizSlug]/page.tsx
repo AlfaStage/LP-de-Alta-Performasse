@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -25,7 +24,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import IconPicker from '@/components/dashboard/IconPicker';
 import QuestionPreview from '@/components/dashboard/QuestionPreview';
 import { cn } from '@/lib/utils';
-import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Draggable, type DropResult } from 'react-beautiful-dnd';
+import { StrictModeDroppable } from '@/components/dashboard/StrictModeDroppable';
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
   ssr: false,
@@ -553,7 +553,7 @@ export default function EditQuizPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <DragDropContext onDragEnd={onDragEnd}>
-                      <Droppable droppableId="messages">
+                      <StrictModeDroppable droppableId="messages">
                         {(provided) => (
                           <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                             {messages.map((msg, msgIndex) => (
@@ -618,7 +618,7 @@ export default function EditQuizPage() {
                             {provided.placeholder}
                           </div>
                         )}
-                      </Droppable>
+                      </StrictModeDroppable>
                     </DragDropContext>
                     <Button type="button" variant="outline" className="w-full mt-4" onClick={addMessage} disabled={messages.length >= 5}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Mensagem
