@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit, AudioWaveform, Image as ImageIconLucide, FileUp, GripVertical } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit, AudioWaveform, Image as ImageIconLucide, FileUp, ChevronUp, ChevronDown } from 'lucide-react';
 import { createQuizAction, generateAndCreateQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage } from '@/types/quiz';
 import dynamic from 'next/dynamic';
@@ -23,8 +23,6 @@ import QuestionPreview from '@/components/dashboard/QuestionPreview';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { DragDropContext, Draggable, type DropResult } from 'react-beautiful-dnd';
-import { StrictModeDroppable } from '@/components/dashboard/StrictModeDroppable';
 
 
 const QuizForm = dynamic(() => import('@/components/quiz/QuizForm'), {
@@ -263,9 +261,11 @@ export default function CreateQuizPage() {
       setMessages([...messages, { id: `msg_${Date.now()}`, type: 'mensagem', content: '' }]);
     }
   };
+
   const removeMessage = (index: number) => {
     setMessages(messages.filter((_, i) => i !== index));
   };
+
   const updateMessage = (index: number, field: keyof QuizMessage, value: any) => {
     const newMessages = [...messages];
     newMessages[index] = { ...newMessages[index], [field]: value };
@@ -273,6 +273,17 @@ export default function CreateQuizPage() {
       newMessages[index].content = '';
       newMessages[index].filename = '';
     }
+    setMessages(newMessages);
+  };
+  
+  const reorderMessages = (index: number, direction: 'up' | 'down') => {
+    const newMessages = [...messages];
+    const item = newMessages.splice(index, 1)[0];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+    if (newIndex < 0 || newIndex >= newMessages.length + 1) return;
+
+    newMessages.splice(newIndex, 0, item);
     setMessages(newMessages);
   };
 
@@ -289,14 +300,6 @@ export default function CreateQuizPage() {
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    const items = Array.from(messages);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    setMessages(items);
   };
 
   const handleManualTabChange = (newTab: 'interactive' | 'json') => {
@@ -563,80 +566,64 @@ export default function CreateQuizPage() {
                       </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <DragDropContext onDragEnd={onDragEnd}>
-                      <StrictModeDroppable droppableId="messages">
-                        {(provided) => (
-                          <div {...provided.droppableProps} ref={provided.innerRef} className="flex flex-col space-y-3">
-                            {messages.map((msg, msgIndex) => (
-                              <Draggable key={msg.id} draggableId={msg.id} index={msgIndex}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                  >
-                                    <Card className={cn(
-                                      "p-4 bg-muted/30 relative border-border/60 pl-12 transition-shadow",
-                                      snapshot.isDragging && "shadow-xl ring-2 ring-primary"
-                                    )}>
-                                        <div className="absolute left-1 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0 text-muted-foreground">
-                                          <span className="font-semibold text-sm">{msgIndex + 1}</span>
-                                          <div {...provided.dragHandleProps} className="cursor-grab p-1 rounded-md hover:bg-accent">
-                                              <GripVertical className="h-5 w-5" />
-                                          </div>
-                                        </div>
-                                        
-                                        <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="absolute top-2 right-2 text-muted-foreground hover:text-destructive z-10 h-8 w-8">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                        
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                                            <div className="space-y-2 md:col-span-1">
-                                                <Label>Tipo da Mensagem</Label>
-                                                <Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}>
-                                                    <SelectTrigger>
-                                                        <div className="flex items-center gap-2">
-                                                            {msg.type === 'imagem' ? <ImageIconLucide className="h-4 w-4 text-muted-foreground" /> : msg.type === 'audio' ? <AudioWaveform className="h-4 w-4 text-muted-foreground" /> : <MessageSquareText className="h-4 w-4 text-muted-foreground" />}
-                                                            <SelectValue placeholder="Selecione o tipo" />
-                                                        </div>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="mensagem">Texto</SelectItem>
-                                                        <SelectItem value="imagem">Imagem</SelectItem>
-                                                        <SelectItem value="audio">Áudio</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2 md:col-span-2">
-                                                <Label>Conteúdo</Label>
-                                                {msg.type === 'mensagem' && (
-                                                    <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3}/>
-                                                )}
-                                                {(msg.type === 'imagem' || msg.type === 'audio') && (
-                                                  <div className="flex items-center gap-2">
-                                                    <Label htmlFor={`file-upload-${msg.id}`} className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}>
-                                                        <FileUp className="mr-2 h-4 w-4" />
-                                                        Escolher
-                                                    </Label>
-                                                    <Input id={`file-upload-${msg.id}`} type="file" accept={msg.type === 'imagem' ? "image/*" : "audio/*"} onChange={(e) => handleFileChange(e, msgIndex)} className="hidden" />
-                                                    {msg.filename ? (
-                                                        <span className="text-sm text-muted-foreground truncate" title={msg.filename}>{msg.filename}</span>
-                                                    ) : (
-                                                        <span className="text-sm text-muted-foreground">Nenhum arquivo</span>
-                                                    )}
-                                                  </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </Card>
-                                  </div>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
+                    <div className="space-y-3">
+                      {messages.map((msg, msgIndex) => (
+                        <Card key={msg.id} className="p-4 bg-muted/30 relative border-border/60 pl-14">
+                          <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col items-center text-muted-foreground">
+                            <span className="font-bold text-sm mb-1">{msgIndex + 1}</span>
+                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}>
+                              <ChevronUp className="h-5 w-5" />
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'down')} disabled={msgIndex === messages.length - 1}>
+                              <ChevronDown className="h-5 w-5" />
+                            </Button>
                           </div>
-                        )}
-                      </StrictModeDroppable>
-                    </DragDropContext>
+                                      
+                          <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="absolute top-2 right-2 text-muted-foreground hover:text-destructive z-10 h-8 w-8">
+                              <Trash2 className="h-4 w-4" />
+                          </Button>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                              <div className="space-y-2 md:col-span-1">
+                                  <Label>Tipo da Mensagem</Label>
+                                  <Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}>
+                                      <SelectTrigger>
+                                          <div className="flex items-center gap-2">
+                                              {msg.type === 'imagem' ? <ImageIconLucide className="h-4 w-4 text-muted-foreground" /> : msg.type === 'audio' ? <AudioWaveform className="h-4 w-4 text-muted-foreground" /> : <MessageSquareText className="h-4 w-4 text-muted-foreground" />}
+                                              <SelectValue placeholder="Selecione o tipo" />
+                                          </div>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                          <SelectItem value="mensagem">Texto</SelectItem>
+                                          <SelectItem value="imagem">Imagem</SelectItem>
+                                          <SelectItem value="audio">Áudio</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                              </div>
+                              <div className="space-y-2 md:col-span-2">
+                                  <Label>Conteúdo</Label>
+                                  {msg.type === 'mensagem' && (
+                                      <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3}/>
+                                  )}
+                                  {(msg.type === 'imagem' || msg.type === 'audio') && (
+                                    <div className="flex items-center gap-2">
+                                      <Label htmlFor={`file-upload-${msg.id}`} className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}>
+                                          <FileUp className="mr-2 h-4 w-4" />
+                                          Escolher
+                                      </Label>
+                                      <Input id={`file-upload-${msg.id}`} type="file" accept={msg.type === 'imagem' ? "image/*" : "audio/*"} onChange={(e) => handleFileChange(e, msgIndex)} className="hidden" />
+                                      {msg.filename ? (
+                                          <span className="text-sm text-muted-foreground truncate" title={msg.filename}>{msg.filename}</span>
+                                      ) : (
+                                          <span className="text-sm text-muted-foreground">Nenhum arquivo</span>
+                                      )}
+                                    </div>
+                                  )}
+                              </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
                     <Button type="button" variant="outline" className="w-full mt-4" onClick={addMessage} disabled={messages.length >= 5}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Mensagem
                     </Button>
