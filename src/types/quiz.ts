@@ -14,6 +14,7 @@ export interface QuizOption {
   imageUrl?: string;
   dataAiHint?: string;
   text_message?: string;
+  isDisqualifying?: boolean;
 }
 
 export interface FormFieldConfig {
@@ -65,6 +66,10 @@ export interface QuizConfig {
     ignoreGlobalSecondaryPixel?: boolean;
     quizSpecificPixelId?: string;
   };
+  successPageText?: string;
+  disqualifiedPageText?: string;
+  disqualifiedRedirectUrl?: string;
+  disqualifiedRedirectDelaySeconds?: number;
 }
 
 export interface WhitelabelConfig {
@@ -79,6 +84,7 @@ export interface WhitelabelConfig {
   pageBackgroundGradient?: string;
   pageBackgroundType: 'color' | 'image' | 'gradient';
   quizSubmissionWebhookUrl: string;
+  disqualifiedSubmissionWebhookUrl?: string;
   facebookPixelId?: string;
   facebookPixelIdSecondary?: string;
   googleAnalyticsId?: string;
@@ -174,4 +180,8 @@ export interface QuizEditData {
     ignoreGlobalSecondaryPixel?: boolean;
     quizSpecificPixelId?: string;
   };
+  successPageText?: string;
+  disqualifiedPageText?: string;
+  disqualifiedRedirectUrl?: string;
+  disqualifiedRedirectDelaySeconds?: number;
 }

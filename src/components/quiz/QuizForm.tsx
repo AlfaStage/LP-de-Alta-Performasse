@@ -21,9 +21,9 @@ import * as LucideIcons from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
-import type { QuizConfig, QuizQuestion } from '@/types/quiz';
+import type { QuizConfig, QuizQuestion, QuizOption } from '@/types/quiz';
 import { hexToHslString } from '@/lib/whitelabel';
-import { Send, ChevronRight, Loader2, Info, CheckCircle, ChevronLeft, Globe, Instagram } from 'lucide-react';
+import { Send, ChevronRight, Loader2, Info, CheckCircle, ChevronLeft, Globe, Instagram, UserX } from 'lucide-react';
 
 
 type FormData = Record<string, any>;
@@ -46,6 +46,10 @@ interface QuizFormProps {
   useCustomTheme?: boolean;
   customTheme?: QuizConfig['customTheme'];
   displayMode?: 'step-by-step' | 'single-page';
+  successPageText?: string;
+  disqualifiedPageText?: string;
+  disqualifiedRedirectUrl?: string;
+  disqualifiedRedirectDelaySeconds?: number;
 }
 
 const IconComponents = LucideIcons;
@@ -95,11 +99,15 @@ export default function QuizForm({
   useCustomTheme = false,
   customTheme,
   displayMode = 'step-by-step',
+  successPageText = "Suas respostas foram enviadas com sucesso! Nossa equipe entrará em contato em breve.",
+  disqualifiedPageText = "Agradecemos seu interesse! No momento, não seguimos com seu perfil, mas guardamos seu contato para futuras oportunidades.",
+  disqualifiedRedirectUrl,
+  disqualifiedRedirectDelaySeconds = 5,
 }: QuizFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
   const [animationClass, setAnimationClass] = useState('animate-question-slide-in');
-  const [isQuizCompleted, setIsQuizCompleted] = useState(false);
+  const [completionStatus, setCompletionStatus] = useState<'qualified' | 'disqualified' | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [themeStyles, setThemeStyles] = useState<React.CSSProperties>({});
   const [utmParams, setUtmParams] = useState<Record<string, string>>({});
@@ -178,10 +186,10 @@ export default function QuizForm({
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (isPreview) { 
+      if (isPreview || completionStatus) { 
         return;
       }
-      if (!isQuizCompleted && Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
+      if (Object.keys(formData).length > 0 && submissionStatus !== 'success' && quizQuestions && quizQuestions.length > 0) {
         const clientInfo = {
           userAgent: navigator.userAgent,
           language: navigator.language,
@@ -227,7 +235,7 @@ export default function QuizForm({
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, currentStep, isQuizCompleted, submissionStatus, quizSlug, clientAbandonmentWebhookUrl, onAbandonmentOverride, isPreview, getValues, currentQuestion, utmParams]);
+  }, [formData, currentStep, completionStatus, submissionStatus, quizSlug, clientAbandonmentWebhookUrl, onAbandonmentOverride, isPreview, getValues, currentQuestion, utmParams]);
 
   const handleNext = async () => {
     if (submissionStatus === 'pending' || !currentQuestion) return;
@@ -366,6 +374,25 @@ export default function QuizForm({
       submittedAt: new Date().toISOString()
     };
     
+    // Check for disqualification
+    let isDisqualified = false;
+    for (const q of quizQuestions) {
+        if (q.options) {
+            const answer = finalData[q.name];
+            if (Array.isArray(answer)) { // Checkbox
+                if (answer.some(a => q.options?.find(opt => opt.value === a)?.isDisqualifying)) {
+                    isDisqualified = true;
+                    break;
+                }
+            } else if (answer) { // Radio
+                if (q.options.find(opt => opt.value === answer)?.isDisqualifying) {
+                    isDisqualified = true;
+                    break;
+                }
+            }
+        }
+    }
+
     if (displayMode === 'single-page' && !isPreview) {
       activeQuestions.forEach(q => {
         const answer = finalData[q.name];
@@ -379,60 +406,43 @@ export default function QuizForm({
     if (isPreview && onSubmitOverride) {
         await onSubmitOverride(finalData);
         setSubmissionStatus('success');
-        setIsQuizCompleted(true);
+        setCompletionStatus(isDisqualified ? 'disqualified' : 'qualified');
         return;
     }
 
     if (isPreview && !onSubmitOverride) {
         toast({title: "Pré-visualização", description: "Submissão simulada. Nenhum dado enviado."})
         setSubmissionStatus('success');
-        setIsQuizCompleted(true);
+        setCompletionStatus(isDisqualified ? 'disqualified' : 'qualified');
         return;
     }
 
     try {
-        const result = await serverSubmitQuizData(finalData);
+        const result = await serverSubmitQuizData(finalData, isDisqualified);
 
         if (result.status === 'success') {
-            setIsQuizCompleted(true);
+            setCompletionStatus(isDisqualified ? 'disqualified' : 'qualified');
             setSubmissionStatus('success');
 
-            const quizCompleteDataFb = { quiz_slug: quizSlug, quiz_title: quizTitle };
-            const leadDataFb = { 
-                value: 1, 
-                currency: 'BRL', 
-                content_name: quizTitle,
-                content_category: 'Quiz',
-            };
-             const quizCompleteDataGa = { 
-                action: 'quiz_complete', 
-                category: 'Quiz', 
-                label: `${quizSlug}_Complete`, 
-                quiz_slug: quizSlug, 
-                quiz_title: quizTitle 
-            };
-             const leadDataGa = { 
-                action: 'generate_lead', 
-                category: 'Quiz', 
-                label: `${quizSlug}_Lead`, 
-                quiz_slug: quizSlug, 
-                value: 1, 
-                currency: 'BRL',
-            };
-
+            const quizCompleteDataFb = { quiz_slug: quizSlug, quiz_title: quizTitle, status: isDisqualified ? 'disqualified' : 'qualified' };
+            const leadDataFb = { value: 1, currency: 'BRL', content_name: quizTitle, content_category: 'Quiz' };
+            const quizCompleteDataGa = { action: 'quiz_complete', category: 'Quiz', label: `${quizSlug}_Complete`, quiz_slug: quizSlug, quiz_title: quizTitle, status: isDisqualified ? 'disqualified' : 'qualified' };
+            const leadDataGa = { action: 'generate_lead', category: 'Quiz', label: `${quizSlug}_Lead`, quiz_slug: quizSlug, value: 1, currency: 'BRL' };
 
             if (finalFacebookPixelIds.length > 0) {
                 trackFbCustomEvent('QuizComplete', quizCompleteDataFb, finalFacebookPixelIds);
-                trackFbEvent('Lead', leadDataFb, finalFacebookPixelIds); 
+                if (!isDisqualified) {
+                    trackFbEvent('Lead', leadDataFb, finalFacebookPixelIds);
+                }
             }
-            if(isGaConfigured && googleAnalyticsId){
+            if (isGaConfigured && googleAnalyticsId) {
                 trackGaEvent(quizCompleteDataGa, googleAnalyticsId);
-                trackGaEvent(leadDataGa, googleAnalyticsId);
+                if (!isDisqualified) {
+                    trackGaEvent(leadDataGa, googleAnalyticsId);
+                }
             }
-
         } else if (result.status === 'invalid_number') {
             setSubmissionStatus('idle');
-            // Assuming the field name for whatsapp is 'whatsapp'
             setFormError('whatsapp', {
                 type: 'manual',
                 message: result.message || "O número de WhatsApp informado parece ser inválido. Por favor, corrija e tente novamente."
@@ -605,7 +615,7 @@ export default function QuizForm({
     );
   };
   
-  if ((!quizQuestions || quizQuestions.length === 0) && !isQuizCompleted) {
+  if (!quizQuestions || quizQuestions.length === 0 && !completionStatus) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
           <Alert className="bg-card text-card-foreground">
@@ -619,55 +629,57 @@ export default function QuizForm({
       );
   }
 
-  if (isQuizCompleted && submissionStatus === 'success') {
-    const FinalSuccessIcon = SuccessIcon || CheckCircle;
+  const PageTemplate = ({ icon: Icon, title, text, children }: { icon: React.ElementType, title: string, text: string, children?: React.ReactNode }) => (
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
+      <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center bg-card text-card-foreground">
+        <CardHeader className="p-6 bg-card">
+          <div className="flex items-center justify-center space-x-3">
+              <Image src={logoUrl} alt="Logo da Empresa" data-ai-hint="company logo" width={150} height={50} className="object-contain" priority={true} />
+          </div>
+          <CardTitle className="text-3xl mt-4 text-primary">{quizTitle}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 md:p-8 space-y-4 bg-card">
+          <Icon className="h-16 w-16 mx-auto mb-4" />
+          <p className="text-lg font-semibold text-card-foreground">{title}</p>
+          <p className="text-muted-foreground">{text}</p>
+          {children}
+        </CardContent>
+         <CardFooter className="p-6 bg-muted/30 flex justify-center">
+           <p className="text-xs text-muted-foreground">{footerCopyrightText}</p>
+         </CardFooter>
+      </Card>
+    </div>
+  );
+
+  if (completionStatus) {
+    if (completionStatus === 'disqualified') {
+      if (disqualifiedRedirectUrl && disqualifiedRedirectUrl.trim() !== "") {
+        setTimeout(() => {
+          window.location.href = disqualifiedRedirectUrl;
+        }, (disqualifiedRedirectDelaySeconds || 5) * 1000);
+      }
+      return <PageTemplate icon={UserX} title="Obrigado pelo seu tempo!" text={disqualifiedPageText || ""} />;
+    }
     
+    // Qualified
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground">
-        <Card className="w-full max-w-xl shadow-2xl rounded-xl overflow-hidden text-center bg-card text-card-foreground">
-          <CardHeader className="p-6 bg-card">
-            <div className="flex items-center justify-center space-x-3">
-                <Image
-                  src={logoUrl}
-                  alt="Logo da Empresa"
-                  data-ai-hint="company logo"
-                  width={150}
-                  height={50}
-                  className="object-contain" 
-                  priority={true}
-                />
-            </div>
-            <CardTitle className="text-3xl mt-4 text-primary">{quizTitle}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 md:p-8 space-y-4 bg-card">
-            <FinalSuccessIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <p className="text-lg font-semibold text-card-foreground">Suas respostas foram enviadas com sucesso!</p>
-            <p className="text-muted-foreground">Nossa equipe entrará em contato com você em breve.</p>
-            {!isPreview && (
-              <div className="pt-4 space-y-3">
-                <p className="text-sm text-card-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
-                {websiteUrl && websiteUrl.trim() !== "" && (
-                    <Link href={websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                    <Globe className="mr-2 h-5 w-5" />
-                    Visite nosso site
-                    </Link>
-                )}
-                {instagramUrl && instagramUrl.trim() !== "" && (
-                    <Link href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
-                    <Instagram className="mr-2 h-5 w-5" />
-                    Siga-nos no Instagram
-                    </Link>
-                )}
-              </div>
+      <PageTemplate icon={SuccessIcon || CheckCircle} title="Sucesso!" text={successPageText || ""}>
+        {!isPreview && (
+          <div className="pt-4 space-y-3">
+            <p className="text-sm text-card-foreground">Enquanto isso, que tal conhecer mais sobre nós?</p>
+            {websiteUrl && websiteUrl.trim() !== "" && (
+              <Link href={websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
+                <Globe className="mr-2 h-5 w-5" /> Visite nosso site
+              </Link>
             )}
-          </CardContent>
-           <CardFooter className="p-6 bg-muted/30 flex justify-center">
-             <p className="text-xs text-muted-foreground">
-                {footerCopyrightText}
-            </p>
-           </CardFooter>
-        </Card>
-      </div>
+            {instagramUrl && instagramUrl.trim() !== "" && (
+              <Link href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-primary hover:underline">
+                <Instagram className="mr-2 h-5 w-5" /> Siga-nos no Instagram
+              </Link>
+            )}
+          </div>
+        )}
+      </PageTemplate>
     );
   }
 

@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, PlusCircle, Trash2, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, BookOpen, ChevronsUpDown, Fingerprint, AudioWaveform, Image as ImageIconLucide, FileUp, ChevronUp, ChevronDown, Tags } from 'lucide-react';
+import { Save, AlertTriangle, Loader2, ArrowLeft, Wand2, FileJson, Eye, MessageSquareText, PlusCircle, Trash2, BadgeInfo, FileTextIcon, Link as LinkIconLucide, Palette, ToggleLeft, LayoutDashboard, BookOpen, ChevronsUpDown, Fingerprint, AudioWaveform, Image as ImageIconLucide, FileUp, ChevronUp, ChevronDown, Tags, UserX, UserCheck, Timer, VenetianMask } from 'lucide-react';
 import { getQuizForEdit, updateQuizAction, type QuizEditData } from '@/app/config/dashboard/quiz/actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage } from '@/types/quiz';
 import Link from 'next/link';
@@ -51,6 +51,10 @@ export default function EditQuizPage() {
   const [customTheme, setCustomTheme] = useState<QuizEditData['customTheme']>({});
   const [displayMode, setDisplayMode] = useState<'step-by-step' | 'single-page'>('step-by-step');
   const [pixelSettings, setPixelSettings] = useState<QuizEditData['pixelSettings']>({});
+  const [successPageText, setSuccessPageText] = useState("");
+  const [disqualifiedPageText, setDisqualifiedPageText] = useState("");
+  const [disqualifiedRedirectUrl, setDisqualifiedRedirectUrl] = useState("");
+  const [disqualifiedRedirectDelaySeconds, setDisqualifiedRedirectDelaySeconds] = useState<number>(5);
 
   const [currentTab, setCurrentTab] = useState<'interactive' | 'json'>('interactive'); 
   const [originalQuizData, setOriginalQuizData] = useState<QuizEditData | null>(null);
@@ -105,6 +109,10 @@ export default function EditQuizPage() {
         setCustomTheme(data.customTheme || {});
         setDisplayMode(data.displayMode || 'step-by-step');
         setPixelSettings(data.pixelSettings || {});
+        setSuccessPageText(data.successPageText || "Suas respostas foram enviadas com sucesso! Nossa equipe entrará em contato em breve.");
+        setDisqualifiedPageText(data.disqualifiedPageText || "Agradecemos seu interesse! No momento, não seguimos com seu perfil, mas guardamos seu contato para futuras oportunidades.");
+        setDisqualifiedRedirectUrl(data.disqualifiedRedirectUrl || "");
+        setDisqualifiedRedirectDelaySeconds(data.disqualifiedRedirectDelaySeconds || 5);
         try {
             const parsedForInteractive = JSON.parse(data.questionsJson);
             if (Array.isArray(parsedForInteractive)) {
@@ -166,11 +174,11 @@ export default function EditQuizPage() {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
     if (!question.options) question.options = [];
-    question.options.push({ value: `opt${(question.options.length || 0) + 1}_${Date.now().toString(36)}`, label: '', icon: undefined, explanation: '', imageUrl: '', dataAiHint: '', text_message: '' });
+    question.options.push({ value: `opt${(question.options.length || 0) + 1}_${Date.now().toString(36)}`, label: '', icon: undefined, explanation: '', imageUrl: '', dataAiHint: '', text_message: '', isDisqualifying: false });
     setInteractiveQuestions(newQuestions);
   };
 
-  const updateOption = (qIndex: number, oIndex: number, field: keyof QuizOption, value: string) => {
+  const updateOption = (qIndex: number, oIndex: number, field: keyof QuizOption, value: string | boolean) => {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
     if (question.options) {
@@ -359,6 +367,10 @@ export default function EditQuizPage() {
         customTheme: customTheme,
         displayMode: displayMode,
         pixelSettings: pixelSettings,
+        successPageText,
+        disqualifiedPageText,
+        disqualifiedRedirectUrl,
+        disqualifiedRedirectDelaySeconds,
       });
       if (result.success) {
         setSuccess(`Quiz "${title}" atualizado com sucesso!`);
@@ -513,6 +525,7 @@ export default function EditQuizPage() {
                                                         <div className="space-y-1"><Label className="text-xs">Ícone</Label><IconPicker value={opt.icon} onChange={(iconName) => updateOption(qIndex, oIndex, 'icon', iconName)} /></div>
                                                         <div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-imageUrl`} className="text-xs">URL da Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-imageUrl`} placeholder="https://placehold.co/300x200.png" value={opt.imageUrl || ''} onChange={(e) => updateOption(qIndex, oIndex, 'imageUrl', e.target.value)} /></div>
                                                         <div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-dataAiHint`} className="text-xs">Dica IA para Imagem</Label><Input id={`q-${qIndex}-opt-${oIndex}-dataAiHint`} placeholder="Ex: abstract shape" value={opt.dataAiHint || ''} onChange={(e) => updateOption(qIndex, oIndex, 'dataAiHint', e.target.value)} /></div>
+                                                        <div className="flex items-center space-x-2 pt-2"><Switch id={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} checked={opt.isDisqualifying} onCheckedChange={(checked) => updateOption(qIndex, oIndex, 'isDisqualifying', checked)} /><Label htmlFor={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} className="text-xs font-normal text-destructive">Desqualificar esta resposta</Label></div>
                                                       </div>
                                                       <Button variant="ghost" size="icon" onClick={() => removeOption(qIndex, oIndex)} className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7"><Trash2 className="h-4 w-4" /></Button>
                                                   </Card>
@@ -587,86 +600,86 @@ export default function EditQuizPage() {
                         <span className="text-sm font-medium text-muted-foreground">{messages.length} / 5</span>
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    {messages.map((msg, msgIndex) => (
-                        <Card key={msg.id} className="p-4 bg-muted/30 relative border-border/60 pl-14 flex flex-col">
-                            <div className="absolute left-2 top-4 flex flex-col items-center gap-1 text-muted-foreground">
-                                <span className="font-bold text-sm">{msgIndex + 1}</span>
-                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}>
-                                  <ChevronUp className="h-5 w-5" />
-                                </Button>
-                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'down')} disabled={msgIndex === messages.length - 1}>
-                                  <ChevronDown className="h-5 w-5" />
-                                </Button>
-                            </div>
-                                        
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start flex-grow">
-                                <div className="space-y-2 md:col-span-1">
-                                    <Label>Tipo da Mensagem</Label>
-                                    <Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}>
-                                        <SelectTrigger>
-                                            <div className="flex items-center gap-2">
-                                                {msg.type === 'imagem' ? <ImageIconLucide className="h-4 w-4 text-muted-foreground" /> : msg.type === 'audio' ? <AudioWaveform className="h-4 w-4 text-muted-foreground" /> : <MessageSquareText className="h-4 w-4 text-muted-foreground" />}
-                                                <SelectValue placeholder="Selecione o tipo" />
-                                            </div>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="mensagem">Texto</SelectItem>
-                                            <SelectItem value="imagem">Imagem</SelectItem>
-                                            <SelectItem value="audio">Áudio</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                <CardContent>
+                    <div className="space-y-3">
+                        {messages.map((msg, msgIndex) => (
+                            <Card key={msg.id} className="p-4 bg-muted/30 relative flex gap-4">
+                                <div className="flex flex-col items-center gap-1 text-muted-foreground bg-background/50 p-2 rounded-md border">
+                                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}>
+                                        <ChevronUp className="h-5 w-5" />
+                                    </Button>
+                                    <span className="font-bold text-sm select-none">{msgIndex + 1}</span>
+                                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'down')} disabled={msgIndex === messages.length - 1}>
+                                        <ChevronDown className="h-5 w-5" />
+                                    </Button>
                                 </div>
-                                <div className="space-y-2 md:col-span-2">
-                                    <Label>Conteúdo</Label>
-                                    {msg.type === 'mensagem' && (
-                                      <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3} />
-                                    )}
-                                    {(msg.type === 'imagem' || msg.type === 'audio') && (
-                                        <div className="flex items-center gap-2">
-                                        <Label htmlFor={`file-upload-edit-${msg.id}`} className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}>
-                                            <FileUp className="mr-2 h-4 w-4" />
-                                            <span>{msg.filename ? 'Trocar' : 'Escolher'}</span>
-                                        </Label>
-                                        <Input id={`file-upload-edit-${msg.id}`} type="file" accept={msg.type === 'imagem' ? "image/*" : "audio/*"} onChange={(e) => handleFileChange(e, msgIndex)} className="hidden" />
-                                        {msg.filename ? (
-                                            <span className="text-sm text-muted-foreground truncate" title={msg.filename}>{msg.filename}</span>
-                                        ) : (
-                                            <span className="text-sm text-muted-foreground">Nenhum arquivo</span>
-                                        )}
+                                <div className="flex-grow flex flex-col">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start flex-grow">
+                                        <div className="space-y-2 md:col-span-1">
+                                            <Label>Tipo da Mensagem</Label>
+                                            <Select value={msg.type} onValueChange={(value: QuizMessage['type']) => updateMessage(msgIndex, 'type', value)}>
+                                                <SelectTrigger>
+                                                    <div className="flex items-center gap-2">
+                                                        {msg.type === 'imagem' ? <ImageIconLucide className="h-4 w-4 text-muted-foreground" /> : msg.type === 'audio' ? <AudioWaveform className="h-4 w-4 text-muted-foreground" /> : <MessageSquareText className="h-4 w-4 text-muted-foreground" />}
+                                                        <SelectValue placeholder="Selecione o tipo" />
+                                                    </div>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="mensagem">Texto</SelectItem>
+                                                    <SelectItem value="imagem">Imagem</SelectItem>
+                                                    <SelectItem value="audio">Áudio</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
-                                    )}
+                                        <div className="space-y-2 md:col-span-2">
+                                            <Label>Conteúdo</Label>
+                                            {msg.type === 'mensagem' && (
+                                                <Textarea placeholder="Digite sua mensagem aqui..." value={msg.content} onChange={(e) => updateMessage(msgIndex, 'content', e.target.value)} rows={3} />
+                                            )}
+                                            {(msg.type === 'imagem' || msg.type === 'audio') && (
+                                                <div className="flex items-center gap-2">
+                                                    <Label htmlFor={`file-upload-edit-${msg.id}`} className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}>
+                                                        <FileUp className="mr-2 h-4 w-4" />
+                                                        <span>{msg.filename ? 'Trocar' : 'Escolher'}</span>
+                                                    </Label>
+                                                    <Input id={`file-upload-edit-${msg.id}`} type="file" accept={msg.type === 'imagem' ? "image/*" : "audio/*"} onChange={(e) => handleFileChange(e, msgIndex)} className="hidden" />
+                                                    {msg.filename ? (
+                                                        <span className="text-sm text-muted-foreground truncate" title={msg.filename}>{msg.filename}</span>
+                                                    ) : (
+                                                        <span className="text-sm text-muted-foreground">Nenhum arquivo</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border/30">
+                                        {msg.type === 'mensagem' && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button type="button" variant="outline" size="sm" disabled={availableVariables.length === 0}>
+                                                        <Tags className="mr-2 h-4 w-4" /> Inserir Variável
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuLabel>Variáveis do Quiz</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    {availableVariables.length > 0 ? availableVariables.map(variable => (
+                                                        <DropdownMenuItem key={variable.value} onSelect={() => handleInsertVariable(variable.value, msgIndex)}>
+                                                            {variable.label}
+                                                        </DropdownMenuItem>
+                                                    )) : (
+                                                        <DropdownMenuItem disabled>Nenhuma variável encontrada</DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+                                        <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="text-muted-foreground hover:text-destructive h-8 w-8">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border/30">
-                                <div className="flex-grow"></div>
-                                {msg.type === 'mensagem' && (
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button type="button" variant="outline" size="sm" disabled={availableVariables.length === 0}>
-                                        <Tags className="mr-2 h-4 w-4" /> Inserir Variável
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                      <DropdownMenuLabel>Variáveis do Quiz</DropdownMenuLabel>
-                                      <DropdownMenuSeparator />
-                                      {availableVariables.length > 0 ? availableVariables.map(variable => (
-                                          <DropdownMenuItem key={variable.value} onSelect={() => handleInsertVariable(variable.value, msgIndex)}>
-                                              {variable.label}
-                                          </DropdownMenuItem>
-                                      )) : (
-                                          <DropdownMenuItem disabled>Nenhuma variável encontrada</DropdownMenuItem>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                )}
-                                <Button variant="ghost" size="icon" onClick={() => removeMessage(msgIndex)} className="text-muted-foreground hover:text-destructive h-8 w-8">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </Card>
-                    ))}
+                            </Card>
+                        ))}
                     </div>
                     <Button type="button" variant="outline" className="w-full mt-4" onClick={addMessage} disabled={messages.length >= 5}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Mensagem
@@ -684,6 +697,22 @@ export default function EditQuizPage() {
                     <div className="space-y-2"><Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição</Label><Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} /></div>
                     <div className="space-y-2"><Label htmlFor="slug" className="flex items-center gap-1.5"><LinkIconLucide className="h-4 w-4 text-muted-foreground" />Slug (URL)</Label><Input id="slug" value={slug} readOnly disabled className="bg-muted/50 cursor-not-allowed" /><p className="text-xs text-muted-foreground">Acessível em: {baseUrl ? `${baseUrl}/${slug}`: '...'}</p></div>
                 </CardContent>
+              </Card>
+
+              <Card className="shadow-lg">
+                <CardHeader><CardTitle>Páginas de Resultado</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2"><Label htmlFor="successPageText" className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-muted-foreground" />Texto (Qualificado)</Label><Textarea id="successPageText" value={successPageText} onChange={(e) => setSuccessPageText(e.target.value)} rows={3}/></div>
+                    <div className="space-y-2"><Label htmlFor="disqualifiedPageText" className="flex items-center gap-1.5"><UserX className="h-4 w-4 text-muted-foreground" />Texto (Desqualificado)</Label><Textarea id="disqualifiedPageText" value={disqualifiedPageText} onChange={(e) => setDisqualifiedPageText(e.target.value)} rows={3}/></div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg">
+                  <CardHeader><CardTitle>Redirecionamento (Desqualificado)</CardTitle></CardHeader>
+                  <CardContent className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2"><Label htmlFor="disqualifiedRedirectUrl" className="flex items-center gap-1.5"><VenetianMask className="h-4 w-4 text-muted-foreground" />URL de Redirecionamento</Label><Input id="disqualifiedRedirectUrl" value={disqualifiedRedirectUrl} onChange={(e) => setDisqualifiedRedirectUrl(e.target.value)} placeholder="https://... (opcional)" /></div>
+                      <div className="space-y-2"><Label htmlFor="disqualifiedRedirectDelaySeconds" className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-muted-foreground" />Atraso (segundos)</Label><Input type="number" id="disqualifiedRedirectDelaySeconds" value={disqualifiedRedirectDelaySeconds} onChange={(e) => setDisqualifiedRedirectDelaySeconds(Number(e.target.value) || 0)} /></div>
+                  </CardContent>
               </Card>
 
                <Card className="shadow-lg">
@@ -818,6 +847,10 @@ export default function EditQuizPage() {
                 footerCopyrightText={whitelabelSettings.footerCopyrightText || `© ${new Date().getFullYear()} Preview.`}
                 websiteUrl={whitelabelSettings.websiteUrl}
                 instagramUrl={whitelabelSettings.instagramUrl}
+                successPageText={successPageText}
+                disqualifiedPageText={disqualifiedPageText}
+                disqualifiedRedirectUrl={disqualifiedRedirectUrl}
+                disqualifiedRedirectDelaySeconds={disqualifiedRedirectDelaySeconds}
                 finalFacebookPixelIds={[]}
                 googleAnalyticsId="" 
                 onSubmitOverride={mockSubmitOverride}

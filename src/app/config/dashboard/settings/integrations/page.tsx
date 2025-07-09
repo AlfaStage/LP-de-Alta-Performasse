@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Save, Loader2, Link2, Facebook, HelpCircle, BrainCircuit, Key } from 'lucide-react';
+import { Save, Loader2, Link2, Facebook, HelpCircle, BrainCircuit, Key, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from '../actions';
 import type { WhitelabelConfig } from '@/types/quiz';
@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 // Schema para os campos desta página
 const integrationsSettingsSchema = z.object({
   quizSubmissionWebhookUrl: z.string().url({ message: "URL do webhook de submissão inválida." }).min(1, "Webhook de submissão é obrigatório."),
+  disqualifiedSubmissionWebhookUrl: z.string().url({ message: "URL do webhook inválida." }).optional().or(z.literal('')),
   facebookDomainVerification: z.string().optional(),
   googleApiKey: z.string().optional(),
 });
@@ -103,13 +104,24 @@ export default function IntegrationsSettingsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="quizSubmissionWebhookUrl" className="flex items-center gap-1"><Link2 className="h-4 w-4 text-muted-foreground" />Webhook de Submissão do Quiz</Label>
+                  <Label htmlFor="quizSubmissionWebhookUrl" className="flex items-center gap-1"><Link2 className="h-4 w-4 text-muted-foreground" />Webhook de Submissão (Leads Qualificados)</Label>
                   <Controller
                     name="quizSubmissionWebhookUrl"
                     control={control}
-                    render={({ field }) => <Input id="quizSubmissionWebhookUrl" {...field} placeholder="https://webhook.exemplo.com/..." />}
+                    render={({ field }) => <Input id="quizSubmissionWebhookUrl" {...field} placeholder="https://webhook.exemplo.com/qualified" />}
                   />
                   {errors.quizSubmissionWebhookUrl && <p className="text-sm text-destructive">{errors.quizSubmissionWebhookUrl.message}</p>}
+                </div>
+
+                 <div className="space-y-2">
+                  <Label htmlFor="disqualifiedSubmissionWebhookUrl" className="flex items-center gap-1"><UserX className="h-4 w-4 text-muted-foreground" />Webhook de Submissão (Leads Desqualificados)</Label>
+                  <Controller
+                    name="disqualifiedSubmissionWebhookUrl"
+                    control={control}
+                    render={({ field }) => <Input id="disqualifiedSubmissionWebhookUrl" {...field} value={field.value || ""} placeholder="https://webhook.exemplo.com/disqualified (opcional)" />}
+                  />
+                  <p className="text-xs text-muted-foreground">Se preenchido, os dados de leads desqualificados serão enviados para esta URL. Caso contrário, serão descartados.</p>
+                  {errors.disqualifiedSubmissionWebhookUrl && <p className="text-sm text-destructive">{errors.disqualifiedSubmissionWebhookUrl.message}</p>}
                 </div>
 
                 <div className="space-y-2">

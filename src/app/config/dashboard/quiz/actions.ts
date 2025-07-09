@@ -203,24 +203,20 @@ export async function getQuizQuestionAnalytics(quizSlug: string, dateRange?: Dat
 }
 
 
-interface CreateQuizPayload {
+interface CreateQuizPayload extends Omit<QuizConfig, 'slug' | 'title' | 'questions'> {
   title: string;
   slug: string;
-  description?: string;
-  dashboardName?: string;
   questions: QuizQuestion[];
-  messages?: QuizMessage[];
-  displayMode?: 'step-by-step' | 'single-page';
 }
 
 export async function createQuizAction(payload: CreateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, description, dashboardName, questions, messages, displayMode } = payload;
+  const { title, slug } = payload;
 
   if (!title || !slug ) { 
     return { success: false, message: "Título e slug são obrigatórios." };
   }
-   if (!Array.isArray(questions)) {
+   if (!Array.isArray(payload.questions)) {
      return { success: false, message: "O campo de perguntas deve ser um array JSON válido (pode ser vazio)." };
    }
 
@@ -241,22 +237,24 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
   }
 
   const quizConfig: QuizConfig = {
-    title,
-    slug,
-    description: description || DEFAULT_QUIZ_DESCRIPTION,
-    dashboardName: dashboardName || title,
-    questions: questions,
-    messages: messages || [],
+    ...payload,
+    description: payload.description || DEFAULT_QUIZ_DESCRIPTION,
+    dashboardName: payload.dashboardName || title,
+    messages: payload.messages || [],
     successIcon: 'CheckCircle', 
     isActive: true,
     useCustomTheme: false,
     customTheme: {},
-    displayMode: displayMode || 'step-by-step',
+    displayMode: payload.displayMode || 'step-by-step',
     pixelSettings: {
       ignoreGlobalPrimaryPixel: false,
       ignoreGlobalSecondaryPixel: false,
       quizSpecificPixelId: '',
     },
+    successPageText: payload.successPageText || "Suas respostas foram enviadas com sucesso! Nossa equipe entrará em contato em breve.",
+    disqualifiedPageText: payload.disqualifiedPageText || "Agradecemos seu interesse! No momento, não seguimos com seu perfil, mas guardamos seu contato para futuras oportunidades.",
+    disqualifiedRedirectUrl: payload.disqualifiedRedirectUrl || "",
+    disqualifiedRedirectDelaySeconds: payload.disqualifiedRedirectDelaySeconds || 5,
   };
 
   try {
@@ -294,6 +292,10 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
       customTheme: quizData.customTheme || {},
       displayMode: quizData.displayMode || 'step-by-step',
       pixelSettings: quizData.pixelSettings || {},
+      successPageText: quizData.successPageText,
+      disqualifiedPageText: quizData.disqualifiedPageText,
+      disqualifiedRedirectUrl: quizData.disqualifiedRedirectUrl,
+      disqualifiedRedirectDelaySeconds: quizData.disqualifiedRedirectDelaySeconds,
     };
   } catch (error) {
     console.error(`Failed to read quiz config for editing (slug ${slug}):`, error);
@@ -318,6 +320,11 @@ export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig 
     quizData.customTheme = quizData.customTheme || {};
     quizData.displayMode = quizData.displayMode || 'step-by-step';
     quizData.pixelSettings = quizData.pixelSettings || {};
+    quizData.successPageText = quizData.successPageText || "Suas respostas foram enviadas com sucesso! Nossa equipe entrará em contato em breve.";
+    quizData.disqualifiedPageText = quizData.disqualifiedPageText || "Agradecemos seu interesse! No momento, não seguimos com seu perfil, mas guardamos seu contato para futuras oportunidades.";
+    quizData.disqualifiedRedirectUrl = quizData.disqualifiedRedirectUrl || "";
+    quizData.disqualifiedRedirectDelaySeconds = quizData.disqualifiedRedirectDelaySeconds || 5;
+
 
     return quizData;
   } catch (error) {
@@ -327,28 +334,16 @@ export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig 
 }
 
 
-interface UpdateQuizPayload {
+interface UpdateQuizPayload extends Omit<QuizConfig, 'slug' | 'title' | 'questions'> {
   title: string;
   slug: string;
-  description?: string;
-  dashboardName?: string;
   questions: QuizQuestion[];
-  messages?: QuizMessage[];
-  isActive?: boolean;
-  useCustomTheme?: boolean;
-  customTheme?: {
-    primaryColorHex?: string;
-    secondaryColorHex?: string;
-    buttonPrimaryBgColorHex?: string;
-    quizBackgroundColorHex?: string;
-  };
-  displayMode?: 'step-by-step' | 'single-page';
-  pixelSettings?: QuizConfig['pixelSettings'];
 }
+
 
 export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ success: boolean; message?: string; slug?: string }> {
   await ensureDirectoryExists(quizzesDirectory);
-  const { title, slug, description, dashboardName, questions, messages, isActive, useCustomTheme, customTheme, displayMode, pixelSettings } = payload;
+  const { title, slug, questions } = payload;
 
   if (!title || !slug) {
     return { success: false, message: "Título e slug são obrigatórios." };
@@ -366,18 +361,21 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
   }
 
   const quizConfig: QuizConfig = {
-    title,
-    slug, 
-    description: description || DEFAULT_QUIZ_DESCRIPTION,
-    dashboardName: dashboardName || title,
+    ...payload,
+    description: payload.description || DEFAULT_QUIZ_DESCRIPTION,
+    dashboardName: payload.dashboardName || title,
     questions: questions,
-    messages: messages || [],
+    messages: payload.messages || [],
     successIcon: 'CheckCircle', 
-    isActive: isActive ?? true,
-    useCustomTheme: useCustomTheme ?? false,
-    customTheme: customTheme || {},
-    displayMode: displayMode || 'step-by-step',
-    pixelSettings: pixelSettings || {},
+    isActive: payload.isActive ?? true,
+    useCustomTheme: payload.useCustomTheme ?? false,
+    customTheme: payload.customTheme || {},
+    displayMode: payload.displayMode || 'step-by-step',
+    pixelSettings: payload.pixelSettings || {},
+    successPageText: payload.successPageText || "Suas respostas foram enviadas com sucesso! Nossa equipe entrará em contato em breve.",
+    disqualifiedPageText: payload.disqualifiedPageText || "Agradecemos seu interesse! No momento, não seguimos com seu perfil, mas guardamos seu contato para futuras oportunidades.",
+    disqualifiedRedirectUrl: payload.disqualifiedRedirectUrl || "",
+    disqualifiedRedirectDelaySeconds: payload.disqualifiedRedirectDelaySeconds || 5,
   };
 
   try {
@@ -514,7 +512,7 @@ export async function getOverallQuizAnalytics(dateRange?: DateRange): Promise<Ov
   let totalStarted = 0;
   let totalCompleted = 0;
   let totalFirstAnswers = 0;
-  let mostEngagingQuizData: (QuizListItem & { conversionRate?: number }) | undefined = undefined;
+  let mostEngagingQuizData: (QuizListItem & { conversionRate: number }) | undefined = undefined;
   let highestConversionRate = -1;
 
   for (const quiz of quizzesList) {
@@ -713,13 +711,7 @@ export async function generateAndCreateQuizAction(topic: string): Promise<{ succ
 
     // Now, create the quiz using the existing action
     return await createQuizAction({
-      title: quizData.title,
-      slug: quizData.slug,
-      description: quizData.description,
-      dashboardName: quizData.dashboardName || quizData.title,
-      questions: quizData.questions,
-      messages: quizData.messages || [],
-      displayMode: quizData.displayMode || 'step-by-step',
+      ...quizData, // Pass all generated data
     });
 
   } catch (error) {

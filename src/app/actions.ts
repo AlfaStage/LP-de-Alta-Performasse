@@ -75,9 +75,12 @@ interface SubmitQuizResponse {
   message: string;
 }
 
-export async function submitQuizData(data: Record<string, any>): Promise<SubmitQuizResponse> {
+export async function submitQuizData(data: Record<string, any>, isDisqualified: boolean): Promise<SubmitQuizResponse> {
   const whitelabelConfig = await getWhitelabelConfig();
-  const webhookUrl = whitelabelConfig.quizSubmissionWebhookUrl;
+  
+  const webhookUrl = isDisqualified 
+    ? whitelabelConfig.disqualifiedSubmissionWebhookUrl 
+    : whitelabelConfig.quizSubmissionWebhookUrl;
   
   const { quizSlug, quizTitle, clientInfo, submittedAt } = data;
 
@@ -85,10 +88,20 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
     console.warn("Quiz slug is missing in the submission data. This is unexpected.");
     return { status: 'webhook_error', message: "Identificador do quiz ausente." };
   }
+  
+  // Record completion for analytics regardless of qualification status
+  await recordQuizCompletedAction(quizSlug);
 
-  if (!webhookUrl || webhookUrl === "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER" || webhookUrl.trim() === "") {
-    console.warn("Quiz submission webhook URL not properly configured in Whitelabel settings. Data not sent.", { webhookUrl, quizSlug });
-    return { status: 'webhook_error', message: "Webhook de submissão não configurado nas configurações Whitelabel." };
+  if (!webhookUrl || webhookUrl.trim() === "" || webhookUrl.includes("_PLACEHOLDER")) {
+    const reason = isDisqualified ? "disqualified submission" : "quiz submission";
+    console.warn(`${reason} webhook URL not properly configured in Whitelabel settings. Data for ${quizSlug} not sent.`, { webhookUrl });
+    
+    // If disqualified and no webhook, it's a "success" for the user, data is just dropped.
+    if (isDisqualified) {
+      return { status: 'success', message: "Dados do usuário desqualificado processados." };
+    }
+    
+    return { status: 'webhook_error', message: `Webhook de submissão (${isDisqualified ? 'desqualificado' : 'padrão'}) não configurado.` };
   }
   
   const quizConfig = await getQuizConfigForPreview(quizSlug);
@@ -166,6 +179,7 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
       quizTitle,
       clientInfo,
       submittedAt,
+      isDisqualified, // Add the disqualification status
       body: {
           perguntas,
           mensagens: processedMessages
@@ -173,7 +187,7 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
   };
 
 
-  console.log("Attempting to submit quiz data to webhook. URL:", webhookUrl);
+  console.log(`Attempting to submit ${isDisqualified ? 'disqualified ' : ''}quiz data to webhook. URL:`, webhookUrl);
   console.log("Payload being sent to webhook:", JSON.stringify(payload, null, 2));
 
   try {
@@ -190,7 +204,7 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
     console.log("Webhook response 'status' header:", webhookStatusHeader);
 
     if (!response.ok) {
-      if (webhookStatusHeader === 'numero incorreto') {
+      if (webhookStatusHeader === 'numero incorreto' && !isDisqualified) {
         console.warn("Webhook returned non-OK HTTP status but 'status' header is 'numero incorreto'.");
         return { status: 'invalid_number', message: "O número de WhatsApp informado parece estar incorreto. Por favor, verifique e tente novamente." };
       }
@@ -200,13 +214,15 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
       console.error("Payload that failed:", JSON.stringify(payload, null, 2));
       return { status: 'webhook_error', message: `Falha ao enviar os dados (HTTP ${response.status}). Detalhes: ${errorBody}` };
     }
+    
+    // For disqualified leads, a 200 OK is sufficient.
+    if(isDisqualified) {
+       console.log("Disqualified quiz data sent to webhook successfully.");
+       return { status: 'success', message: "Dados enviados com sucesso!" };
+    }
 
     if (webhookStatusHeader === 'mensagem enviada') {
       console.log("Submitted quiz data sent to webhook successfully. Webhook 'status' header: mensagem enviada");
-      // Registrar que o quiz foi completado
-      if (payload.quizSlug) {
-        await recordQuizCompletedAction(payload.quizSlug);
-      }
       return { status: 'success', message: "Dados enviados com sucesso!" };
     } else if (webhookStatusHeader === 'numero incorreto') {
       console.log("Webhook 'status' header: numero incorreto");

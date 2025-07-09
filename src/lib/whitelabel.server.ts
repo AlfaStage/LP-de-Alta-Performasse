@@ -18,6 +18,7 @@ export const defaultConfig: WhitelabelConfig = {
   pageBackgroundGradient: "",
   pageBackgroundType: "color",
   quizSubmissionWebhookUrl: "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
+  disqualifiedSubmissionWebhookUrl: "",
   facebookPixelId: "",
   facebookPixelIdSecondary: "",
   googleAnalyticsId: "",
@@ -67,6 +68,7 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
     }
     mergedConfig.footerCopyrightText = footerTextToUse;
 
+    mergedConfig.disqualifiedSubmissionWebhookUrl = typeof savedConfig.disqualifiedSubmissionWebhookUrl === 'string' ? savedConfig.disqualifiedSubmissionWebhookUrl : defaultConfig.disqualifiedSubmissionWebhookUrl;
     mergedConfig.facebookPixelId = typeof savedConfig.facebookPixelId === 'string' ? savedConfig.facebookPixelId : defaultConfig.facebookPixelId;
     mergedConfig.facebookPixelIdSecondary = typeof savedConfig.facebookPixelIdSecondary === 'string' ? savedConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary;
     mergedConfig.googleAnalyticsId = typeof savedConfig.googleAnalyticsId === 'string' ? savedConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId;
@@ -113,6 +115,7 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
         pageBackgroundGradient: typeof newConfig.pageBackgroundGradient === 'string' ? newConfig.pageBackgroundGradient : defaultConfig.pageBackgroundGradient,
         pageBackgroundType: newConfig.pageBackgroundType || defaultConfig.pageBackgroundType,
         quizSubmissionWebhookUrl: newConfig.quizSubmissionWebhookUrl,
+        disqualifiedSubmissionWebhookUrl: typeof newConfig.disqualifiedSubmissionWebhookUrl === 'string' ? newConfig.disqualifiedSubmissionWebhookUrl : defaultConfig.disqualifiedSubmissionWebhookUrl,
         facebookPixelId: typeof newConfig.facebookPixelId === 'string' ? newConfig.facebookPixelId : defaultConfig.facebookPixelId,
         facebookPixelIdSecondary: typeof newConfig.facebookPixelIdSecondary === 'string' ? newConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary,
         googleAnalyticsId: typeof newConfig.googleAnalyticsId === 'string' ? newConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId,
