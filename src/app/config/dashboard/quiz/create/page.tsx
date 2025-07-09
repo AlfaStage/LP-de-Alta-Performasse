@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit, AudioWave, Image as ImageIconLucide } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, File, Settings, ChevronsUpDown, BrainCircuit, AudioWaveform, Image as ImageIconLucide } from 'lucide-react';
 import { createQuizAction, generateAndCreateQuizAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage } from '@/types/quiz';
 import dynamic from 'next/dynamic';
@@ -564,7 +564,7 @@ export default function CreateQuizPage() {
                                         <SelectContent>
                                             <SelectItem value="mensagem"><MessageSquareText className="mr-2 h-4 w-4" />Texto</SelectItem>
                                             <SelectItem value="imagem"><ImageIconLucide className="mr-2 h-4 w-4" />Imagem</SelectItem>
-                                            <SelectItem value="audio"><AudioWave className="mr-2 h-4 w-4" />Áudio</SelectItem>
+                                            <SelectItem value="audio"><AudioWaveform className="mr-2 h-4 w-4" />Áudio</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
