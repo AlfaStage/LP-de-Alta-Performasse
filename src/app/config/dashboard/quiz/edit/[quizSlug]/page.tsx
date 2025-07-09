@@ -166,7 +166,7 @@ export default function EditQuizPage() {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
     if (!question.options) question.options = [];
-    question.options.push({ value: `opt${(question.options.length || 0) + 1}_${Date.now().toString(36)}`, label: '', icon: undefined, explanation: '', imageUrl: '', dataAiHint: '' });
+    question.options.push({ value: `opt${(question.options.length || 0) + 1}_${Date.now().toString(36)}`, label: '', icon: undefined, explanation: '', imageUrl: '', dataAiHint: '', text_message: '' });
     setInteractiveQuestions(newQuestions);
   };
 
@@ -509,6 +509,7 @@ export default function EditQuizPage() {
                                                       <div className="space-y-3">
                                                         <Label className="text-sm font-medium">Opção {oIndex + 1}</Label>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-value`} className="text-xs">Valor (ID)</Label><Input id={`q-${qIndex}-opt-${oIndex}-value`} placeholder="Ex: opcao_a" value={opt.value} onChange={(e) => updateOption(qIndex, oIndex, 'value', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-opt-${oIndex}-label`} placeholder="Ex: Opção A" value={opt.label} onChange={(e) => updateOption(qIndex, oIndex, 'label', e.target.value)} /></div></div>
+                                                        <div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-text_message`} className="text-xs">Texto para Mensagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-text_message`} placeholder="Ex: 'que já tem experiência'" value={opt.text_message || ''} onChange={(e) => updateOption(qIndex, oIndex, 'text_message', e.target.value)} /></div>
                                                         <div className="space-y-1"><Label className="text-xs">Ícone</Label><IconPicker value={opt.icon} onChange={(iconName) => updateOption(qIndex, oIndex, 'icon', iconName)} /></div>
                                                         <div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-imageUrl`} className="text-xs">URL da Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-imageUrl`} placeholder="https://placehold.co/300x200.png" value={opt.imageUrl || ''} onChange={(e) => updateOption(qIndex, oIndex, 'imageUrl', e.target.value)} /></div>
                                                         <div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-dataAiHint`} className="text-xs">Dica IA para Imagem</Label><Input id={`q-${qIndex}-opt-${oIndex}-dataAiHint`} placeholder="Ex: abstract shape" value={opt.dataAiHint || ''} onChange={(e) => updateOption(qIndex, oIndex, 'dataAiHint', e.target.value)} /></div>
@@ -593,8 +594,8 @@ export default function EditQuizPage() {
                   <div className="space-y-3">
                     {messages.map((msg, msgIndex) => (
                         <Card key={msg.id} className="p-4 bg-muted/30 relative border-border/60 pl-14">
-                            <div className="absolute left-2 top-4 flex flex-col items-center text-muted-foreground">
-                                <span className="font-bold text-sm mb-1">{msgIndex + 1}</span>
+                            <div className="absolute left-2 top-4 flex flex-col items-center gap-1 text-muted-foreground">
+                                <span className="font-bold text-sm">{msgIndex + 1}</span>
                                 <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}>
                                   <ChevronUp className="h-5 w-5" />
                                 </Button>

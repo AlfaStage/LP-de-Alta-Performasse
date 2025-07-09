@@ -13,6 +13,7 @@ export interface QuizOption {
   explanation?: string;
   imageUrl?: string;
   dataAiHint?: string;
+  text_message?: string;
 }
 
 export interface FormFieldConfig {

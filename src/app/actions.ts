@@ -137,12 +137,14 @@ export async function submitQuizData(data: Record<string, any>): Promise<SubmitQ
           if (Array.isArray(value)) { // Checkbox
             const labels = value.map(v => {
               const option = question.options?.find(o => o.value === v);
-              return option ? option.label : v;
+              if (!option) return v;
+              return (option.text_message && option.text_message.trim() !== '') ? option.text_message : option.label;
             });
             return labels.join(', ');
           } else { // Radio
             const option = question.options.find(o => o.value === value);
-            return option ? option.label : value;
+            if (!option) return value;
+            return (option.text_message && option.text_message.trim() !== '') ? option.text_message : option.label;
           }
         }
         
