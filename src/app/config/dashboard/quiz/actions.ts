@@ -238,6 +238,7 @@ export async function createQuizAction(payload: CreateQuizPayload): Promise<{ su
 
   const quizConfig: QuizConfig = {
     ...payload,
+    questions: payload.questions.map(q => ({ ...q, isRequired: q.isRequired ?? true })),
     description: payload.description || DEFAULT_QUIZ_DESCRIPTION,
     dashboardName: payload.dashboardName || title,
     messages: payload.messages || [],
@@ -285,7 +286,7 @@ export async function getQuizForEdit(slug: string): Promise<QuizEditData | null>
       slug: quizData.slug,
       description: quizData.description || DEFAULT_QUIZ_DESCRIPTION,
       dashboardName: quizData.dashboardName || quizData.title,
-      questionsJson: JSON.stringify(quizData.questions, null, 2),
+      questionsJson: JSON.stringify(quizData.questions.map(q => ({...q, isRequired: q.isRequired ?? true})), null, 2),
       messages: quizData.messages || [],
       isActive: quizData.isActive ?? true,
       useCustomTheme: quizData.useCustomTheme ?? false,
@@ -314,6 +315,7 @@ export async function getQuizConfigForPreview(slug: string): Promise<QuizConfig 
     quizData.slug = quizData.slug || slug; 
     quizData.description = quizData.description || DEFAULT_QUIZ_DESCRIPTION;
     quizData.dashboardName = quizData.dashboardName || quizData.title;
+    quizData.questions = quizData.questions.map(q => ({...q, isRequired: q.isRequired ?? true}));
     quizData.messages = quizData.messages || [];
     quizData.isActive = quizData.isActive ?? true;
     quizData.useCustomTheme = quizData.useCustomTheme ?? false;
@@ -364,7 +366,7 @@ export async function updateQuizAction(payload: UpdateQuizPayload): Promise<{ su
     ...payload,
     description: payload.description || DEFAULT_QUIZ_DESCRIPTION,
     dashboardName: payload.dashboardName || title,
-    questions: questions,
+    questions: questions.map(q => ({ ...q, isRequired: q.isRequired ?? true })),
     messages: payload.messages || [],
     successIcon: 'CheckCircle', 
     isActive: payload.isActive ?? true,

@@ -59,22 +59,42 @@ const DEFAULT_GENERIC_QUIZ_DESCRIPTION = "Responda algumas perguntas rápidas pa
 const generateFormSchema = (questions: QuizQuestion[]) => {
     const schemaFields: Record<string, z.ZodTypeAny> = {};
     questions.forEach(q => {
+        const isRequired = q.isRequired ?? true;
+        
         if (q.type === 'textFields' && q.fields) {
             q.fields.forEach(field => {
-                let fieldSchema: z.ZodString = z.string().min(1, `${field.label} é obrigatório.`);
-                 if (field.type === 'email') {
+                let fieldSchema: z.ZodString = z.string();
+                if (isRequired) {
+                    fieldSchema = fieldSchema.min(1, `${field.label} é obrigatório.`);
+                }
+                if (field.type === 'email') {
                     fieldSchema = fieldSchema.email('Formato de email inválido.');
                 } else if (field.type === 'tel') {
-                    fieldSchema = fieldSchema.min(10, "Telefone inválido. Inclua o DDD.").regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, "Formato de telefone inválido. Use (XX) XXXXX-XXXX ou apenas números.");
-                } else { // 'text'
+                   if (isRequired) {
+                     fieldSchema = fieldSchema.min(10, "Telefone inválido. Inclua o DDD.").regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, "Formato de telefone inválido. Use (XX) XXXXX-XXXX ou apenas números.");
+                   }
+                } else if (isRequired) {
                     fieldSchema = fieldSchema.min(3, `${field.label} deve ter pelo menos 3 caracteres.`);
                 }
-                schemaFields[field.name] = fieldSchema;
+                
+                if (!isRequired) {
+                    schemaFields[field.name] = fieldSchema.optional().nullable();
+                } else {
+                    schemaFields[field.name] = fieldSchema;
+                }
             });
         } else if (q.type === 'radio') {
-            schemaFields[q.name] = z.string({ required_error: "Por favor, selecione uma opção." }).min(1, "Por favor, selecione uma opção.");
+            if (isRequired) {
+                schemaFields[q.name] = z.string({ required_error: "Por favor, selecione uma opção." }).min(1, "Por favor, selecione uma opção.");
+            } else {
+                schemaFields[q.name] = z.string().optional().nullable();
+            }
         } else if (q.type === 'checkbox') {
-            schemaFields[q.name] = z.array(z.string()).nonempty({ message: "Selecione ao menos uma opção."});
+            if (isRequired) {
+                schemaFields[q.name] = z.array(z.string()).nonempty({ message: "Selecione ao menos uma opção."});
+            } else {
+                schemaFields[q.name] = z.array(z.string()).optional();
+            }
         }
     });
     return z.object(schemaFields);
@@ -241,47 +261,49 @@ export default function QuizForm({
     if (submissionStatus === 'pending' || !currentQuestion) return;
 
     let stepIsValid = true;
-    
-    // Clear previous errors for all fields in the current step to avoid stale errors
+    const isRequired = currentQuestion.isRequired ?? true;
+
+    // Clear previous errors for the current step to avoid stale errors
     if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
-        currentQuestion.fields.forEach(field => clearErrors(field.name));
+      currentQuestion.fields.forEach(field => clearErrors(field.name));
     } else if (currentQuestion.name) {
-        clearErrors(currentQuestion.name);
+      clearErrors(currentQuestion.name);
     }
     
-    if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
+    if (isRequired) {
+      if (currentQuestion.type === 'textFields' && currentQuestion.fields) {
         const schemaFields: Record<string, z.ZodString> = {};
         currentQuestion.fields.forEach(field => {
-            let fieldSchema = z.string().min(1, `${field.label} é obrigatório.`);
-            if (field.type === 'email') {
-                fieldSchema = fieldSchema.email('Formato de email inválido.');
-            } else if (field.type === 'tel') {
-                fieldSchema = fieldSchema.min(10, "Telefone inválido. Inclua o DDD.").regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, "Formato de telefone inválido. Use (XX) XXXXX-XXXX ou apenas números.");
-            } else { // 'text'
-                fieldSchema = fieldSchema.min(3, `${field.label} deve ter pelo menos 3 caracteres.`);
-            }
-            schemaFields[field.name] = fieldSchema;
+          let fieldSchema = z.string().min(1, `${field.label} é obrigatório.`);
+          if (field.type === 'email') {
+            fieldSchema = fieldSchema.email('Formato de email inválido.');
+          } else if (field.type === 'tel') {
+            fieldSchema = fieldSchema.min(10, "Telefone inválido. Inclua o DDD.").regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$|^\d{10,11}$/, "Formato de telefone inválido. Use (XX) XXXXX-XXXX ou apenas números.");
+          } else { // 'text'
+            fieldSchema = fieldSchema.min(3, `${field.label} deve ter pelo menos 3 caracteres.`);
+          }
+          schemaFields[field.name] = fieldSchema;
         });
 
         const stepSchema = z.object(schemaFields);
         const result = stepSchema.safeParse(getValues());
 
         if (!result.success) {
-            stepIsValid = false;
-            result.error.errors.forEach(err => {
-                const fieldName = err.path[0];
-                if (typeof fieldName === 'string') {
-                    setFormError(fieldName, { type: 'manual', message: err.message });
-                }
-            });
+          stepIsValid = false;
+          result.error.errors.forEach(err => {
+            const fieldName = err.path[0];
+            if (typeof fieldName === 'string') {
+              setFormError(fieldName, { type: 'manual', message: err.message });
+            }
+          });
         }
-
-    } else if (currentQuestion.type === 'radio' || currentQuestion.type === 'checkbox') {
+      } else if (currentQuestion.type === 'radio' || currentQuestion.type === 'checkbox') {
         const value = getValues(currentQuestion.name);
         stepIsValid = !!value && (Array.isArray(value) ? value.length > 0 : true);
         if (!stepIsValid) {
-            setFormError(currentQuestion.name, { type: "manual", message: "Por favor, selecione uma opção."});
+          setFormError(currentQuestion.name, { type: "manual", message: "Por favor, selecione uma opção." });
         }
+      }
     }
 
     if (!stepIsValid) return;
@@ -497,7 +519,7 @@ export default function QuizForm({
           <Controller
             name={question.name}
             control={control}
-            rules={{ required: 'Por favor, selecione uma opção.' }}
+            rules={{ required: (question.isRequired ?? true) ? 'Por favor, selecione uma opção.' : false }}
             render={({ field }) => (
               <RadioGroup
                 onValueChange={(value) => handleValueChange(question.name, value)}
@@ -531,7 +553,7 @@ export default function QuizForm({
             name={question.name}
             control={control}
             defaultValue={[]}
-            rules={{ validate: value => (Array.isArray(value) && value.length > 0) || 'Selecione ao menos uma opção.' }}
+            rules={{ validate: value => (question.isRequired ?? true) ? ((Array.isArray(value) && value.length > 0) || 'Selecione ao menos uma opção.') : true }}
             render={({ field }) => (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {question.options!.map((option, index) => {

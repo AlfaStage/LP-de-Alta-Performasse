@@ -31,6 +31,7 @@ export interface QuizQuestion {
   text: string;
   explanation?: string;
   type: 'radio' | 'checkbox' | 'textFields';
+  isRequired?: boolean;
   options?: QuizOption[];
   fields?: FormFieldConfig[];
   condition?: (formData: Record<string, any>) => boolean; 
