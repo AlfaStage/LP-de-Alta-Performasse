@@ -244,13 +244,13 @@ export default function EditQuizPage() {
 
   const reorderMessages = (index: number, direction: 'up' | 'down') => {
     const newMessages = [...messages];
-    const item = newMessages.splice(index, 1)[0];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-
-    if (newIndex < 0 || newIndex >= newMessages.length + 1) return;
-
-    newMessages.splice(newIndex, 0, item);
-    setMessages(newMessages);
+    if (newIndex >= 0 && newIndex < newMessages.length) {
+      const temp = newMessages[index];
+      newMessages[index] = newMessages[newIndex];
+      newMessages[newIndex] = temp;
+      setMessages(newMessages);
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, msgIndex: number) => {
@@ -415,9 +415,9 @@ export default function EditQuizPage() {
   }, [interactiveQuestions, questionsJson, currentTab]);
 
   const handleInsertVariable = (variableName: string, msgIndex: number) => {
-      const currentMessage = messages[msgIndex];
-      const newContent = (currentMessage.content ? currentMessage.content + ' ' : '') + `{{${variableName}}}`;
-      updateMessage(msgIndex, 'content', newContent);
+    const currentMessage = messages[msgIndex];
+    const newContent = (currentMessage.content ? currentMessage.content + ' ' : '') + `{{${variableName}}}`;
+    updateMessage(msgIndex, 'content', newContent);
   };
 
   if (isFetching) {
@@ -468,9 +468,9 @@ export default function EditQuizPage() {
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="configuracoes" className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-4 h-auto">
-                <TabsTrigger value="configuracoes" className="py-2">Configurações</TabsTrigger>
-                <TabsTrigger value="perguntas" className="py-2">Perguntas</TabsTrigger>
-                <TabsTrigger value="mensagens" className="py-2">Mensagens</TabsTrigger>
+                <TabsTrigger value="configuracoes" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Configurações</TabsTrigger>
+                <TabsTrigger value="perguntas" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Perguntas</TabsTrigger>
+                <TabsTrigger value="mensagens" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Mensagens</TabsTrigger>
             </TabsList>
 
             <TabsContent value="perguntas">
@@ -524,6 +524,14 @@ export default function EditQuizPage() {
                   </CardContent>
                 </Card>
                 <Card className="shadow-lg">
+                    <CardHeader><CardTitle>Páginas de Resultado</CardTitle></CardHeader>
+                    <CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="successPageText" className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-muted-foreground" />Texto (Qualificado)</Label><Textarea id="successPageText" value={successPageText} onChange={(e) => setSuccessPageText(e.target.value)} rows={3}/></div><div className="space-y-2"><Label htmlFor="disqualifiedPageText" className="flex items-center gap-1.5"><UserX className="h-4 w-4 text-muted-foreground" />Texto (Desqualificado)</Label><Textarea id="disqualifiedPageText" value={disqualifiedPageText} onChange={(e) => setDisqualifiedPageText(e.target.value)} rows={3}/></div></CardContent>
+                </Card>
+                <Card className="shadow-lg">
+                    <CardHeader><CardTitle>Redirecionamento (Desqualificado)</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="disqualifiedRedirectUrl" className="flex items-center gap-1.5"><VenetianMask className="h-4 w-4 text-muted-foreground" />URL de Redirecionamento</Label><Input id="disqualifiedRedirectUrl" value={disqualifiedRedirectUrl} onChange={(e) => setDisqualifiedRedirectUrl(e.target.value)} placeholder="https://... (opcional)" /></div><div className="space-y-2"><Label htmlFor="disqualifiedRedirectDelaySeconds" className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-muted-foreground" />Atraso (segundos)</Label><Input type="number" id="disqualifiedRedirectDelaySeconds" value={disqualifiedRedirectDelaySeconds} onChange={(e) => setDisqualifiedRedirectDelaySeconds(Number(e.target.value) || 0)} /></div></CardContent>
+                </Card>
+                <Card className="shadow-lg">
                   <CardHeader><CardTitle>Aparência</CardTitle></CardHeader>
                   <CardContent>
                       <div className="space-y-4 rounded-lg border p-4">
@@ -549,9 +557,6 @@ export default function EditQuizPage() {
                 <Card className="shadow-lg">
                   <CardHeader>
                     <CardTitle>Mensagens Pós-Quiz</CardTitle>
-                    <CardDescription>
-                        Configure e ordene mensagens de texto, imagem ou áudio para serem enviadas via webhook.
-                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                       <div className="space-y-3">
@@ -577,14 +582,6 @@ export default function EditQuizPage() {
                       </div>
                       <Button type="button" variant="outline" className="w-full mt-4" onClick={addMessage} disabled={messages.length >= 5}><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Mensagem</Button>
                   </CardContent>
-                </Card>
-                <Card className="shadow-lg">
-                  <CardHeader><CardTitle>Páginas de Resultado</CardTitle></CardHeader>
-                  <CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="successPageText" className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-muted-foreground" />Texto (Qualificado)</Label><Textarea id="successPageText" value={successPageText} onChange={(e) => setSuccessPageText(e.target.value)} rows={3}/></div><div className="space-y-2"><Label htmlFor="disqualifiedPageText" className="flex items-center gap-1.5"><UserX className="h-4 w-4 text-muted-foreground" />Texto (Desqualificado)</Label><Textarea id="disqualifiedPageText" value={disqualifiedPageText} onChange={(e) => setDisqualifiedPageText(e.target.value)} rows={3}/></div></CardContent>
-                </Card>
-                <Card className="shadow-lg">
-                    <CardHeader><CardTitle>Redirecionamento (Desqualificado)</CardTitle></CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="disqualifiedRedirectUrl" className="flex items-center gap-1.5"><VenetianMask className="h-4 w-4 text-muted-foreground" />URL de Redirecionamento</Label><Input id="disqualifiedRedirectUrl" value={disqualifiedRedirectUrl} onChange={(e) => setDisqualifiedRedirectUrl(e.target.value)} placeholder="https://... (opcional)" /></div><div className="space-y-2"><Label htmlFor="disqualifiedRedirectDelaySeconds" className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-muted-foreground" />Atraso (segundos)</Label><Input type="number" id="disqualifiedRedirectDelaySeconds" value={disqualifiedRedirectDelaySeconds} onChange={(e) => setDisqualifiedRedirectDelaySeconds(Number(e.target.value) || 0)} /></div></CardContent>
                 </Card>
             </TabsContent>
         </Tabs>

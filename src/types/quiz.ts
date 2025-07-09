@@ -98,6 +98,13 @@ export interface WhitelabelConfig {
   conversionMetric?: 'start_vs_complete' | 'first_answer_vs_complete';
 }
 
+export interface AiPromptsConfig {
+  fullQuizGeneration: string;
+  // Add other prompts here in the future
+  // e.g., generateDetailsPrompt: string;
+  // e.g., generateMessagesPrompt: string;
+}
+
 // Statistics types
 export interface QuizListItem extends Omit<QuizConfig, 'questions' | 'description' | 'dashboardName' | 'customTheme' | 'useCustomTheme' | 'pixelSettings' | 'messages'> {
   title: string;

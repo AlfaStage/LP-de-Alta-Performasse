@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Settings, Palette, Link2, BarChart3, Info, Fingerprint, LucideIcon, Database, FileJson } from 'lucide-react';
+import { Settings, Palette, Link2, BarChart3, Info, Fingerprint, LucideIcon, Database, FileJson, BrainCircuit } from 'lucide-react';
 
 const settingsNavItems: { title: string; href: string; icon: LucideIcon }[] = [
   {
@@ -26,6 +26,11 @@ const settingsNavItems: { title: string; href: string; icon: LucideIcon }[] = [
     title: 'Rastreadores',
     href: '/config/dashboard/settings/tracking',
     icon: Fingerprint,
+  },
+   {
+    title: 'Prompts de IA',
+    href: '/config/dashboard/settings/prompts',
+    icon: BrainCircuit,
   },
   {
     title: 'Estatísticas',

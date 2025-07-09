@@ -47,6 +47,7 @@ export default function CreateQuizPage() {
   // AI Form State
   const [aiTopic, setAiTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
 
   // Manual Form State
   const [title, setTitle] = useState('');
@@ -76,6 +77,9 @@ export default function CreateQuizPage() {
     async function fetchPreviewConfig() {
       const config = await fetchWhitelabelSettings();
       setWhitelabelSettings(config);
+      if (config.googleApiKey && config.googleApiKey.trim() !== '') {
+        setHasApiKey(true);
+      }
     }
     fetchPreviewConfig();
   }, []);
@@ -226,7 +230,7 @@ export default function CreateQuizPage() {
   const updateOption = (qIndex: number, oIndex: number, field: keyof QuizOption, value: string | boolean) => {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
-    if (question.options) {
+    if (question.options && question.options[oIndex]) {
       question.options[oIndex] = { ...question.options[oIndex], [field]: value };
       setInteractiveQuestions(newQuestions);
     }
@@ -286,16 +290,16 @@ export default function CreateQuizPage() {
     }
     setMessages(newMessages);
   };
-  
+
   const reorderMessages = (index: number, direction: 'up' | 'down') => {
     const newMessages = [...messages];
-    const item = newMessages.splice(index, 1)[0];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-
-    if (newIndex < 0 || newIndex >= newMessages.length + 1) return;
-
-    newMessages.splice(newIndex, 0, item);
-    setMessages(newMessages);
+    if (newIndex >= 0 && newIndex < newMessages.length) {
+      const temp = newMessages[index];
+      newMessages[index] = newMessages[newIndex];
+      newMessages[newIndex] = temp;
+      setMessages(newMessages);
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, msgIndex: number) => {
@@ -389,11 +393,10 @@ export default function CreateQuizPage() {
   }, [interactiveQuestions, questionsJson, currentManualTab]);
 
   const handleInsertVariable = (variableName: string, msgIndex: number) => {
-      const currentMessage = messages[msgIndex];
-      const newContent = (currentMessage.content ? currentMessage.content + ' ' : '') + `{{${variableName}}}`;
-      updateMessage(msgIndex, 'content', newContent);
+    const currentMessage = messages[msgIndex];
+    const newContent = (currentMessage.content ? currentMessage.content + ' ' : '') + `{{${variableName}}}`;
+    updateMessage(msgIndex, 'content', newContent);
   };
-
 
   return (
     <div className="flex flex-col gap-6">
@@ -404,49 +407,51 @@ export default function CreateQuizPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="ai" className="w-full">
+      <Tabs defaultValue="manual" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="ai"><BrainCircuit className="mr-2 h-4 w-4" />Gerar com IA</TabsTrigger>
             <TabsTrigger value="manual"><Wand2 className="mr-2 h-4 w-4" />Criação Manual</TabsTrigger>
+            {hasApiKey && <TabsTrigger value="ai"><BrainCircuit className="mr-2 h-4 w-4" />Gerar com IA</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="ai" className="pt-4">
-          <Card className="shadow-lg">
-            <form onSubmit={handleAiSubmit}>
-                <CardHeader>
-                    <CardTitle>Gerar Quiz com Inteligência Artificial</CardTitle>
-                    <CardDescription>
-                        Descreva o tópico ou o objetivo do seu quiz, e a nossa IA irá criar um conjunto completo de perguntas, incluindo título, slug e uma etapa final de contato.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <Label htmlFor="ai-topic" className="text-base">Tópico do Quiz</Label>
-                    <Textarea
-                        id="ai-topic"
-                        value={aiTopic}
-                        onChange={(e) => setAiTopic(e.target.value)}
-                        placeholder="Ex: 'um quiz para uma clínica de estética que quer qualificar leads para depilação a laser', ou 'quiz divertido sobre finanças pessoais para jovens', ou 'avaliação de conhecimento sobre marketing digital'."
-                        rows={4}
-                        className="text-base"
-                    />
-                    {error && (<Alert variant="destructive" className="w-full"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erro na Geração</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>)}
-                </CardContent>
-                <CardFooter>
-                     <Button type="submit" size="lg" className="shadow-md" disabled={isGenerating}>
-                        {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Gerando Quiz...</>) : (<><BrainCircuit className="mr-2 h-4 w-4" />Gerar Quiz com IA</>)}
-                    </Button>
-                </CardFooter>
-            </form>
-          </Card>
-        </TabsContent>
+        {hasApiKey && (
+            <TabsContent value="ai" className="pt-4">
+            <Card className="shadow-lg">
+                <form onSubmit={handleAiSubmit}>
+                    <CardHeader>
+                        <CardTitle>Gerar Quiz com Inteligência Artificial</CardTitle>
+                        <CardDescription>
+                            Descreva o tópico ou o objetivo do seu quiz, e a nossa IA irá criar um conjunto completo de perguntas, incluindo título, slug e uma etapa final de contato.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Label htmlFor="ai-topic" className="text-base">Tópico do Quiz</Label>
+                        <Textarea
+                            id="ai-topic"
+                            value={aiTopic}
+                            onChange={(e) => setAiTopic(e.target.value)}
+                            placeholder="Ex: 'um quiz para uma clínica de estética que quer qualificar leads para depilação a laser', ou 'quiz divertido sobre finanças pessoais para jovens', ou 'avaliação de conhecimento sobre marketing digital'."
+                            rows={4}
+                            className="text-base"
+                        />
+                        {error && (<Alert variant="destructive" className="w-full"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erro na Geração</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>)}
+                    </CardContent>
+                    <CardFooter>
+                        <Button type="submit" size="lg" className="shadow-md" disabled={isGenerating}>
+                            {isGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Gerando Quiz...</>) : (<><BrainCircuit className="mr-2 h-4 w-4" />Gerar Quiz com IA</>)}
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Card>
+            </TabsContent>
+        )}
         
         <TabsContent value="manual" className="pt-4">
           <form onSubmit={handleManualSubmit}>
              <Tabs defaultValue="configuracoes" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-4 h-auto">
-                  <TabsTrigger value="configuracoes" className="py-2">Configurações</TabsTrigger>
-                  <TabsTrigger value="perguntas" className="py-2">Perguntas</TabsTrigger>
-                  <TabsTrigger value="mensagens" className="py-2">Mensagens</TabsTrigger>
+                  <TabsTrigger value="configuracoes" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Configurações</TabsTrigger>
+                  <TabsTrigger value="perguntas" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Perguntas</TabsTrigger>
+                  <TabsTrigger value="mensagens" className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Mensagens</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="configuracoes" className="space-y-6">
@@ -459,6 +464,14 @@ export default function CreateQuizPage() {
                             <div className="space-y-2"><Label className="flex items-center gap-1.5"><LayoutDashboard className="h-4 w-4 text-muted-foreground" />Formato de Exibição</Label><RadioGroup value={displayMode} onValueChange={(value) => setDisplayMode(value as 'step-by-step' | 'single-page')} className="flex gap-4 pt-2"><div className="flex items-center space-x-2"><RadioGroupItem value="step-by-step" id="mode-step" /><Label htmlFor="mode-step" className="font-normal">Passo a Passo</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="single-page" id="mode-single" /><Label htmlFor="mode-single" className="font-normal">Página Única</Label></div></RadioGroup></div>
                             <div className="space-y-2 md:col-span-2"><Label htmlFor="description" className="flex items-center gap-1.5"><MessageSquareText className="h-4 w-4 text-muted-foreground" />Descrição do Quiz (Opcional)</Label><Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Aparecerá abaixo do título na página do quiz." rows={2} /></div>
                         </CardContent>
+                    </Card>
+                    <Card className="shadow-lg">
+                      <CardHeader><CardTitle>Páginas de Resultado</CardTitle></CardHeader>
+                      <CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="successPageText" className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-muted-foreground" />Texto da Página de Sucesso (Qualificado)</Label><Textarea id="successPageText" value={successPageText} onChange={(e) => setSuccessPageText(e.target.value)} rows={3}/></div><div className="space-y-2"><Label htmlFor="disqualifiedPageText" className="flex items-center gap-1.5"><UserX className="h-4 w-4 text-muted-foreground" />Texto da Página de Desqualificado</Label><Textarea id="disqualifiedPageText" value={disqualifiedPageText} onChange={(e) => setDisqualifiedPageText(e.target.value)} rows={3}/></div></CardContent>
+                    </Card>
+                    <Card className="shadow-lg">
+                        <CardHeader><CardTitle>Redirecionamento (Desqualificado)</CardTitle></CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="disqualifiedRedirectUrl" className="flex items-center gap-1.5"><VenetianMask className="h-4 w-4 text-muted-foreground" />URL de Redirecionamento</Label><Input id="disqualifiedRedirectUrl" value={disqualifiedRedirectUrl} onChange={(e) => setDisqualifiedRedirectUrl(e.target.value)} placeholder="https://... (opcional)" /></div><div className="space-y-2"><Label htmlFor="disqualifiedRedirectDelaySeconds" className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-muted-foreground" />Atraso para Redirecionar (segundos)</Label><Input type="number" id="disqualifiedRedirectDelaySeconds" value={disqualifiedRedirectDelaySeconds} onChange={(e) => setDisqualifiedRedirectDelaySeconds(Number(e.target.value) || 0)} /></div></CardContent>
                     </Card>
                 </TabsContent>
 
@@ -497,16 +510,13 @@ export default function CreateQuizPage() {
                     <Card className="shadow-lg">
                       <CardHeader>
                           <CardTitle>Mensagens Pós-Quiz</CardTitle>
-                          <CardDescription>
-                              Configure e ordene mensagens de texto, imagem ou áudio para serem enviadas via webhook.
-                          </CardDescription>
                       </CardHeader>
                       <CardContent>
                           <div className="space-y-3">
                               {messages.map((msg, msgIndex) => (
                                   <Card key={msg.id} className="p-4 bg-muted/30 flex gap-4">
                                       <div className="flex flex-col items-center gap-1 text-muted-foreground bg-background/50 p-1 rounded-md border h-min">
-                                        <span className="font-bold text-sm select-none p-1">{msgIndex + 1}</span>
+                                          <span className="font-bold text-sm select-none p-1">{msgIndex + 1}</span>
                                           <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'up')} disabled={msgIndex === 0}><ChevronUp className="h-5 w-5" /></Button>
                                           <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => reorderMessages(msgIndex, 'down')} disabled={msgIndex === messages.length - 1}><ChevronDown className="h-5 w-5" /></Button>
                                       </div>
@@ -525,15 +535,6 @@ export default function CreateQuizPage() {
                           </div>
                           <Button type="button" variant="outline" className="w-full mt-4" onClick={addMessage} disabled={messages.length >= 5}><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Mensagem</Button>
                       </CardContent>
-                    </Card>
-
-                    <Card className="shadow-lg">
-                      <CardHeader><CardTitle>Páginas de Resultado</CardTitle></CardHeader>
-                      <CardContent className="space-y-4"><div className="space-y-2"><Label htmlFor="successPageText" className="flex items-center gap-1.5"><UserCheck className="h-4 w-4 text-muted-foreground" />Texto da Página de Sucesso (Qualificado)</Label><Textarea id="successPageText" value={successPageText} onChange={(e) => setSuccessPageText(e.target.value)} rows={3}/></div><div className="space-y-2"><Label htmlFor="disqualifiedPageText" className="flex items-center gap-1.5"><UserX className="h-4 w-4 text-muted-foreground" />Texto da Página de Desqualificado</Label><Textarea id="disqualifiedPageText" value={disqualifiedPageText} onChange={(e) => setDisqualifiedPageText(e.target.value)} rows={3}/></div></CardContent>
-                    </Card>
-                    <Card className="shadow-lg">
-                        <CardHeader><CardTitle>Redirecionamento (Desqualificado)</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="disqualifiedRedirectUrl" className="flex items-center gap-1.5"><VenetianMask className="h-4 w-4 text-muted-foreground" />URL de Redirecionamento</Label><Input id="disqualifiedRedirectUrl" value={disqualifiedRedirectUrl} onChange={(e) => setDisqualifiedRedirectUrl(e.target.value)} placeholder="https://... (opcional)" /></div><div className="space-y-2"><Label htmlFor="disqualifiedRedirectDelaySeconds" className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-muted-foreground" />Atraso para Redirecionar (segundos)</Label><Input type="number" id="disqualifiedRedirectDelaySeconds" value={disqualifiedRedirectDelaySeconds} onChange={(e) => setDisqualifiedRedirectDelaySeconds(Number(e.target.value) || 0)} /></div></CardContent>
                     </Card>
                 </TabsContent>
             </Tabs>
