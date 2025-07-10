@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -96,7 +95,7 @@ export default function PromptsSettingsPage() {
             <AlertTitle>Como Funciona</AlertTitle>
             <AlertDescription>
               Você pode editar a personalidade e as instruções da IA, mas a estrutura de saída do JSON é fixa para garantir a compatibilidade.
-              Use variáveis como `{{topic}}` para instruções e `{{existingData}}` para contexto.
+              Use variáveis como 'topic' para instruções e 'existingData' para contexto.
             </AlertDescription>
           </Alert>
 
