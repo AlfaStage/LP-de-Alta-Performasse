@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import type { WhitelabelConfig } from '@/types/quiz';
 import crypto from 'crypto';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-config.json');
 
@@ -23,7 +24,7 @@ export const defaultConfig: WhitelabelConfig = {
   facebookPixelIdSecondary: "",
   googleAnalyticsId: "",
   googleApiKey: "",
-  aiModel: "googleai/gemini-1.5-flash",
+  aiModel: "googleai/gemini-2.5-flash",
   footerCopyrightText: "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   apiStatsAccessToken: "",
   websiteUrl: "", 
@@ -143,4 +144,28 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
 
 export async function generateNewApiToken(): Promise<string> {
   return crypto.randomBytes(32).toString('hex');
+}
+
+export async function listGoogleAiModels(): Promise<string[]> {
+  const config = await getWhitelabelConfig();
+  const apiKey = config.googleApiKey;
+  if (!apiKey) {
+    throw new Error('Chave de API do Google não configurada.');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const models = await genAI.listModels();
+  
+  const modelNames = await Promise.all(
+    models.map(async (model) => {
+      // The API returns display names, but we need the model ID like 'gemini-1.5-flash-latest'
+      // These are often in the format 'models/gemini-1.5-flash-latest'
+      const parts = model.name.split('/');
+      return parts[1];
+    })
+  );
+
+  // Filter for 'generateContent' supported models and remove duplicates
+  const uniqueModels = [...new Set(modelNames)];
+  return uniqueModels;
 }

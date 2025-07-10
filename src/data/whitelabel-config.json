@@ -21,5 +21,6 @@
   "instagramUrl": "",
   "facebookDomainVerification": "",
   "dashboardDefaultFilter": "last7",
-  "conversionMetric": "start_vs_complete"
+  "conversionMetric": "start_vs_complete",
+  "aiModel": "googleai/gemini-2.5-flash"
 }

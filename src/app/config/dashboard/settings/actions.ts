@@ -1,7 +1,7 @@
 
 "use server";
 
-import { getWhitelabelConfig, saveWhitelabelConfig as saveConfig, generateNewApiToken } from '@/lib/whitelabel.server';
+import { getWhitelabelConfig, saveWhitelabelConfig as saveConfig, generateNewApiToken, listGoogleAiModels } from '@/lib/whitelabel.server';
 import type { WhitelabelConfig } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
 
@@ -60,6 +60,17 @@ export async function deleteApiStatsTokenAction(): Promise<{ success: boolean; m
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao excluir token.";
     console.error("Error deleting API stats token:", error);
+    return { success: false, message: errorMessage };
+  }
+}
+
+export async function listAvailableAiModelsAction(): Promise<{ success: boolean; models?: string[]; message?: string }> {
+  try {
+    const models = await listGoogleAiModels();
+    return { success: true, models };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao listar modelos.";
+    console.error("Error listing AI models:", error);
     return { success: false, message: errorMessage };
   }
 }

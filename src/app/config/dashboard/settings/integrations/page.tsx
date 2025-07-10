@@ -11,10 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Save, Loader2, Link2, Facebook, HelpCircle, BrainCircuit, Key, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { fetchWhitelabelSettings, saveWhitelabelSettings } from '../actions';
+import { fetchWhitelabelSettings, saveWhitelabelSettings, listAvailableAiModelsAction } from '../actions';
 import type { WhitelabelConfig } from '@/types/quiz';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Schema para os campos desta página
 const integrationsSettingsSchema = z.object({
@@ -22,7 +23,7 @@ const integrationsSettingsSchema = z.object({
   disqualifiedSubmissionWebhookUrl: z.string().url({ message: "URL do webhook inválida." }).optional().or(z.literal('')),
   facebookDomainVerification: z.string().optional(),
   googleApiKey: z.string().optional(),
-  aiModel: z.enum(['googleai/gemini-1.5-flash', 'googleai/gemini-1.5-pro']).optional(),
+  aiModel: z.string().optional(),
 });
 
 // Schema completo para manter a estrutura de dados ao salvar
@@ -32,10 +33,12 @@ const fullWhitelabelSchema = z.object({}).passthrough();
 export default function IntegrationsSettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [fullConfig, setFullConfig] = useState<Partial<WhitelabelConfig>>({});
   const { toast } = useToast();
 
-  const { control, handleSubmit, reset, formState: { errors, isDirty } } = useForm<WhitelabelConfig>({
+  const { control, handleSubmit, reset, formState: { errors, isDirty }, watch } = useForm<WhitelabelConfig>({
     resolver: zodResolver(integrationsSettingsSchema),
     defaultValues: async () => {
       setIsFetching(true);
@@ -45,6 +48,8 @@ export default function IntegrationsSettingsPage() {
       return settings;
     }
   });
+
+  const googleApiKey = watch('googleApiKey');
 
   useEffect(() => {
     async function loadSettings() {
@@ -56,6 +61,30 @@ export default function IntegrationsSettingsPage() {
     }
     loadSettings();
   }, [reset]);
+
+  useEffect(() => {
+    async function fetchModels() {
+      if (googleApiKey && googleApiKey.trim() !== '') {
+        setIsFetchingModels(true);
+        const result = await listAvailableAiModelsAction();
+        if (result.success && result.models) {
+          setAvailableModels(result.models);
+        } else {
+          toast({
+            title: "Erro ao buscar modelos de IA",
+            description: result.message || "Não foi possível carregar a lista de modelos disponíveis.",
+            variant: "destructive",
+          });
+          setAvailableModels([]);
+        }
+        setIsFetchingModels(false);
+      } else {
+        setAvailableModels([]);
+      }
+    }
+    fetchModels();
+  }, [googleApiKey, toast]);
+
 
   const onSubmit = async (data: WhitelabelConfig) => {
     setIsLoading(true);
@@ -181,21 +210,27 @@ export default function IntegrationsSettingsPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="aiModel">Modelo de Geração</Label>
+                    {isFetchingModels ? (
+                      <Skeleton className="h-10 w-full md:w-[280px]" />
+                    ) : (
                      <Controller
                         name="aiModel"
                         control={control}
                         render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value || 'googleai/gemini-1.5-flash'}>
-                            <SelectTrigger id="aiModel" className="w-full md:w-[280px]">
+                        <Select onValueChange={field.onChange} value={field.value || 'googleai/gemini-2.5-flash'} disabled={!googleApiKey || availableModels.length === 0}>
+                            <SelectTrigger id="aiModel" className="w-full md:w-[380px]">
                             <SelectValue placeholder="Selecione um modelo" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="googleai/gemini-1.5-flash">Gemini 1.5 Flash (Rápido e Eficiente)</SelectItem>
-                                <SelectItem value="googleai/gemini-1.5-pro">Gemini 1.5 Pro (Mais Poderoso)</SelectItem>
+                                {availableModels.map(model => (
+                                    <SelectItem key={model} value={`googleai/${model}`}>{model}</SelectItem>
+                                ))}
+                                {availableModels.length === 0 && <SelectItem value="googleai/gemini-2.5-flash" disabled>Nenhum modelo disponível</SelectItem>}
                             </SelectContent>
                         </Select>
                         )}
                     />
+                    )}
                     {errors.aiModel && <p className="text-sm text-destructive">{errors.aiModel.message}</p>}
                     <p className="text-xs text-muted-foreground">Escolha qual modelo da família Gemini será usado para gerar conteúdo.</p>
                 </div>

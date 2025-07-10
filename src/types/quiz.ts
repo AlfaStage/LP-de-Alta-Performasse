@@ -90,7 +90,7 @@ export interface WhitelabelConfig {
   facebookPixelIdSecondary?: string;
   googleAnalyticsId?: string;
   googleApiKey?: string;
-  aiModel?: 'googleai/gemini-1.5-flash' | 'googleai/gemini-1.5-pro';
+  aiModel?: string;
   footerCopyrightText?: string;
   apiStatsAccessToken?: string;
   websiteUrl?: string;
