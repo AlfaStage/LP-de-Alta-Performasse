@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { fetchWhitelabelSettings, saveWhitelabelSettings } from '../actions';
 import type { WhitelabelConfig } from '@/types/quiz';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Schema para os campos desta página
 const integrationsSettingsSchema = z.object({
@@ -21,6 +22,7 @@ const integrationsSettingsSchema = z.object({
   disqualifiedSubmissionWebhookUrl: z.string().url({ message: "URL do webhook inválida." }).optional().or(z.literal('')),
   facebookDomainVerification: z.string().optional(),
   googleApiKey: z.string().optional(),
+  aiModel: z.enum(['googleai/gemini-1.5-flash', 'googleai/gemini-1.5-pro']).optional(),
 });
 
 // Schema completo para manter a estrutura de dados ao salvar
@@ -151,7 +153,7 @@ export default function IntegrationsSettingsPage() {
                       Configurações de IA (Genkit)
                   </CardTitle>
                    <CardDescription>
-                      Configure a chave de API para funcionalidades de IA, como a geração de quizzes.
+                      Configure a chave de API e o modelo de linguagem para as funcionalidades de IA.
                   </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -176,6 +178,26 @@ export default function IntegrationsSettingsPage() {
                   <p className="text-xs text-muted-foreground">
                     Sua chave é armazenada de forma segura. Em ambientes de produção, pode ser necessário reiniciar o servidor para que uma nova chave entre em vigor.
                   </p>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="aiModel">Modelo de Geração</Label>
+                     <Controller
+                        name="aiModel"
+                        control={control}
+                        render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value || 'googleai/gemini-1.5-flash'}>
+                            <SelectTrigger id="aiModel" className="w-full md:w-[280px]">
+                            <SelectValue placeholder="Selecione um modelo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="googleai/gemini-1.5-flash">Gemini 1.5 Flash (Rápido e Eficiente)</SelectItem>
+                                <SelectItem value="googleai/gemini-1.5-pro">Gemini 1.5 Pro (Mais Poderoso)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        )}
+                    />
+                    {errors.aiModel && <p className="text-sm text-destructive">{errors.aiModel.message}</p>}
+                    <p className="text-xs text-muted-foreground">Escolha qual modelo da família Gemini será usado para gerar conteúdo.</p>
                 </div>
               </CardContent>
           </Card>

@@ -23,6 +23,7 @@ export const defaultConfig: WhitelabelConfig = {
   facebookPixelIdSecondary: "",
   googleAnalyticsId: "",
   googleApiKey: "",
+  aiModel: "googleai/gemini-1.5-flash",
   footerCopyrightText: "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   apiStatsAccessToken: "",
   websiteUrl: "", 
@@ -73,6 +74,7 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
     mergedConfig.facebookPixelIdSecondary = typeof savedConfig.facebookPixelIdSecondary === 'string' ? savedConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary;
     mergedConfig.googleAnalyticsId = typeof savedConfig.googleAnalyticsId === 'string' ? savedConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId;
     mergedConfig.googleApiKey = typeof savedConfig.googleApiKey === 'string' ? savedConfig.googleApiKey : defaultConfig.googleApiKey;
+    mergedConfig.aiModel = savedConfig.aiModel || defaultConfig.aiModel;
     mergedConfig.apiStatsAccessToken = typeof savedConfig.apiStatsAccessToken === 'string' ? savedConfig.apiStatsAccessToken : defaultConfig.apiStatsAccessToken;
     mergedConfig.websiteUrl = typeof savedConfig.websiteUrl === 'string' ? savedConfig.websiteUrl : defaultConfig.websiteUrl;
     mergedConfig.instagramUrl = typeof savedConfig.instagramUrl === 'string' ? savedConfig.instagramUrl : defaultConfig.instagramUrl;
@@ -120,6 +122,7 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
         facebookPixelIdSecondary: typeof newConfig.facebookPixelIdSecondary === 'string' ? newConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary,
         googleAnalyticsId: typeof newConfig.googleAnalyticsId === 'string' ? newConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId,
         googleApiKey: typeof newConfig.googleApiKey === 'string' ? newConfig.googleApiKey : defaultConfig.googleApiKey,
+        aiModel: newConfig.aiModel || defaultConfig.aiModel,
         footerCopyrightText: footerTextToSave,
         apiStatsAccessToken: typeof newConfig.apiStatsAccessToken === 'string' ? newConfig.apiStatsAccessToken : defaultConfig.apiStatsAccessToken,
         websiteUrl: typeof newConfig.websiteUrl === 'string' ? newConfig.websiteUrl : defaultConfig.websiteUrl,

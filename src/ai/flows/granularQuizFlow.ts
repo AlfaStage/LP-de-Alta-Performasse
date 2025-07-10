@@ -5,64 +5,91 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { getAiPrompts } from '@/lib/ai.server';
+import { getWhitelabelConfig, getAiPrompts } from '@/lib/ai.server';
 import { z } from 'genkit';
+import { defaultPrompts } from '@/lib/ai.server';
 
 const GranularQuizGenerationInputSchema = z.object({
   topic: z.string().describe('The topic or instruction for the quiz section to be generated.'),
   generationType: z.enum(['details', 'questions', 'messages', 'results']).describe('The section of the quiz to generate.'),
   generationMode: z.enum(['overwrite', 'improve', 'complete']).describe('The mode of generation.'),
-  existingData: z.string().optional().describe('A JSON string of the existing data for this section, if any.'),
+  existingData: z.string().optional().describe('A JSON string of the existing quiz data for context.'),
 });
 export type GranularQuizGenerationInput = z.infer<typeof GranularQuizGenerationInputSchema>;
 
-const GranularQuizGenerationOutputSchema = z.object({
+// Shared output schema
+const JsonOutputSchema = z.object({
   jsonOutput: z.string().describe('A valid JSON string representing the generated quiz section.'),
 });
-export type GranularQuizGenerationOutput = z.infer<typeof GranularQuizGenerationOutputSchema>;
+export type GranularQuizGenerationOutput = z.infer<typeof JsonOutputSchema>;
+
 
 export async function generateQuizSection(input: GranularQuizGenerationInput): Promise<GranularQuizGenerationOutput> {
   return granularQuizFlow(input);
 }
 
+// Fixed JSON structures for the AI to follow. These are NOT editable by the user.
+const jsonStructures = {
+    details: `{\"title\": \"...\", \"dashboardName\": \"...\", \"slug\": \"...\", \"description\": \"...\"}`,
+    questions: `{\"questions\": [{\"id\": \"...\", \"name\": \"...\", \"text\": \"...\", \"type\": \"radio\", \"icon\": \"HelpCircle\", \"options\": [{\"value\": \"...\", \"label\": \"...\"}]}]}`,
+    messages: `{\"messages\": [{\"id\": \"...\", \"type\": \"mensagem\", \"content\": \"...\"}]}`,
+    results: `{\"successPageText\": \"...\", \"disqualifiedPageText\": \"...\"}`,
+};
+
 const granularQuizFlow = ai.defineFlow(
   {
     name: 'granularQuizFlow',
     inputSchema: GranularQuizGenerationInputSchema,
-    outputSchema: GranularQuizGenerationOutputSchema,
+    outputSchema: JsonOutputSchema,
   },
   async (input) => {
-    // Fetch the customizable prompts from the configuration file.
-    const promptsConfig = await getAiPrompts();
-    let promptText = '';
+    // Fetch the customizable prompts and the selected model from the configuration file.
+    const [promptsConfig, whitelabelConfig] = await Promise.all([
+        getAiPrompts(),
+        getWhitelabelConfig(),
+    ]);
+
+    const modelToUse = whitelabelConfig.aiModel || 'googleai/gemini-1.5-flash';
+    let basePromptText = '';
+    let jsonStructure = '';
 
     // Select the appropriate prompt based on the generation type
     switch (input.generationType) {
         case 'details':
-            promptText = promptsConfig.generateQuizDetails;
+            basePromptText = promptsConfig.generateQuizDetails || defaultPrompts.generateQuizDetails;
+            jsonStructure = jsonStructures.details;
             break;
         case 'questions':
-            promptText = promptsConfig.generateQuizQuestions;
+            basePromptText = promptsConfig.generateQuizQuestions || defaultPrompts.generateQuizQuestions;
+            jsonStructure = jsonStructures.questions;
             break;
         case 'messages':
-            promptText = promptsConfig.generateQuizMessages;
+            basePromptText = promptsConfig.generateQuizMessages || defaultPrompts.generateQuizMessages;
+            jsonStructure = jsonStructures.messages;
             break;
         case 'results':
-            promptText = promptsConfig.generateQuizResultsPages;
+            basePromptText = promptsConfig.generateQuizResultsPages || defaultPrompts.generateQuizResultsPages;
+            jsonStructure = jsonStructures.results;
             break;
         default:
             throw new Error(`Invalid generation type: ${input.generationType}`);
     }
 
-    // Dynamically define the prompt inside the flow to use the fetched text.
+    // Combine the user-editable prompt with the fixed, non-editable JSON structure instructions.
+    const fullPromptText = `${basePromptText}\n\nReturn ONLY a valid JSON object with a single key "jsonOutput" which contains a stringified JSON matching this exact structure: ${jsonStructure}. Do not add any other text or markdown formatting.`;
+
+    // Dynamically define the prompt inside the flow to use the fetched text and selected model.
     const granularPrompt = ai.definePrompt({
       name: 'dynamicGranularQuizPrompt',
       input: { schema: GranularQuizGenerationInputSchema },
-      output: { schema: z.object({ jsonOutput: z.string() }) }, // Ensure output schema matches what AI should return
-      prompt: promptText,
+      output: { schema: JsonOutputSchema },
+      prompt: fullPromptText,
+      model: modelToUse, // Use the dynamically selected model
+      config: {
+          temperature: 0.7, // Adjust creativity
+      },
     });
     
-    // The prompt expects 'jsonOutput' in the result object, so we wrap it.
     const { output } = await granularPrompt(input);
     if (!output || !output.jsonOutput) {
       throw new Error("AI did not return the expected 'jsonOutput' field.");

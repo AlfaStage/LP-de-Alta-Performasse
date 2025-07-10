@@ -1,34 +1,34 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { AiPromptsConfig } from '@/types/quiz';
+import type { AiPromptsConfig, WhitelabelConfig } from '@/types/quiz';
 
 const promptsFilePath = path.join(process.cwd(), 'src', 'data', 'ai-prompts.json');
+const whitelabelConfigPath = path.join(process.cwd(), 'src', 'data', 'whitelabel-config.json');
 
 export const defaultPrompts: AiPromptsConfig = {
-  generateQuizDetails: "You are a marketing copywriter. Based on the provided topic, generate a concise and engaging 'title', 'dashboardName', and 'description' for a quiz. The 'slug' should be a URL-friendly version of the title (lowercase, no spaces, use hyphens). The mode is '{{generationMode}}'. The topic is: '{{topic}}'.\n\nIf the mode is 'improve' or 'complete', use the following existing data as a base: {{existingData}}.\n\nReturn ONLY a valid JSON object in the format: {\"title\": \"...\", \"dashboardName\": \"...\", \"slug\": \"...\", \"description\": \"...\"}",
-  generateQuizQuestions: "You are an expert quiz creator. Based on the topic '{{topic}}', create an array of 3 to 5 quiz questions. The final question MUST be of type 'textFields' to collect the user's name, WhatsApp, and email (use field names: 'nomeCompleto', 'whatsapp', 'email'). Vary the other questions between 'radio' and 'checkbox'. Use valid icon names from 'lucide-react' for all icons.\n\nReturn ONLY a valid JSON object with a single key \"questions\" containing the array of question objects. Example: {\"questions\": [ ... ]}",
-  generateQuizMessages: "You are a friendly and engaging chatbot persona specialist. Based on the quiz topic '{{topic}}', create a sequence of 2-3 post-quiz messages to be sent via webhook. The messages can be of type 'mensagem' (text). You can use variables like {{nomeCompleto}} to personalize the message.\n\nReturn ONLY a valid JSON object with a single key \"messages\" containing the array of message objects. Example: {\"messages\": [ ... ]}",
-  generateQuizResultsPages: "You are a skilled UX copywriter. Based on the quiz topic '{{topic}}', write two distinct pieces of text: \n1. 'successPageText': An encouraging message for qualified leads who completed the quiz successfully.\n2. 'disqualifiedPageText': A polite and professional message for users who were disqualified based on their answers.\n\nReturn ONLY a valid JSON object in the format: {\"successPageText\": \"...\", \"disqualifiedPageText\": \"...\"}"
+  generateQuizDetails: "You are a marketing copywriter. Your task is to generate the details for a quiz: 'title', 'dashboardName', 'slug', and 'description'.\n\nThe generation mode is '{{generationMode}}'. The user's primary instruction or topic is: '{{topic}}'.\nAll other existing quiz data is provided for context in this JSON object: {{existingData}}.\n\n- If mode is 'overwrite', create everything from scratch based on the topic.\n- If mode is 'improve', refine the existing details based on the instruction.\n- If mode is 'complete', fill in any missing details based on the topic and existing context.\n\nMake the slug URL-friendly (lowercase, hyphens, no special characters).",
+  generateQuizQuestions: "You are an expert quiz creator and instructional designer. Your task is to generate a JSON array of quiz questions.\n\nThe generation mode is '{{generationMode}}'. The user's primary instruction or topic is: '{{topic}}'.\nAll other existing quiz data (like title and description) is provided for context in this JSON object: {{existingData}}.\n\n- If mode is 'overwrite', create 3-5 questions from scratch. The last question must be type 'textFields' for contact info (nomeCompleto, whatsapp, email).\n- If mode is 'improve', refine the existing questions based on the instruction.\n- If mode is 'complete', add 1-2 new relevant questions to the existing ones.\n\nUse valid and relevant icon names from 'lucide-react' for all icons.",
+  generateQuizMessages: "You are a friendly and engaging chatbot persona specialist. Your task is to generate a JSON array of post-quiz messages to be sent via webhook.\n\nThe generation mode is '{{generationMode}}'. The user's primary instruction or topic is: '{{topic}}'.\nAll other existing quiz data is provided for context in this JSON object: {{existingData}}.\n\n- If mode is 'overwrite', create 2-3 messages from scratch.\n- If mode is 'improve' or 'complete', refine or add to the existing messages based on the instruction.\n\nYou can use variables like {{nomeCompleto}} to personalize the message.",
+  generateQuizResultsPages: "You are a skilled UX copywriter. Your task is to generate the text for quiz result pages.\n\nThe generation mode is '{{generationMode}}'. The user's primary instruction or topic is: '{{topic}}'.\nAll other existing quiz data is provided for context in this JSON object: {{existingData}}.\n\n- If mode is 'overwrite', write new 'successPageText' and 'disqualifiedPageText' from scratch.\n- If mode is 'improve' or 'complete', refine the existing text based on the instruction."
 };
 
 
-async function ensurePromptsFileExists() {
+async function ensureFileExists(filePath: string, defaultContent: object) {
   try {
-    await fs.access(promptsFilePath);
+    await fs.access(filePath);
   } catch (error) {
     try {
-      await fs.mkdir(path.dirname(promptsFilePath), { recursive: true });
-      await fs.writeFile(promptsFilePath, JSON.stringify(defaultPrompts, null, 2), 'utf8');
-      console.log('Created default ai-prompts.json at:', promptsFilePath);
+      await fs.mkdir(path.dirname(filePath), { recursive: true });
+      await fs.writeFile(filePath, JSON.stringify(defaultContent, null, 2), 'utf8');
     } catch (writeError) {
-      console.error('Failed to write default ai-prompts.json:', writeError);
+      console.error(`Failed to write default file at ${filePath}:`, writeError);
     }
   }
 }
 
 export async function getAiPrompts(): Promise<AiPromptsConfig> {
-  await ensurePromptsFileExists();
+  await ensureFileExists(promptsFilePath, defaultPrompts);
   try {
     const fileContents = await fs.readFile(promptsFilePath, 'utf8');
     const savedPrompts = JSON.parse(fileContents) as Partial<AiPromptsConfig>;
@@ -48,4 +48,15 @@ export async function saveAiPrompts(newPrompts: AiPromptsConfig): Promise<{ succ
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return { success: false, message: `Erro ao salvar prompts: ${errorMessage}` };
   }
+}
+
+// Helper to get whitelabel config on the server, as it's needed by the AI flow.
+export async function getWhitelabelConfig(): Promise<Partial<WhitelabelConfig>> {
+    try {
+        await fs.access(whitelabelConfigPath);
+        const fileContents = await fs.readFile(whitelabelConfigPath, 'utf8');
+        return JSON.parse(fileContents) as Partial<WhitelabelConfig>;
+    } catch {
+        return {}; // Return empty object if file doesn't exist
+    }
 }

@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Save, Loader2, BrainCircuit, AlertCircle } from 'lucide-react';
+import { Save, Loader2, BrainCircuit, AlertCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchAiPrompts, savePromptsAction } from './actions';
 import type { AiPromptsConfig } from '@/types/quiz';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const promptsSchema = z.object({
   generateQuizDetails: z.string().min(50, "O prompt deve ter pelo menos 50 caracteres."),
@@ -90,69 +91,73 @@ export default function PromptsSettingsPage() {
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Atenção ao Editar</AlertTitle>
+          <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800">
+            <Info className="h-4 w-4 !text-blue-600" />
+            <AlertTitle>Como Funciona</AlertTitle>
             <AlertDescription>
-              A IA espera receber um JSON válido como resposta. Mudanças drásticas na estrutura do prompt podem quebrar a funcionalidade de geração. Use as variáveis como `{"{{topic}}"}` para inserir dados dinâmicos.
+              Você pode editar a personalidade e as instruções da IA, mas a estrutura de saída do JSON é fixa para garantir a compatibilidade.
+              Use variáveis como `{{topic}}` para instruções e `{{existingData}}` para contexto.
             </AlertDescription>
           </Alert>
 
-          <div className="space-y-2">
-            <Label htmlFor="generateQuizDetails" className="text-lg font-semibold">
-              Prompt para Detalhes do Quiz (Título, Slug, etc.)
-            </Label>
-            <Controller
-              name="generateQuizDetails"
-              control={control}
-              render={({ field }) => (
-                <Textarea id="generateQuizDetails" {...field} rows={8} className="font-mono text-xs"/>
-              )}
-            />
-            {errors.generateQuizDetails && <p className="text-sm text-destructive">{errors.generateQuizDetails.message}</p>}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="generateQuizQuestions" className="text-lg font-semibold">
-              Prompt para Perguntas do Quiz
-            </Label>
-            <Controller
-              name="generateQuizQuestions"
-              control={control}
-              render={({ field }) => (
-                <Textarea id="generateQuizQuestions" {...field} rows={8} className="font-mono text-xs"/>
-              )}
-            />
-            {errors.generateQuizQuestions && <p className="text-sm text-destructive">{errors.generateQuizQuestions.message}</p>}
-          </div>
+          <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+            <AccordionItem value="item-1">
+              <AccordionTrigger className="text-lg font-semibold">Prompt para Detalhes do Quiz</AccordionTrigger>
+              <AccordionContent className="pt-4">
+                <Controller
+                  name="generateQuizDetails"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea {...field} rows={8} className="font-mono text-xs"/>
+                  )}
+                />
+                {errors.generateQuizDetails && <p className="text-sm text-destructive mt-2">{errors.generateQuizDetails.message}</p>}
+              </AccordionContent>
+            </AccordionItem>
 
-          <div className="space-y-2">
-            <Label htmlFor="generateQuizMessages" className="text-lg font-semibold">
-              Prompt para Mensagens Pós-Quiz
-            </Label>
-            <Controller
-              name="generateQuizMessages"
-              control={control}
-              render={({ field }) => (
-                <Textarea id="generateQuizMessages" {...field} rows={8} className="font-mono text-xs"/>
-              )}
-            />
-            {errors.generateQuizMessages && <p className="text-sm text-destructive">{errors.generateQuizMessages.message}</p>}
-          </div>
+            <AccordionItem value="item-2">
+              <AccordionTrigger className="text-lg font-semibold">Prompt para Perguntas do Quiz</AccordionTrigger>
+              <AccordionContent className="pt-4">
+                <Controller
+                  name="generateQuizQuestions"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea {...field} rows={8} className="font-mono text-xs"/>
+                  )}
+                />
+                {errors.generateQuizQuestions && <p className="text-sm text-destructive mt-2">{errors.generateQuizQuestions.message}</p>}
+              </AccordionContent>
+            </AccordionItem>
+            
+            <AccordionItem value="item-3">
+              <AccordionTrigger className="text-lg font-semibold">Prompt para Mensagens Pós-Quiz</AccordionTrigger>
+              <AccordionContent className="pt-4">
+                <Controller
+                  name="generateQuizMessages"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea {...field} rows={8} className="font-mono text-xs"/>
+                  )}
+                />
+                {errors.generateQuizMessages && <p className="text-sm text-destructive mt-2">{errors.generateQuizMessages.message}</p>}
+              </AccordionContent>
+            </AccordionItem>
 
-          <div className="space-y-2">
-            <Label htmlFor="generateQuizResultsPages" className="text-lg font-semibold">
-              Prompt para Páginas de Resultado (Sucesso/Desqualificado)
-            </Label>
-            <Controller
-              name="generateQuizResultsPages"
-              control={control}
-              render={({ field }) => (
-                <Textarea id="generateQuizResultsPages" {...field} rows={8} className="font-mono text-xs"/>
-              )}
-            />
-            {errors.generateQuizResultsPages && <p className="text-sm text-destructive">{errors.generateQuizResultsPages.message}</p>}
-          </div>
+            <AccordionItem value="item-4">
+              <AccordionTrigger className="text-lg font-semibold">Prompt para Páginas de Resultado</AccordionTrigger>
+              <AccordionContent className="pt-4">
+                 <Controller
+                  name="generateQuizResultsPages"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea {...field} rows={8} className="font-mono text-xs"/>
+                  )}
+                />
+                {errors.generateQuizResultsPages && <p className="text-sm text-destructive mt-2">{errors.generateQuizResultsPages.message}</p>}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
         </CardContent>
         <CardFooter>
           <Button type="submit" size="lg" disabled={isSaving || isFetching || !isDirty}>

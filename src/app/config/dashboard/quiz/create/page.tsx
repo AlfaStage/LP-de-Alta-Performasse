@@ -1,6 +1,6 @@
 
 "use client";
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, ChevronUp, ChevronDown, BrainCircuit, AudioWaveform, Image as ImageIconLucide, FileUp, GripVertical, Settings, Palette, Fingerprint, VenetianMask, Timer, UserX, UserCheck, Tags, Pilcrow } from 'lucide-react';
+import { Save, AlertTriangle, Info, Loader2, PlusCircle, Trash2, Wand2, FileJson, Eye, MessageSquareText, ListChecks, Edit3, Text, Phone, Mail, BadgeInfo, FileTextIcon, Link as LinkIconLucide, BookOpen, LayoutDashboard, ChevronUp, ChevronDown, BrainCircuit, AudioWaveform, Image as ImageIconLucide, FileUp, GripVertical, Settings, Palette, Fingerprint, VenetianMask, Timer, UserX, UserCheck, Tags, Pilcrow, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { createQuizAction, generateQuizSectionAction } from '../actions';
 import type { QuizQuestion, QuizOption, FormFieldConfig, WhitelabelConfig, QuizMessage, QuizConfig } from '@/types/quiz';
 import dynamic from 'next/dynamic';
@@ -48,7 +48,6 @@ export default function CreateQuizPage() {
   // AI State
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   const [currentGenerationType, setCurrentGenerationType] = useState<GenerationType>('details');
-  const [aiExistingData, setAiExistingData] = useState<any>({});
   const [hasApiKey, setHasApiKey] = useState(false);
 
   // Manual Form State
@@ -210,7 +209,7 @@ export default function CreateQuizPage() {
     const newQuestions = [...interactiveQuestions];
     const question = newQuestions[qIndex];
     if (question.options) {
-      question.options = question.options.filter((_, i) => i !== oIndex);
+      question.options.splice(oIndex, 1);
       setInteractiveQuestions(newQuestions);
     }
   };
@@ -370,39 +369,40 @@ export default function CreateQuizPage() {
 
   const handleOpenAiDialog = (type: GenerationType) => {
     setCurrentGenerationType(type);
-    let dataToPass = {};
-    if (type === 'details') {
-      dataToPass = { title, slug, dashboardName, description };
-    } else if (type === 'questions') {
-      try {
-        const questions = currentManualTab === 'interactive' ? interactiveQuestions : JSON.parse(questionsJson);
-        dataToPass = { questions };
-      } catch {
-        dataToPass = { questions: interactiveQuestions };
-      }
-    } else if (type === 'messages') {
-      dataToPass = { messages };
-    } else if (type === 'results') {
-      dataToPass = { successPageText, disqualifiedPageText };
-    }
-    setAiExistingData(dataToPass);
     setIsAiDialogOpen(true);
   };
+  
+  const getCurrentContextData = useCallback(() => {
+      let questions = [];
+      try {
+          questions = currentManualTab === 'interactive' ? interactiveQuestions : JSON.parse(questionsJson);
+          if (!Array.isArray(questions)) questions = [];
+      } catch {
+          questions = interactiveQuestions;
+      }
+      return {
+          title, slug, dashboardName, description,
+          questions,
+          messages,
+          successPageText, disqualifiedPageText
+      };
+  }, [title, slug, dashboardName, description, interactiveQuestions, questionsJson, currentManualTab, messages, successPageText, disqualifiedPageText]);
+
 
   const handleAiGeneratedData = (data: any) => {
     if (!data) return;
 
     if (currentGenerationType === 'details') {
         setTitle(data.title || title);
-        setSlug(data.slug || slug);
+        setSlug(data.slug ? data.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : slug);
         setDashboardName(data.dashboardName || dashboardName);
         setDescription(data.description || description);
     } else if (currentGenerationType === 'questions') {
-        const newQuestions = data.questions || interactiveQuestions;
+        const newQuestions = data.questions || [];
         setInteractiveQuestions(newQuestions);
         setQuestionsJson(JSON.stringify(newQuestions, null, 2));
     } else if (currentGenerationType === 'messages') {
-        setMessages(data.messages || messages);
+        setMessages(data.messages || []);
     } else if (currentGenerationType === 'results') {
         setSuccessPageText(data.successPageText || successPageText);
         setDisqualifiedPageText(data.disqualifiedPageText || disqualifiedPageText);
@@ -582,7 +582,7 @@ export default function CreateQuizPage() {
           setIsOpen={setIsAiDialogOpen}
           generationType={currentGenerationType}
           onGenerate={handleAiGeneratedData}
-          existingData={aiExistingData} 
+          existingData={getCurrentContextData()} 
         />
       )}
 
