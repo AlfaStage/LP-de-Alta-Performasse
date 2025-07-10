@@ -3,7 +3,6 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import type { WhitelabelConfig } from '@/types/quiz';
 import crypto from 'crypto';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-config.json');
 
@@ -147,25 +146,38 @@ export async function generateNewApiToken(): Promise<string> {
 }
 
 export async function listGoogleAiModels(): Promise<string[]> {
-  const config = await getWhitelabelConfig();
-  const apiKey = config.googleApiKey;
-  if (!apiKey) {
-    throw new Error('Chave de API do Google não configurada.');
-  }
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const models = await genAI.listModels();
+    const config = await getWhitelabelConfig();
+    const apiKey = config.googleApiKey;
+    if (!apiKey) {
+      throw new Error('Chave de API do Google não configurada.');
+    }
   
-  const modelNames = await Promise.all(
-    models.map(async (model) => {
-      // The API returns display names, but we need the model ID like 'gemini-1.5-flash-latest'
-      // These are often in the format 'models/gemini-1.5-flash-latest'
-      const parts = model.name.split('/');
-      return parts[1];
-    })
-  );
-
-  // Filter for 'generateContent' supported models and remove duplicates
-  const uniqueModels = [...new Set(modelNames)];
-  return uniqueModels;
-}
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Google API error: ${errorData.error?.message || response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const modelNames = data.models
+        .filter((model: any) => model.supportedGenerationMethods.includes('generateContent'))
+        .map((model: any) => {
+          // Extract model ID like 'gemini-1.5-flash-latest' from 'models/gemini-1.5-flash-latest'
+          return model.name.split('/')[1];
+        });
+        
+      // Ensure gemini-2.5-flash is included if available, otherwise add it if it might be a new release
+      const uniqueModels = [...new Set(modelNames)];
+      if (!uniqueModels.includes('gemini-2.5-flash')) {
+          uniqueModels.unshift('gemini-2.5-flash'); // Add to the top as a likely candidate
+      }
+  
+      return uniqueModels;
+      
+    } catch (error) {
+        console.error("Failed to fetch models from Google API:", error);
+        // Fallback list in case of API failure
+        return ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
+    }
+  }
