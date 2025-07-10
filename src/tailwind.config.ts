@@ -91,16 +91,16 @@ export default {
           },
         },
         'question-slide-in': {
-          from: { opacity: '0', transform: 'translateX(30px)' },
+          from: { opacity: '0', transform: 'translateX(20px)' },
           to: { opacity: '1', transform: 'translateX(0)' },
         },
         'question-slide-out': {
           from: { opacity: '1', transform: 'translateX(0)' },
-          to: { opacity: '0', transform: 'translateX(-30px)' },
+          to: { opacity: '0', transform: 'translateX(-20px)' },
         },
-        'fade-in-up': {
-          from: { opacity: '0', transform: 'translateY(10px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+        'staggered-fade-in-up': {
+            '0%': { opacity: '0', transform: 'translateY(10px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
       animation: {
@@ -108,7 +108,7 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'question-slide-in': 'question-slide-in 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
         'question-slide-out': 'question-slide-out 0.3s ease-out forwards',
-        'staggered-fade-in-up': 'fade-in-up 0.5s ease-out',
+        'staggered-fade-in-up': 'staggered-fade-in-up 0.5s ease-out',
       },
     },
   },

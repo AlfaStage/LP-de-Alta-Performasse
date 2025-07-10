@@ -8,9 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Home, ListPlus, Settings2, LogOut, PanelLeftClose, PanelRightOpen, Briefcase, BookText, BarChartHorizontalBig } from 'lucide-react';
 
-interface DashboardShellProps {
-  children: ReactNode;
-  logoutAction: () => Promise<void>;
+interface NavItemProps {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  exactMatch?: boolean;
+  isCollapsed: boolean;
+  onLinkClick?: () => void;
 }
 
 const navItems = [
@@ -20,70 +24,79 @@ const navItems = [
   { href: "/config/dashboard/documentation", label: "Documentação", icon: BookText, exactMatch: false }, 
 ];
 
+function NavLink({ href, label, icon: Icon, exactMatch = false, isCollapsed, onLinkClick }: NavItemProps) {
+    const pathname = usePathname();
+    const isActive = exactMatch ? pathname === href : pathname.startsWith(href);
+
+    return (
+        <Link
+            href={href}
+            onClick={onLinkClick}
+            prefetch={true} 
+            className={`flex items-center gap-3.5 rounded-lg py-2.5 transition-all duration-200 ease-in-out group
+                        ${isCollapsed ? 'justify-center px-2.5 h-11' : 'px-3.5 h-11'}
+                        ${isActive 
+                            ? 'bg-primary/15 text-primary shadow-sm font-semibold' 
+                            : 'text-muted-foreground hover:bg-primary/10 hover:text-primary hover:shadow-sm'
+                        }`}
+            title={isCollapsed ? label : undefined}
+        >
+            <Icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary transition-colors'}`} />
+            {!isCollapsed && <span>{label}</span>}
+        </Link>
+    );
+}
+
+function DashboardNav({ isCollapsed, onLinkClick }: { isCollapsed: boolean, onLinkClick?: () => void }) {
+    return (
+        <nav className={`grid items-start text-sm font-medium gap-1.5 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+            {navItems.map((item) => (
+                <NavLink key={item.href} {...item} isCollapsed={isCollapsed} onLinkClick={onLinkClick} />
+            ))}
+        </nav>
+    );
+}
+
+
+interface DashboardShellProps {
+  children: ReactNode;
+  logoutAction: () => Promise<void>;
+}
+
 export default function DashboardShell({ children, logoutAction }: DashboardShellProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const pathname = usePathname();
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
   
-  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+  // Close mobile sheet on navigation
   useEffect(() => {
-    setIsMobileSheetOpen(false); 
+    if (isMobileSheetOpen) {
+      setIsMobileSheetOpen(false); 
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-
-  const isActive = (href: string, exactMatch: boolean = false) => {
-    if (exactMatch) {
-      return pathname === href;
-    }
-    return pathname.startsWith(href) && (pathname === href || pathname.startsWith(`${href}/`));
-  };
 
   return (
     <div className={`grid min-h-screen w-full bg-background transition-all duration-300 ease-in-out ${
         isSidebarCollapsed ? 'md:grid-cols-[68px_1fr]' : 'md:grid-cols-[280px_1fr]'
       }`}
     >
-      {/* Desktop Sidebar - Fixed */}
-      <div className={`hidden border-r bg-card md:flex flex-col shadow-sm sticky top-0 h-screen transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? 'w-[68px]' : 'w-72'
-        }`}
-      >
+      {/* Desktop Sidebar */}
+      <aside className={`hidden md:flex flex-col border-r bg-card shadow-sm sticky top-0 h-screen transition-all duration-300 ease-in-out`}>
         <div className={`flex h-20 items-center border-b shrink-0 ${isSidebarCollapsed ? 'px-3 justify-center' : 'px-6 justify-between'}`}>
-          {!isSidebarCollapsed && (
-            <Link href="/config/dashboard" className="flex items-center gap-2.5" aria-label="Página Inicial do Dashboard">
-               <BarChartHorizontalBig className="h-7 w-7 text-primary" />
-               <span className="font-display text-xl font-bold text-primary">LP de Alta Performasse</span>
-            </Link>
-          )}
-           {isSidebarCollapsed && (
-            <Link href="/config/dashboard" aria-label="Página Inicial do Dashboard">
-                <BarChartHorizontalBig className="h-7 w-7 text-primary" />
-            </Link>
-          )}
+          <Link href="/config/dashboard" className="flex items-center gap-2.5" aria-label="Página Inicial do Dashboard">
+             <BarChartHorizontalBig className="h-7 w-7 text-primary" />
+             {!isSidebarCollapsed && <span className="font-display text-xl font-bold text-primary">LP de Alta Performasse</span>}
+          </Link>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4">
-          <nav className={`grid items-start text-sm font-medium gap-1.5 ${isSidebarCollapsed ? 'px-2' : 'px-4'}`}>
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`flex items-center gap-3.5 rounded-lg py-2.5 transition-all duration-200 ease-in-out group
-                            ${isSidebarCollapsed ? 'justify-center px-2.5 h-11' : 'px-3.5 h-11'}
-                            ${isActive(item.href, item.exactMatch) 
-                                ? 'bg-primary/15 text-primary shadow-sm font-semibold' 
-                                : 'text-muted-foreground hover:bg-primary/10 hover:text-primary hover:shadow-sm'
-                            }`}
-                title={isSidebarCollapsed ? item.label : undefined}
-              >
-                <item.icon className={`h-5 w-5 shrink-0 ${isActive(item.href, item.exactMatch) ? 'text-primary' : 'text-muted-foreground group-hover:text-primary transition-colors'}`} />
-                {!isSidebarCollapsed && item.label}
-              </Link>
-            ))}
-          </nav>
+            <DashboardNav isCollapsed={isSidebarCollapsed} />
         </div>
 
         <div className="mt-auto p-4 border-t space-y-2">
@@ -97,7 +110,7 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
             title={isSidebarCollapsed ? "Expandir menu" : "Recolher menu"}
           >
             {isSidebarCollapsed ? <PanelRightOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-            {!isSidebarCollapsed && (isSidebarCollapsed ? "" : "Recolher Menu")}
+            {!isSidebarCollapsed && "Recolher Menu"}
           </Button>
           <form action={logoutAction}>
             <Button variant="ghost" 
@@ -110,7 +123,7 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
             </Button>
           </form>
         </div>
-      </div>
+      </aside>
 
       {/* Mobile Header & Main Content Area */}
       <div className="flex flex-col overflow-y-auto">
@@ -133,23 +146,9 @@ export default function DashboardShell({ children, logoutAction }: DashboardShel
                    <span className="font-display text-xl font-bold text-primary">LP de Alta Performasse</span>
                 </Link>
               </div>
-              <nav className="grid gap-2 text-base font-medium p-4">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    onClick={() => setIsMobileSheetOpen(false)} 
-                    className={`flex items-center gap-4 rounded-lg px-3.5 py-3 transition-all duration-200 ease-in-out group
-                                ${isActive(item.href, item.exactMatch) 
-                                    ? 'bg-primary/15 text-primary font-semibold' 
-                                    : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                                }`}
-                  >
-                    <item.icon className={`h-5 w-5 shrink-0 ${isActive(item.href, item.exactMatch) ? 'text-primary' : 'text-muted-foreground group-hover:text-primary transition-colors'}`} />
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
+              <div className="py-4">
+                  <DashboardNav isCollapsed={false} onLinkClick={() => setIsMobileSheetOpen(false)} />
+              </div>
               <div className="mt-auto p-4 border-t">
                 <form action={logoutAction}>
                   <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:bg-destructive/10 hover:text-destructive group py-3 px-3.5">
