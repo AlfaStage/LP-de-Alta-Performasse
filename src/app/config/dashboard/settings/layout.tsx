@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Settings, Palette, Link2, BarChart3, Info, Fingerprint, LucideIcon, Database, FileJson, BrainCircuit } from 'lucide-react';
+import { Settings, Palette, Link2, BarChart3, Info, Fingerprint, LucideIcon, BrainCircuit } from 'lucide-react';
 
 const settingsNavItems: { title: string; href: string; icon: LucideIcon }[] = [
   {

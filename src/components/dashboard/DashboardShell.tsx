@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Home, ListPlus, Settings2, LogOut, PanelLeftClose, PanelRightOpen, Briefcase, BookText, BarChartHorizontalBig } from 'lucide-react';
+import { Menu, Home, ListPlus, Settings2, LogOut, PanelLeftClose, PanelRightOpen, BookText, BarChartHorizontalBig } from 'lucide-react';
 
 interface NavItemProps {
   href: string;
