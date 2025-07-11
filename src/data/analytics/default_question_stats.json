@@ -1,2 +1,12 @@
 {
+  "q1_generic_experience": {
+    "id": "q1_generic_experience",
+    "type": "radio",
+    "answers": [
+      {
+        "date": "2025-07-11T13:19:03.271Z",
+        "value": "no"
+      }
+    ]
+  }
 }

@@ -42,16 +42,6 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-
-    /* Sidebar specific colors - can remain somewhat independent */
-    --sidebar-background: 0 0% 98%; 
-    --sidebar-foreground: 210 20% 30%;
-    --sidebar-primary: 19 60% 70%; /* Can be distinct from main --primary if needed */
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 15 76% 81%;
-    --sidebar-accent-foreground: 15 60% 30%;
-    --sidebar-border: 0 0% 85%;
-    --sidebar-ring: 19 60% 65%;
   }
 
   .dark {
@@ -83,15 +73,6 @@
     --border: 210 15% 35%;
     --input: 210 15% 35%;
     --ring: 19 55% 55%;
-    
-    --sidebar-background: 215 25% 18%;
-    --sidebar-foreground: 210 25% 92%;
-    --sidebar-primary: 19 55% 60%;
-    --sidebar-primary-foreground: 0 0% 95%;
-    --sidebar-accent: 15 70% 55%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 210 15% 35%;
-    --sidebar-ring: 19 55% 55%;
   }
 }
 
