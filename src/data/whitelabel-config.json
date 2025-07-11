@@ -9,18 +9,18 @@
   "pageBackgroundImageUrl": "",
   "pageBackgroundGradient": "",
   "pageBackgroundType": "color",
-  "quizSubmissionWebhookUrl": "https://6000-firebase-studio-1749477182674.cluster-vpxjqdstfzgs6qeiaf7rdlsqrc.cloudworkstations.dev/config/dashboard/settings/integrations",
-  "disqualifiedSubmissionWebhookUrl": "",
+  "quizSubmissionWebhookUrl": "YOUR_WEBHOOK_URL_PLACEHOLDER",
+  "disqualifiedSubmissionWebhookUrl": "YOUR_DISQUALIFIED_WEBHOOK_URL_PLACEHOLDER",
   "facebookPixelId": "",
   "facebookPixelIdSecondary": "",
   "googleAnalyticsId": "",
-  "googleApiKey": "AIzaSyCUSUc8RpYUIIiHBmIez5JSgTTIlXdIWVg",
-  "footerCopyrightText": "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
+  "googleApiKey": "",
+  "footerCopyrightText": "© {YEAR} Sua Empresa. Todos os direitos reservados.",
   "apiStatsAccessToken": "",
   "websiteUrl": "",
   "instagramUrl": "",
   "facebookDomainVerification": "",
   "dashboardDefaultFilter": "last7",
   "conversionMetric": "start_vs_complete",
-  "aiModel": "googleai/gemini-2.5-flash"
+  "aiModel": "googleai/gemini-1.5-flash"
 }
