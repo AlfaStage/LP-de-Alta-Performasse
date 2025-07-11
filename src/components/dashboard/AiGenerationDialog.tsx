@@ -19,8 +19,8 @@ interface AiGenerationDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   generationType: GenerationType;
-  onGenerate: (data: any) => void;
-  existingData: any; 
+  onGenerate: (data: any, mode: GenerationMode) => void;
+  existingDataContext: string; 
 }
 
 export default function AiGenerationDialog({
@@ -28,7 +28,7 @@ export default function AiGenerationDialog({
   setIsOpen,
   generationType,
   onGenerate,
-  existingData,
+  existingDataContext,
 }: AiGenerationDialogProps) {
   const [topic, setTopic] = useState('');
   const [mode, setMode] = useState<GenerationMode>('overwrite');
@@ -52,11 +52,11 @@ export default function AiGenerationDialog({
         topic,
         generationType,
         generationMode: mode,
-        existingData: JSON.stringify(existingData),
+        existingData: existingDataContext,
       });
 
       if (result.success && result.data) {
-        onGenerate(result.data);
+        onGenerate(result.data, mode);
         toast({
           title: "Conteúdo Gerado!",
           description: `A seção foi atualizada com base no seu tópico.`,
@@ -96,7 +96,14 @@ export default function AiGenerationDialog({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+        if (!open) {
+            setTopic('');
+            setError(null);
+            setMode('overwrite');
+        }
+        setIsOpen(open);
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

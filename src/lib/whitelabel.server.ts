@@ -23,7 +23,7 @@ export const defaultConfig: WhitelabelConfig = {
   facebookPixelIdSecondary: "",
   googleAnalyticsId: "",
   googleApiKey: "",
-  aiModel: "googleai/gemini-2.5-flash",
+  aiModel: "googleai/gemini-1.5-flash",
   footerCopyrightText: "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   apiStatsAccessToken: "",
   websiteUrl: "", 
@@ -180,4 +180,4 @@ export async function listGoogleAiModels(): Promise<string[]> {
         // Fallback list in case of API failure
         return ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
     }
-  }
+}

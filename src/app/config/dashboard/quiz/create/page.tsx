@@ -373,39 +373,56 @@ export default function CreateQuizPage() {
   };
   
   const getCurrentContextData = useCallback(() => {
-      let questions = [];
+      let questions: QuizQuestion[] = [];
       try {
-          questions = currentManualTab === 'interactive' ? interactiveQuestions : JSON.parse(questionsJson);
-          if (!Array.isArray(questions)) questions = [];
+          const parsedQuestions = currentManualTab === 'interactive' ? interactiveQuestions : JSON.parse(questionsJson);
+          if (Array.isArray(parsedQuestions)) {
+              questions = parsedQuestions;
+          }
       } catch {
           questions = interactiveQuestions;
       }
-      return {
+      return JSON.stringify({
           title, slug, dashboardName, description,
           questions,
           messages,
           successPageText, disqualifiedPageText
-      };
+      });
   }, [title, slug, dashboardName, description, interactiveQuestions, questionsJson, currentManualTab, messages, successPageText, disqualifiedPageText]);
 
 
-  const handleAiGeneratedData = (data: any) => {
+  const handleAiGeneratedData = (data: any, mode: 'overwrite' | 'improve' | 'complete') => {
     if (!data) return;
 
     if (currentGenerationType === 'details') {
-        setTitle(data.title || title);
-        setSlug(data.slug ? data.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : slug);
-        setDashboardName(data.dashboardName || dashboardName);
-        setDescription(data.description || description);
+        if (mode === 'complete') {
+            if (!title && data.title) setTitle(data.title);
+            if (!slug && data.slug) setSlug(data.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
+            if (!dashboardName && data.dashboardName) setDashboardName(data.dashboardName);
+            if (!description && data.description) setDescription(data.description);
+        } else { // Overwrite or Improve
+            setTitle(data.title || title);
+            setSlug(data.slug ? data.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : slug);
+            setDashboardName(data.dashboardName || dashboardName);
+            setDescription(data.description || description);
+        }
     } else if (currentGenerationType === 'questions') {
         const newQuestions = data.questions || [];
-        setInteractiveQuestions(newQuestions);
-        setQuestionsJson(JSON.stringify(newQuestions, null, 2));
+        const combinedQuestions = mode === 'complete' ? [...interactiveQuestions, ...newQuestions] : newQuestions;
+        setInteractiveQuestions(combinedQuestions);
+        setQuestionsJson(JSON.stringify(combinedQuestions, null, 2));
     } else if (currentGenerationType === 'messages') {
-        setMessages(data.messages || []);
+        const newMessages = data.messages || [];
+        const combinedMessages = mode === 'complete' ? [...messages, ...newMessages] : newMessages;
+        setMessages(combinedMessages);
     } else if (currentGenerationType === 'results') {
-        setSuccessPageText(data.successPageText || successPageText);
-        setDisqualifiedPageText(data.disqualifiedPageText || disqualifiedPageText);
+        if (mode === 'complete') {
+            if (!successPageText && data.successPageText) setSuccessPageText(data.successPageText);
+            if (!disqualifiedPageText && data.disqualifiedPageText) setDisqualifiedPageText(data.disqualifiedPageText);
+        } else { // Overwrite or Improve
+            setSuccessPageText(data.successPageText || successPageText);
+            setDisqualifiedPageText(data.disqualifiedPageText || disqualifiedPageText);
+        }
     }
   };
 
@@ -484,11 +501,11 @@ export default function CreateQuizPage() {
                         <TabsContent value="interactive" className="pt-4">
                             <Accordion type="single" collapsible className="w-full space-y-4">
                                 {interactiveQuestions.map((q, qIndex) => (
-                                <AccordionItem key={q.id} value={q.id || `item-${qIndex}`} className="border rounded-lg bg-muted/20 p-0">
+                                <AccordionItem key={q.id || `item-${qIndex}`} value={q.id || `item-${qIndex}`} className="border rounded-lg bg-muted/20 p-0">
                                     <AccordionTrigger className="px-4 py-3 text-lg font-medium hover:no-underline"><div className="flex items-center gap-3"><GripVertical className="h-5 w-5 text-muted-foreground" /><span>Pergunta {qIndex + 1}: {q.text || "Nova Pergunta"}</span></div></AccordionTrigger>
                                     <AccordionContent className="border-t"><div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4"><div className="space-y-4"><Card><CardContent className="p-4 space-y-4"><div className="space-y-2"><Label htmlFor={`q-${qIndex}-text`}>Texto da Pergunta</Label><Textarea id={`q-${qIndex}-text`} placeholder="Qual o seu tipo de pele?" value={q.text} onChange={(e) => updateQuestion(qIndex, 'text', e.target.value)} /></div><div className="space-y-2"><Label htmlFor={`q-${qIndex}-explanation`}>Explicação (Opcional)</Label><Textarea id={`q-${qIndex}-explanation`} placeholder="Ajude o usuário a entender a pergunta." value={q.explanation || ''} onChange={(e) => updateQuestion(qIndex, 'explanation', e.target.value)} rows={2}/></div></CardContent></Card><Card><CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor={`q-${qIndex}-id`}>ID da Pergunta</Label><Input id={`q-${qIndex}-id`} placeholder="Ex: q1_pele (único)" value={q.id} onChange={(e) => updateQuestion(qIndex, 'id', e.target.value)} /></div><div className="space-y-2"><Label htmlFor={`q-${qIndex}-name`}>Nome/Chave (form)</Label><Input id={`q-${qIndex}-name`} placeholder="Ex: tipoPele" value={q.name} onChange={(e) => updateQuestion(qIndex, 'name', e.target.value)} /></div><div className="space-y-2"><Label>Ícone da Pergunta</Label><IconPicker value={q.icon} onChange={(iconName) => updateQuestion(qIndex, 'icon', iconName)} /></div><div className="space-y-2"><Label>Tipo</Label><Select value={q.type} onValueChange={(value) => updateQuestion(qIndex, 'type', value)}><SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger><SelectContent><SelectItem value="radio">Escolha Única (Radio)</SelectItem><SelectItem value="checkbox">Múltipla Escolha (Checkbox)</SelectItem><SelectItem value="textFields">Campos de Texto</SelectItem></SelectContent></Select></div><div className="md:col-span-2 flex items-center space-x-2 pt-2"><Switch id={`q-${qIndex}-isRequired`} checked={q.isRequired ?? true} onCheckedChange={(checked) => updateQuestion(qIndex, 'isRequired', checked)} /><Label htmlFor={`q-${qIndex}-isRequired`} className="font-normal text-sm">Pergunta Obrigatória</Label></div></CardContent></Card>
-                                        {(q.type === 'radio' || q.type === 'checkbox') && (<Card><CardHeader className="pb-2"><CardTitle className="text-md">Opções de Resposta</CardTitle></CardHeader><CardContent className="space-y-3 p-4">{(q.options || []).map((opt, oIndex) => (<Card key={opt.value} className="p-3 bg-background/50 relative"><div className="space-y-3"><Label className="text-sm font-medium">Opção {oIndex + 1}</Label><div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-value`} className="text-xs">Valor (ID)</Label><Input id={`q-${qIndex}-opt-${oIndex}-value`} placeholder="Ex: opcao_a" value={opt.value} onChange={(e) => updateOption(qIndex, oIndex, 'value', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-opt-${oIndex}-label`} placeholder="Ex: Opção A" value={opt.label} onChange={(e) => updateOption(qIndex, oIndex, 'label', e.target.value)} /></div></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-text_message`} className="text-xs">Texto para Mensagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-text_message`} placeholder="Ex: 'que já tem experiência'" value={opt.text_message || ''} onChange={(e) => updateOption(qIndex, oIndex, 'text_message', e.target.value)} /></div><div className="space-y-1"><Label className="text-xs">Ícone</Label><IconPicker value={opt.icon} onChange={(iconName) => updateOption(qIndex, oIndex, 'icon', iconName)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-imageUrl`} className="text-xs">URL da Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-imageUrl`} placeholder="https://placehold.co/300x200.png" value={opt.imageUrl || ''} onChange={(e) => updateOption(qIndex, oIndex, 'imageUrl', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-dataAiHint`} className="text-xs">Dica IA para Imagem</Label><Input id={`q-${qIndex}-opt-${oIndex}-dataAiHint`} placeholder="Ex: abstract shape" value={opt.dataAiHint || ''} onChange={(e) => updateOption(qIndex, oIndex, 'dataAiHint', e.target.value)} /></div><div className="flex items-center space-x-2 pt-2"><Switch id={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} checked={opt.isDisqualifying} onCheckedChange={(checked) => updateOption(qIndex, oIndex, 'isDisqualifying', checked)} /><Label htmlFor={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} className="text-xs font-normal text-destructive">Desqualificar esta resposta</Label></div></div><Button variant="ghost" size="icon" onClick={() => removeOption(qIndex, oIndex)} className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7"><Trash2 className="h-4 w-4" /></Button></Card>))}<Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)} className="mt-2 w-full"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Opção</Button></CardContent></Card>)}
-                                        {q.type === 'textFields' && (<Card><CardHeader className="pb-2"><CardTitle className="text-md">Campos de Entrada</CardTitle></CardHeader><CardContent className="space-y-3 p-4">{(q.fields || []).map((field, fIndex) => (<Card key={field.name} className="p-3 bg-background/50 relative"><div className="space-y-3"><Label className="text-sm font-medium">Campo {fIndex + 1}</Label><div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-name`} className="text-xs">Nome/Chave</Label><Input id={`q-${qIndex}-field-${fIndex}-name`} placeholder="Ex: nomeCompleto" value={field.name} onChange={(e) => updateFormField(qIndex, fIndex, 'name', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-field-${fIndex}-label`} placeholder="Ex: Nome Completo" value={field.label} onChange={(e) => updateFormField(qIndex, fIndex, 'label', e.target.value)} /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div><Label className="text-xs">Tipo do Campo</Label><Select value={field.type} onValueChange={(val) => updateFormField(qIndex, fIndex, 'type', val as 'text'|'tel'|'email')}><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger><SelectContent><SelectItem value="text">Texto</SelectItem><SelectItem value="tel">Telefone</SelectItem><SelectItem value="email">Email</SelectItem></SelectContent></Select></div><div><Label className="text-xs">Ícone</Label><IconPicker value={field.icon} onChange={(val) => updateFormField(qIndex, fIndex, 'icon', val)} /></div></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-placeholder`} className="text-xs">Placeholder</Label><Input id={`q-${qIndex}-field-${fIndex}-placeholder`} placeholder="Ex: Digite seu nome" value={field.placeholder || ''} onChange={(e) => updateFormField(qIndex, fIndex, 'placeholder', e.target.value)} /></div></div><Button variant="ghost" size="icon" onClick={() => removeFormField(qIndex, fIndex)} className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7"><Trash2 className="h-4 w-4" /></Button></Card>))}<Button type="button" variant="outline" size="sm" onClick={() => addFormField(qIndex)} className="mt-2 w-full"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Campo</Button></CardContent></Card>)}
+                                        {(q.type === 'radio' || q.type === 'checkbox') && (<Card><CardHeader className="pb-2"><CardTitle className="text-md">Opções de Resposta</CardTitle></CardHeader><CardContent className="space-y-3 p-4">{(q.options || []).map((opt, oIndex) => (<Card key={oIndex} className="p-3 bg-background/50 relative"><div className="space-y-3"><Label className="text-sm font-medium">Opção {oIndex + 1}</Label><div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-value`} className="text-xs">Valor (ID)</Label><Input id={`q-${qIndex}-opt-${oIndex}-value`} placeholder="Ex: opcao_a" value={opt.value} onChange={(e) => updateOption(qIndex, oIndex, 'value', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-opt-${oIndex}-label`} placeholder="Ex: Opção A" value={opt.label} onChange={(e) => updateOption(qIndex, oIndex, 'label', e.target.value)} /></div></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-text_message`} className="text-xs">Texto para Mensagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-text_message`} placeholder="Ex: 'que já tem experiência'" value={opt.text_message || ''} onChange={(e) => updateOption(qIndex, oIndex, 'text_message', e.target.value)} /></div><div className="space-y-1"><Label className="text-xs">Ícone</Label><IconPicker value={opt.icon} onChange={(iconName) => updateOption(qIndex, oIndex, 'icon', iconName)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-imageUrl`} className="text-xs">URL da Imagem (Opcional)</Label><Input id={`q-${qIndex}-opt-${oIndex}-imageUrl`} placeholder="https://placehold.co/300x200.png" value={opt.imageUrl || ''} onChange={(e) => updateOption(qIndex, oIndex, 'imageUrl', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-opt-${oIndex}-dataAiHint`} className="text-xs">Dica IA para Imagem</Label><Input id={`q-${qIndex}-opt-${oIndex}-dataAiHint`} placeholder="Ex: abstract shape" value={opt.dataAiHint || ''} onChange={(e) => updateOption(qIndex, oIndex, 'dataAiHint', e.target.value)} /></div><div className="flex items-center space-x-2 pt-2"><Switch id={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} checked={opt.isDisqualifying} onCheckedChange={(checked) => updateOption(qIndex, oIndex, 'isDisqualifying', checked)} /><Label htmlFor={`q-${qIndex}-opt-${oIndex}-isDisqualifying`} className="text-xs font-normal text-destructive">Desqualificar esta resposta</Label></div></div><Button variant="ghost" size="icon" onClick={() => removeOption(qIndex, oIndex)} className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7"><Trash2 className="h-4 w-4" /></Button></Card>))}<Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)} className="mt-2 w-full"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Opção</Button></CardContent></Card>)}
+                                        {q.type === 'textFields' && (<Card><CardHeader className="pb-2"><CardTitle className="text-md">Campos de Entrada</CardTitle></CardHeader><CardContent className="space-y-3 p-4">{(q.fields || []).map((field, fIndex) => (<Card key={fIndex} className="p-3 bg-background/50 relative"><div className="space-y-3"><Label className="text-sm font-medium">Campo {fIndex + 1}</Label><div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-name`} className="text-xs">Nome/Chave</Label><Input id={`q-${qIndex}-field-${fIndex}-name`} placeholder="Ex: nomeCompleto" value={field.name} onChange={(e) => updateFormField(qIndex, fIndex, 'name', e.target.value)} /></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-label`} className="text-xs">Label Visível</Label><Input id={`q-${qIndex}-field-${fIndex}-label`} placeholder="Ex: Nome Completo" value={field.label} onChange={(e) => updateFormField(qIndex, fIndex, 'label', e.target.value)} /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-2"><div><Label className="text-xs">Tipo do Campo</Label><Select value={field.type} onValueChange={(val) => updateFormField(qIndex, fIndex, 'type', val as 'text'|'tel'|'email')}><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger><SelectContent><SelectItem value="text">Texto</SelectItem><SelectItem value="tel">Telefone</SelectItem><SelectItem value="email">Email</SelectItem></SelectContent></Select></div><div><Label className="text-xs">Ícone</Label><IconPicker value={field.icon} onChange={(val) => updateFormField(qIndex, fIndex, 'icon', val)} /></div></div><div className="space-y-1"><Label htmlFor={`q-${qIndex}-field-${fIndex}-placeholder`} className="text-xs">Placeholder</Label><Input id={`q-${qIndex}-field-${fIndex}-placeholder`} placeholder="Ex: Digite seu nome" value={field.placeholder || ''} onChange={(e) => updateFormField(qIndex, fIndex, 'placeholder', e.target.value)} /></div></div><Button variant="ghost" size="icon" onClick={() => removeFormField(qIndex, fIndex)} className="absolute top-1 right-1 text-destructive hover:text-destructive/80 h-7 w-7"><Trash2 className="h-4 w-4" /></Button></Card>))}<Button type="button" variant="outline" size="sm" onClick={() => addFormField(qIndex)} className="mt-2 w-full"><PlusCircle className="mr-2 h-4 w-4" /> Adicionar Campo</Button></CardContent></Card>)}
                                         <div className="flex justify-end pt-2"><Button variant="ghost" size="sm" onClick={() => removeQuestion(qIndex)} className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Remover Pergunta</Button></div></div>
                                     <div className="lg:sticky lg:top-4"><Card className="bg-background"><CardHeader><CardTitle className="text-md">Pré-visualização</CardTitle></CardHeader><CardContent><QuestionPreview question={q} /></CardContent></Card></div></div></AccordionContent></AccordionItem>))}
                             </Accordion>
@@ -582,7 +599,7 @@ export default function CreateQuizPage() {
           setIsOpen={setIsAiDialogOpen}
           generationType={currentGenerationType}
           onGenerate={handleAiGeneratedData}
-          existingData={getCurrentContextData()} 
+          existingDataContext={getCurrentContextData()}
         />
       )}
 
