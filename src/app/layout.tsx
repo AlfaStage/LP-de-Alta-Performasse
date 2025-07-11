@@ -2,7 +2,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { getWhitelabelConfig } from '@/lib/whitelabel.server';
-import { hexToHslString } from '@/lib/whitelabel';
+import { hexToHslString, getContrastingTextColorHsl } from '@/lib/whitelabel';
 import { ClientOnlyToaster } from '@/components/ClientOnlyToaster';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -47,17 +47,21 @@ export default async function RootLayout({
     pageBackgroundType,
   } = whitelabelConfig;
 
+  // Convert all colors to HSL strings
   const themePrimaryColorHslString = primaryColorHex ? hexToHslString(primaryColorHex) : null;
   const secondaryColorHslString = secondaryColorHex ? hexToHslString(secondaryColorHex) : null;
   const pageBackgroundColorHslString = pageBackgroundColorHex ? hexToHslString(pageBackgroundColorHex) : null;
   const quizBackgroundColorHslString = quizBackgroundColorHex ? hexToHslString(quizBackgroundColorHex) : null;
+
+  // Determine the final color for primary interactive elements (like buttons)
+  const finalPrimaryInteractiveColorHex = buttonPrimaryBgColorHex?.trim() ? buttonPrimaryBgColorHex : primaryColorHex;
+  const finalPrimaryInteractiveHsl = finalPrimaryInteractiveColorHex ? hexToHslString(finalPrimaryInteractiveColorHex) : themePrimaryColorHslString;
+
+  // --- Automatic Contrast Calculation ---
+  const primaryFgHsl = getContrastingTextColorHsl(finalPrimaryInteractiveColorHex);
+  const secondaryFgHsl = getContrastingTextColorHsl(secondaryColorHex);
+  const accentFgHsl = getContrastingTextColorHsl(secondaryColorHex); // Accent is based on secondary
   
-  let buttonSpecificPrimaryHslString: string | null = null;
-  if (buttonPrimaryBgColorHex && buttonPrimaryBgColorHex.trim() !== "") {
-    buttonSpecificPrimaryHslString = hexToHslString(buttonPrimaryBgColorHex);
-  }
-  
-  const finalPrimaryInteractiveHsl = buttonSpecificPrimaryHslString || themePrimaryColorHslString;
   const accentColorHslString = secondaryColorHslString; 
 
   let dynamicStyles = `
@@ -67,6 +71,11 @@ export default async function RootLayout({
       ${finalPrimaryInteractiveHsl ? `--primary: ${finalPrimaryInteractiveHsl};` : ''}
       ${secondaryColorHslString ? `--secondary: ${secondaryColorHslString};` : ''}
       ${accentColorHslString ? `--accent: ${accentColorHslString};` : ''}
+      
+      /* Set automatically calculated foreground colors */
+      ${primaryFgHsl ? `--primary-foreground: ${primaryFgHsl};` : ''}
+      ${secondaryFgHsl ? `--secondary-foreground: ${secondaryFgHsl};` : ''}
+      ${accentFgHsl ? `--accent-foreground: ${accentFgHsl};` : ''}
 
       ${themePrimaryColorHslString ? `--ring: ${themePrimaryColorHslString};` : ''}
       ${themePrimaryColorHslString ? `--chart-1: ${themePrimaryColorHslString};` : ''}
@@ -74,7 +83,6 @@ export default async function RootLayout({
   `;
 
   let bodyBackgroundStyles = '';
-  // Apply background based on explicit type selection
   if (pageBackgroundType === 'gradient' && pageBackgroundGradient?.trim()) {
     bodyBackgroundStyles = `body { background: ${pageBackgroundGradient.trim()}; }`;
   } else if (pageBackgroundType === 'image' && pageBackgroundImageUrl?.trim()) {
@@ -87,7 +95,6 @@ export default async function RootLayout({
       }
     `;
   }
-  // If type is 'color', the --background variable set above will be used by default.
   
   if (bodyBackgroundStyles) {
     dynamicStyles += bodyBackgroundStyles;
