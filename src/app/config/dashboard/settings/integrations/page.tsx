@@ -9,21 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Save, Loader2, Link2, Facebook, HelpCircle, BrainCircuit, Key, UserX } from 'lucide-react';
+import { Save, Loader2, Link2, Facebook, HelpCircle, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { fetchWhitelabelSettings, saveWhitelabelSettings, listAvailableAiModelsAction } from '../actions';
+import { fetchWhitelabelSettings, saveWhitelabelSettings } from '../actions';
 import type { WhitelabelConfig } from '@/types/quiz';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 
 // Schema para os campos desta página
 const integrationsSettingsSchema = z.object({
   quizSubmissionWebhookUrl: z.string().url({ message: "URL do webhook de submissão inválida." }).min(1, "Webhook de submissão é obrigatório."),
   disqualifiedSubmissionWebhookUrl: z.string().url({ message: "URL do webhook inválida." }).optional().or(z.literal('')),
   facebookDomainVerification: z.string().optional(),
-  googleApiKey: z.string().optional(),
-  aiModel: z.string().optional(),
 });
 
 // Schema completo para manter a estrutura de dados ao salvar
@@ -33,12 +29,10 @@ const fullWhitelabelSchema = z.object({}).passthrough();
 export default function IntegrationsSettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [isFetchingModels, setIsFetchingModels] = useState(false);
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [fullConfig, setFullConfig] = useState<Partial<WhitelabelConfig>>({});
   const { toast } = useToast();
 
-  const { control, handleSubmit, reset, formState: { errors, isDirty }, watch } = useForm<WhitelabelConfig>({
+  const { control, handleSubmit, reset, formState: { errors, isDirty } } = useForm<WhitelabelConfig>({
     resolver: zodResolver(integrationsSettingsSchema),
     defaultValues: async () => {
       setIsFetching(true);
@@ -48,8 +42,6 @@ export default function IntegrationsSettingsPage() {
       return settings;
     }
   });
-
-  const googleApiKey = watch('googleApiKey');
 
   useEffect(() => {
     async function loadSettings() {
@@ -61,30 +53,6 @@ export default function IntegrationsSettingsPage() {
     }
     loadSettings();
   }, [reset]);
-
-  useEffect(() => {
-    async function fetchModels() {
-      if (googleApiKey && googleApiKey.trim() !== '') {
-        setIsFetchingModels(true);
-        const result = await listAvailableAiModelsAction();
-        if (result.success && result.models) {
-          setAvailableModels(result.models);
-        } else {
-          toast({
-            title: "Erro ao buscar modelos de IA",
-            description: result.message || "Não foi possível carregar a lista de modelos disponíveis.",
-            variant: "destructive",
-          });
-          setAvailableModels([]);
-        }
-        setIsFetchingModels(false);
-      } else {
-        setAvailableModels([]);
-      }
-    }
-    fetchModels();
-  }, [googleApiKey, toast]);
-
 
   const onSubmit = async (data: WhitelabelConfig) => {
     setIsLoading(true);
@@ -130,7 +98,7 @@ export default function IntegrationsSettingsPage() {
                 Integrações e Webhooks
               </CardTitle>
               <CardDescription>
-                Gerencie webhooks e outras integrações externas.
+                Gerencie webhooks para envio de dados e outras integrações externas.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -173,71 +141,7 @@ export default function IntegrationsSettingsPage() {
                   {errors.facebookDomainVerification && <p className="text-sm text-destructive">{errors.facebookDomainVerification.message}</p>}
                 </div>
             </CardContent>
-          </Card>
-          
-          <Card className="shadow-lg">
-              <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-xl text-foreground">
-                      <BrainCircuit className="h-5 w-5" />
-                      Configurações de IA (Genkit)
-                  </CardTitle>
-                   <CardDescription>
-                      Configure a chave de API e o modelo de linguagem para as funcionalidades de IA.
-                  </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="googleApiKey" className="flex items-center gap-1">
-                    <Key className="h-4 w-4 text-muted-foreground" />Chave de API do Google (Gemini)
-                  </Label>
-                  <Controller
-                    name="googleApiKey"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        id="googleApiKey"
-                        type="password"
-                        {...field}
-                        value={field.value || ""}
-                        placeholder="Cole sua chave de API aqui"
-                      />
-                    )}
-                  />
-                  {errors.googleApiKey && <p className="text-sm text-destructive">{errors.googleApiKey.message}</p>}
-                  <p className="text-xs text-muted-foreground">
-                    Sua chave é armazenada de forma segura. Em ambientes de produção, pode ser necessário reiniciar o servidor para que uma nova chave entre em vigor.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="aiModel">Modelo de Geração</Label>
-                    {isFetchingModels ? (
-                      <Skeleton className="h-10 w-full md:w-[280px]" />
-                    ) : (
-                     <Controller
-                        name="aiModel"
-                        control={control}
-                        render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value || 'googleai/gemini-2.5-flash'} disabled={!googleApiKey || availableModels.length === 0}>
-                            <SelectTrigger id="aiModel" className="w-full md:w-[380px]">
-                            <SelectValue placeholder="Selecione um modelo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableModels.map(model => (
-                                    <SelectItem key={model} value={`googleai/${model}`}>{model}</SelectItem>
-                                ))}
-                                {availableModels.length === 0 && <SelectItem value="googleai/gemini-2.5-flash" disabled>Nenhum modelo disponível</SelectItem>}
-                            </SelectContent>
-                        </Select>
-                        )}
-                    />
-                    )}
-                    {errors.aiModel && <p className="text-sm text-destructive">{errors.aiModel.message}</p>}
-                    <p className="text-xs text-muted-foreground">Escolha qual modelo da família Gemini será usado para gerar conteúdo.</p>
-                </div>
-              </CardContent>
-          </Card>
-
-          <CardFooter className="px-0">
+             <CardFooter className="px-6 pb-6">
               <Button type="submit" size="lg" disabled={isLoading || isFetching || !isDirty}>
                 {isLoading ? (
                   <>
@@ -252,6 +156,7 @@ export default function IntegrationsSettingsPage() {
                 )}
               </Button>
             </CardFooter>
+          </Card>
         </div>
       </form>
     </TooltipProvider>

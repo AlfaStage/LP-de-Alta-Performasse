@@ -28,8 +28,8 @@ const settingsNavItems: { title: string; href: string; icon: LucideIcon }[] = [
     icon: Fingerprint,
   },
    {
-    title: 'Prompts de IA',
-    href: '/config/dashboard/settings/prompts',
+    title: 'IA',
+    href: '/config/dashboard/settings/ai',
     icon: BrainCircuit,
   },
   {

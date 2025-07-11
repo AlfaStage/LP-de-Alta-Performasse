@@ -2,8 +2,9 @@
 "use server";
 
 import { getWhitelabelConfig, saveWhitelabelConfig as saveConfig, generateNewApiToken, listGoogleAiModels } from '@/lib/whitelabel.server';
-import type { WhitelabelConfig } from '@/types/quiz';
+import type { AiPromptsConfig, WhitelabelConfig } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
+import { getAiPrompts, saveAiPrompts } from '@/lib/ai.server';
 
 export async function fetchWhitelabelSettings(): Promise<WhitelabelConfig> {
   return await getWhitelabelConfig();
@@ -13,7 +14,7 @@ export async function saveWhitelabelSettings(settings: WhitelabelConfig): Promis
   const result = await saveConfig(settings);
   if (result.success) {
     revalidatePath('/', 'layout'); 
-    revalidatePath('/config/dashboard/settings/documentation', 'page');
+    revalidatePath('/config/dashboard/documentation', 'page');
   }
   return result;
 }
@@ -73,4 +74,17 @@ export async function listAvailableAiModelsAction(): Promise<{ success: boolean;
     console.error("Error listing AI models:", error);
     return { success: false, message: errorMessage };
   }
+}
+
+// --- AI Prompts Actions ---
+export async function fetchAiPrompts(): Promise<AiPromptsConfig> {
+  return await getAiPrompts();
+}
+
+export async function savePromptsAction(prompts: AiPromptsConfig): Promise<{ success: boolean; message?: string }> {
+  const result = await saveAiPrompts(prompts);
+  if (result.success) {
+    // No specific path needs revalidation for this, as the prompt is read JIT in the flow.
+  }
+  return result;
 }
