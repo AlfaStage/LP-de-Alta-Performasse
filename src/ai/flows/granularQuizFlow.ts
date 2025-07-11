@@ -49,7 +49,7 @@ const granularQuizFlow = ai.defineFlow(
         getWhitelabelConfig(),
     ]);
 
-    const primaryModel = whitelabelConfig.aiModel || 'googleai/gemini-1.5-flash';
+    const primaryModel = whitelabelConfig.aiModel || 'googleai/gemini-2.5-flash';
     const fallbackModel = 'googleai/gemini-1.5-flash';
     
     let userEditablePrompt = '';
