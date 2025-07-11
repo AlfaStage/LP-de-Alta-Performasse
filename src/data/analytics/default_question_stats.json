@@ -1,0 +1,24 @@
+{
+  "q1_generic_experience": {
+    "id": "q1_generic_experience",
+    "type": "radio",
+    "answers": [
+      {
+        "date": "2025-07-11T14:32:55.851Z",
+        "value": "no"
+      }
+    ]
+  },
+  "q2_generic_interest": {
+    "id": "q2_generic_interest",
+    "type": "checkbox",
+    "answers": [
+      {
+        "date": "2025-07-11T14:32:58.944Z",
+        "value": [
+          "topic_b"
+        ]
+      }
+    ]
+  }
+}
