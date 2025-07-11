@@ -49,7 +49,9 @@ const granularQuizFlow = ai.defineFlow(
         getWhitelabelConfig(),
     ]);
 
-    const modelToUse = whitelabelConfig.aiModel || 'googleai/gemini-1.5-flash';
+    const primaryModel = whitelabelConfig.aiModel || 'googleai/gemini-2.5-flash';
+    const fallbackModel = 'googleai/gemini-1.5-flash';
+    
     let userEditablePrompt = '';
     let jsonStructure = '';
     
@@ -86,25 +88,53 @@ const granularQuizFlow = ai.defineFlow(
     // Combine the user-editable prompt with the fixed, non-editable JSON structure instructions.
     const fullPromptText = `${userEditablePrompt}\n${responseFormatSection}`;
     
-    const granularPrompt = ai.definePrompt({
-      name: 'dynamicGranularQuizPrompt',
-      input: { schema: GranularQuizGenerationInputSchema },
-      output: { schema: JsonOutputSchema },
-      prompt: fullPromptText,
-      model: modelToUse,
-      config: {
-          temperature: 0.7,
-      },
-    });
-    
-    const { output } = await granularPrompt(input);
-    if (!output || !output.jsonOutput) {
-      throw new Error("AI did not return the expected 'jsonOutput' field.");
-    }
-    
-    // The AI might sometimes wrap the JSON in ```json ... ```, so we need to clean it.
-    const cleanedJson = output.jsonOutput.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    try {
+        const granularPrompt = ai.definePrompt({
+          name: 'dynamicGranularQuizPrompt',
+          input: { schema: GranularQuizGenerationInputSchema },
+          output: { schema: JsonOutputSchema },
+          prompt: fullPromptText,
+          model: primaryModel,
+          config: {
+              temperature: 0.7,
+          },
+        });
 
-    return { jsonOutput: cleanedJson };
+        const { output } = await granularPrompt(input);
+        if (!output || !output.jsonOutput) {
+          throw new Error("AI did not return the expected 'jsonOutput' field.");
+        }
+        
+        const cleanedJson = output.jsonOutput.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        return { jsonOutput: cleanedJson };
+
+    } catch (error) {
+        const err = error as Error;
+        // If the primary model is not found, try the fallback model.
+        if (err.message.includes('NOT_FOUND') || err.message.includes('Model not found')) {
+            console.warn(`Model '${primaryModel}' not found. Attempting to use fallback model '${fallbackModel}'.`);
+
+            const fallbackPrompt = ai.definePrompt({
+                name: 'fallbackGranularQuizPrompt',
+                input: { schema: GranularQuizGenerationInputSchema },
+                output: { schema: JsonOutputSchema },
+                prompt: fullPromptText,
+                model: fallbackModel, // Use the fallback model
+                config: {
+                    temperature: 0.7,
+                },
+            });
+
+            const { output } = await fallbackPrompt(input);
+            if (!output || !output.jsonOutput) {
+              throw new Error("AI (fallback) did not return the expected 'jsonOutput' field.");
+            }
+
+            const cleanedJson = output.jsonOutput.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+            return { jsonOutput: cleanedJson };
+        }
+        // If it's a different error, re-throw it.
+        throw error;
+    }
   }
 );

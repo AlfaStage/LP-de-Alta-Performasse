@@ -18,7 +18,7 @@
   "googleApiKey": "",
   "openAiApiKey": "",
   "openAiBaseUrl": "",
-  "aiModel": "googleai/gemini-1.5-flash",
+  "aiModel": "googleai/gemini-2.5-flash",
   "footerCopyrightText": "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   "apiStatsAccessToken": "",
   "websiteUrl": "",
