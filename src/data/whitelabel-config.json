@@ -1,3 +1,4 @@
+
 {
   "projectName": "Sistema de Quiz Interativo",
   "logoUrl": "https://placehold.co/150x50.png?text=Sua+Logo",
@@ -14,7 +15,6 @@
   "facebookPixelId": "",
   "facebookPixelIdSecondary": "",
   "googleAnalyticsId": "",
-  "googleApiKey": "",
   "footerCopyrightText": "© {YEAR} Sua Empresa. Todos os direitos reservados.",
   "apiStatsAccessToken": "",
   "websiteUrl": "",
@@ -22,5 +22,9 @@
   "facebookDomainVerification": "",
   "dashboardDefaultFilter": "last7",
   "conversionMetric": "start_vs_complete",
+  "aiProvider": "google",
+  "googleApiKey": "",
+  "openAiApiKey": "",
+  "openAiBaseUrl": "",
   "aiModel": "googleai/gemini-1.5-flash"
 }

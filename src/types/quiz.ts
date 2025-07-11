@@ -89,8 +89,14 @@ export interface WhitelabelConfig {
   facebookPixelId?: string;
   facebookPixelIdSecondary?: string;
   googleAnalyticsId?: string;
+  
+  // AI Settings
+  aiProvider: 'google' | 'openai';
   googleApiKey?: string;
+  openAiApiKey?: string;
+  openAiBaseUrl?: string;
   aiModel?: string;
+
   footerCopyrightText?: string;
   apiStatsAccessToken?: string;
   websiteUrl?: string;

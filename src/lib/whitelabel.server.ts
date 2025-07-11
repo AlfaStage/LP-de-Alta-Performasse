@@ -22,8 +22,13 @@ export const defaultConfig: WhitelabelConfig = {
   facebookPixelId: "",
   facebookPixelIdSecondary: "",
   googleAnalyticsId: "",
+  
+  aiProvider: 'google',
   googleApiKey: "",
+  openAiApiKey: "",
+  openAiBaseUrl: "",
   aiModel: "googleai/gemini-1.5-flash",
+
   footerCopyrightText: "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   apiStatsAccessToken: "",
   websiteUrl: "", 
@@ -56,82 +61,37 @@ export async function getWhitelabelConfig(): Promise<WhitelabelConfig> {
     const fileContents = await fs.readFile(configFilePath, 'utf8');
     const savedConfig = JSON.parse(fileContents) as Partial<WhitelabelConfig>;
     
-    const mergedConfig = { 
-      ...defaultConfig, 
-      ...savedConfig 
-    };
+    const mergedConfig: WhitelabelConfig = { ...defaultConfig, ...savedConfig };
     
-    mergedConfig.buttonPrimaryBgColorHex = typeof savedConfig.buttonPrimaryBgColorHex === 'string' ? savedConfig.buttonPrimaryBgColorHex : defaultConfig.buttonPrimaryBgColorHex;
-    
-    let footerTextToUse = (typeof savedConfig.footerCopyrightText === 'string' && savedConfig.footerCopyrightText.trim() !== "") ? savedConfig.footerCopyrightText : defaultConfig.footerCopyrightText;
-    if (footerTextToUse.includes('{YEAR}')) {
-        footerTextToUse = footerTextToUse.replace('{YEAR}', new Date().getFullYear().toString());
+    // Replace {YEAR} placeholder if it exists
+    if (mergedConfig.footerCopyrightText?.includes('{YEAR}')) {
+        mergedConfig.footerCopyrightText = mergedConfig.footerCopyrightText.replace('{YEAR}', new Date().getFullYear().toString());
     }
-    mergedConfig.footerCopyrightText = footerTextToUse;
 
-    mergedConfig.disqualifiedSubmissionWebhookUrl = typeof savedConfig.disqualifiedSubmissionWebhookUrl === 'string' ? savedConfig.disqualifiedSubmissionWebhookUrl : defaultConfig.disqualifiedSubmissionWebhookUrl;
-    mergedConfig.facebookPixelId = typeof savedConfig.facebookPixelId === 'string' ? savedConfig.facebookPixelId : defaultConfig.facebookPixelId;
-    mergedConfig.facebookPixelIdSecondary = typeof savedConfig.facebookPixelIdSecondary === 'string' ? savedConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary;
-    mergedConfig.googleAnalyticsId = typeof savedConfig.googleAnalyticsId === 'string' ? savedConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId;
-    mergedConfig.googleApiKey = typeof savedConfig.googleApiKey === 'string' ? savedConfig.googleApiKey : defaultConfig.googleApiKey;
-    mergedConfig.aiModel = savedConfig.aiModel || defaultConfig.aiModel;
-    mergedConfig.apiStatsAccessToken = typeof savedConfig.apiStatsAccessToken === 'string' ? savedConfig.apiStatsAccessToken : defaultConfig.apiStatsAccessToken;
-    mergedConfig.websiteUrl = typeof savedConfig.websiteUrl === 'string' ? savedConfig.websiteUrl : defaultConfig.websiteUrl;
-    mergedConfig.instagramUrl = typeof savedConfig.instagramUrl === 'string' ? savedConfig.instagramUrl : defaultConfig.instagramUrl;
-    mergedConfig.facebookDomainVerification = typeof savedConfig.facebookDomainVerification === 'string' ? savedConfig.facebookDomainVerification : defaultConfig.facebookDomainVerification;
-    mergedConfig.pageBackgroundImageUrl = typeof savedConfig.pageBackgroundImageUrl === 'string' ? savedConfig.pageBackgroundImageUrl : defaultConfig.pageBackgroundImageUrl;
-    mergedConfig.pageBackgroundGradient = typeof savedConfig.pageBackgroundGradient === 'string' ? savedConfig.pageBackgroundGradient : defaultConfig.pageBackgroundGradient;
-    mergedConfig.pageBackgroundType = savedConfig.pageBackgroundType || defaultConfig.pageBackgroundType;
-    mergedConfig.dashboardDefaultFilter = savedConfig.dashboardDefaultFilter || defaultConfig.dashboardDefaultFilter;
-    mergedConfig.conversionMetric = savedConfig.conversionMetric || defaultConfig.conversionMetric;
-
-
-    return mergedConfig as WhitelabelConfig;
+    return mergedConfig;
 
   } catch (error) {
     console.warn('Failed to read or parse whitelabel-config.json, returning default config:', error);
     const dynamicDefaultConfig = {...defaultConfig};
-    dynamicDefaultConfig.footerCopyrightText = dynamicDefaultConfig.footerCopyrightText.replace('{YEAR}', new Date().getFullYear().toString());
+    if (dynamicDefaultConfig.footerCopyrightText) {
+      dynamicDefaultConfig.footerCopyrightText = dynamicDefaultConfig.footerCopyrightText.replace('{YEAR}', new Date().getFullYear().toString());
+    }
     return dynamicDefaultConfig; 
   }
 }
 
 export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise<{ success: boolean; message?: string }> {
   try {
+    // Ensure {YEAR} placeholder is preserved if it was there
     let footerTextToSave = newConfig.footerCopyrightText || defaultConfig.footerCopyrightText;
-    if (!footerTextToSave.includes('{YEAR}')) {
-        if (!newConfig.footerCopyrightText || newConfig.footerCopyrightText === defaultConfig.footerCopyrightText.replace('{YEAR}', new Date().getFullYear().toString())) {
-            footerTextToSave = defaultConfig.footerCopyrightText; 
+    if (footerTextToSave && !footerTextToSave.includes('{YEAR}')) {
+        const currentYear = new Date().getFullYear().toString();
+        if (footerTextToSave.includes(currentYear)) {
+            footerTextToSave = footerTextToSave.replace(currentYear, '{YEAR}');
         }
     }
 
-    const dataToSave: WhitelabelConfig = {
-        projectName: newConfig.projectName,
-        logoUrl: newConfig.logoUrl,
-        primaryColorHex: newConfig.primaryColorHex,
-        secondaryColorHex: newConfig.secondaryColorHex,
-        buttonPrimaryBgColorHex: typeof newConfig.buttonPrimaryBgColorHex === 'string' ? newConfig.buttonPrimaryBgColorHex : defaultConfig.buttonPrimaryBgColorHex,
-        pageBackgroundColorHex: newConfig.pageBackgroundColorHex,
-        quizBackgroundColorHex: newConfig.quizBackgroundColorHex,
-        pageBackgroundImageUrl: typeof newConfig.pageBackgroundImageUrl === 'string' ? newConfig.pageBackgroundImageUrl : defaultConfig.pageBackgroundImageUrl,
-        pageBackgroundGradient: typeof newConfig.pageBackgroundGradient === 'string' ? newConfig.pageBackgroundGradient : defaultConfig.pageBackgroundGradient,
-        pageBackgroundType: newConfig.pageBackgroundType || defaultConfig.pageBackgroundType,
-        quizSubmissionWebhookUrl: newConfig.quizSubmissionWebhookUrl,
-        disqualifiedSubmissionWebhookUrl: typeof newConfig.disqualifiedSubmissionWebhookUrl === 'string' ? newConfig.disqualifiedSubmissionWebhookUrl : defaultConfig.disqualifiedSubmissionWebhookUrl,
-        facebookPixelId: typeof newConfig.facebookPixelId === 'string' ? newConfig.facebookPixelId : defaultConfig.facebookPixelId,
-        facebookPixelIdSecondary: typeof newConfig.facebookPixelIdSecondary === 'string' ? newConfig.facebookPixelIdSecondary : defaultConfig.facebookPixelIdSecondary,
-        googleAnalyticsId: typeof newConfig.googleAnalyticsId === 'string' ? newConfig.googleAnalyticsId : defaultConfig.googleAnalyticsId,
-        googleApiKey: typeof newConfig.googleApiKey === 'string' ? newConfig.googleApiKey : defaultConfig.googleApiKey,
-        aiModel: newConfig.aiModel || defaultConfig.aiModel,
-        footerCopyrightText: footerTextToSave,
-        apiStatsAccessToken: typeof newConfig.apiStatsAccessToken === 'string' ? newConfig.apiStatsAccessToken : defaultConfig.apiStatsAccessToken,
-        websiteUrl: typeof newConfig.websiteUrl === 'string' ? newConfig.websiteUrl : defaultConfig.websiteUrl,
-        instagramUrl: typeof newConfig.instagramUrl === 'string' ? newConfig.instagramUrl : defaultConfig.instagramUrl,
-        facebookDomainVerification: typeof newConfig.facebookDomainVerification === 'string' ? newConfig.facebookDomainVerification : defaultConfig.facebookDomainVerification,
-        dashboardDefaultFilter: newConfig.dashboardDefaultFilter || defaultConfig.dashboardDefaultFilter,
-        conversionMetric: newConfig.conversionMetric || defaultConfig.conversionMetric,
-    };
-
+    const dataToSave = { ...newConfig, footerCopyrightText: footerTextToSave };
     await fs.writeFile(configFilePath, JSON.stringify(dataToSave, null, 2), 'utf8');
     return { success: true, message: 'Configurações Whitelabel salvas com sucesso!' };
   } catch (error) {
@@ -141,43 +101,13 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
   }
 }
 
+
 export async function generateNewApiToken(): Promise<string> {
   return crypto.randomBytes(32).toString('hex');
 }
 
+// This function is kept for simplicity, but the logic is moved to the actions file
+// to handle different providers.
 export async function listGoogleAiModels(): Promise<string[]> {
-    const config = await getWhitelabelConfig();
-    const apiKey = config.googleApiKey;
-    if (!apiKey) {
-      throw new Error('Chave de API do Google não configurada.');
-    }
-  
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Google API error: ${errorData.error?.message || response.statusText}`);
-      }
-      
-      const data = await response.json();
-      const modelNames = data.models
-        .filter((model: any) => model.supportedGenerationMethods.includes('generateContent'))
-        .map((model: any) => {
-          // Extract model ID like 'gemini-1.5-flash-latest' from 'models/gemini-1.5-flash-latest'
-          return model.name.split('/')[1];
-        });
-        
-      // Ensure gemini-2.5-flash is included if available, otherwise add it if it might be a new release
-      const uniqueModels = [...new Set(modelNames)];
-      if (!uniqueModels.includes('gemini-2.5-flash')) {
-          uniqueModels.unshift('gemini-2.5-flash'); // Add to the top as a likely candidate
-      }
-  
-      return uniqueModels;
-      
-    } catch (error) {
-        console.error("Failed to fetch models from Google API:", error);
-        // Fallback list in case of API failure
-        return ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
-    }
+    return [];
 }

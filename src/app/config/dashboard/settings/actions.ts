@@ -1,7 +1,7 @@
 
 "use server";
 
-import { getWhitelabelConfig, saveWhitelabelConfig as saveConfig, generateNewApiToken, listGoogleAiModels } from '@/lib/whitelabel.server';
+import { getWhitelabelConfig, saveWhitelabelConfig as saveConfig, generateNewApiToken } from '@/lib/whitelabel.server';
 import type { AiPromptsConfig, WhitelabelConfig } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
 import { getAiPrompts, saveAiPrompts } from '@/lib/ai.server';
@@ -65,16 +65,70 @@ export async function deleteApiStatsTokenAction(): Promise<{ success: boolean; m
   }
 }
 
-export async function listAvailableAiModelsAction(): Promise<{ success: boolean; models?: string[]; message?: string }> {
-  try {
-    const models = await listGoogleAiModels();
-    return { success: true, models };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao listar modelos.";
-    console.error("Error listing AI models:", error);
-    return { success: false, message: errorMessage };
-  }
+interface ListModelsParams {
+    provider: 'google' | 'openai';
+    apiKey?: string;
+    baseUrl?: string;
 }
+
+export async function listAvailableAiModelsAction(params: ListModelsParams): Promise<{ success: boolean; models?: string[]; message?: string }> {
+  const { provider, apiKey, baseUrl } = params;
+  if (!apiKey) {
+    return { success: false, message: 'Chave de API não fornecida.' };
+  }
+
+  if (provider === 'google') {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Erro da API do Google: ${errorData.error?.message || response.statusText}`);
+      }
+      const data = await response.json();
+      const modelNames = data.models
+        .filter((model: any) => model.supportedGenerationMethods.includes('generateContent') && model.name.includes('gemini'))
+        .map((model: any) => `googleai/${model.name.split('/')[1]}`);
+      return { success: true, models: [...new Set(modelNames)] as string[] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao listar modelos do Google.";
+      console.error("Erro ao listar modelos do Google:", error);
+      return { success: false, message: errorMessage };
+    }
+  } else if (provider === 'openai') {
+    try {
+      const finalBaseUrl = baseUrl || 'https://api.openai.com/v1';
+      const response = await fetch(`${finalBaseUrl}/models`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Erro da API OpenAI: ${errorData.error?.message || response.statusText}`);
+      }
+      const data = await response.json();
+      const modelNames = data.data
+        .map((model: any) => `openai/${model.id}`)
+        .filter((name: string) => name.includes('gpt'));
+      return { success: true, models: [...new Set(modelNames)] as string[] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao listar modelos da OpenAI.";
+      console.error("Erro ao listar modelos da OpenAI:", error);
+      return { success: false, message: errorMessage };
+    }
+  }
+  return { success: false, message: "Provedor de IA inválido." };
+}
+
+export async function testAiConnectionAction(params: ListModelsParams): Promise<{ success: boolean; message: string }> {
+    const result = await listAvailableAiModelsAction(params);
+    if (result.success && result.models && result.models.length > 0) {
+        return { success: true, message: `Conexão bem-sucedida! ${result.models.length} modelo(s) encontrado(s).` };
+    } else if (result.success) {
+        return { success: false, message: "Conexão bem-sucedida, mas nenhum modelo compatível foi encontrado." };
+    } else {
+        return { success: false, message: `Falha na conexão: ${result.message}` };
+    }
+}
+
 
 // --- AI Prompts Actions ---
 export async function fetchAiPrompts(): Promise<AiPromptsConfig> {

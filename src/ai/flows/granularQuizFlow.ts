@@ -77,8 +77,8 @@ const granularQuizFlow = ai.defineFlow(
     
     // Construct the final, non-editable part of the prompt
     const responseFormatSection = `
-### 7. Formato de Resposta (Regra Fixa)
-- **IMPORTANTE**: Você deve retornar APENAS um objeto JSON com uma única chave "jsonOutput".
+### 7. Formato de Resposta (Regra Fixa e Não Editável)
+- **IMPORTANTE**: Sua única saída deve ser um objeto JSON com uma única chave "jsonOutput".
 - O valor de "jsonOutput" deve ser uma STRING JSON válida e minificada (sem quebras de linha).
 - A estrutura da string JSON DEVE seguir este modelo exato: ${jsonStructure}.
 - Não adicione nenhum outro texto, explicações ou formatação de markdown como \`\`\`json ao redor da sua resposta final. Apenas o objeto JSON.`;
@@ -102,6 +102,9 @@ const granularQuizFlow = ai.defineFlow(
       throw new Error("AI did not return the expected 'jsonOutput' field.");
     }
     
-    return { jsonOutput: output.jsonOutput };
+    // The AI might sometimes wrap the JSON in ```json ... ```, so we need to clean it.
+    const cleanedJson = output.jsonOutput.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+
+    return { jsonOutput: cleanedJson };
   }
 );

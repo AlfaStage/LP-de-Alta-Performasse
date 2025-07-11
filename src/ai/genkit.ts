@@ -1,27 +1,35 @@
-import {genkit} from 'genkit';
+
+import {genkit, type Plugin} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import type { WhitelabelConfig } from '@/types/quiz';
 
-let apiKey: string | undefined;
-
-try {
-    const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-config.json');
-    if (existsSync(configFilePath)) {
-        const fileContents = readFileSync(configFilePath, 'utf8');
-        const config = JSON.parse(fileContents) as Partial<WhitelabelConfig>;
-        if (config.googleApiKey && config.googleApiKey.trim() !== "") {
-            apiKey = config.googleApiKey;
+// This function will now dynamically configure Genkit based on the saved settings.
+// It is called once at startup.
+const configureGenkitDynamic = (): Plugin<any>[] => {
+    let config: Partial<WhitelabelConfig> = {};
+    try {
+        const configFilePath = path.join(process.cwd(), 'src', 'data', 'whitelabel-config.json');
+        if (existsSync(configFilePath)) {
+            const fileContents = readFileSync(configFilePath, 'utf8');
+            config = JSON.parse(fileContents);
         }
+    } catch (e) {
+        console.error("Could not read whitelabel config for Genkit. Using defaults.", e);
     }
-} catch (e) {
-    console.error("Could not read API key from whitelabel config for Genkit. Will rely on GOOGLE_API_KEY environment variable if available.", e);
-}
 
-// O plugin googleAI usará automaticamente process.env.GOOGLE_API_KEY se 'apiKey' for undefined.
-// Isso fornece um fallback para desenvolvedores que usam .env.
+    const plugins: Plugin<any>[] = [];
+
+    // Always configure Google AI if a key is present
+    if (config.googleApiKey) {
+        plugins.push(googleAI({ apiKey: config.googleApiKey }));
+    }
+
+    return plugins;
+};
+
+// Initialize Genkit with the dynamically determined plugins
 export const ai = genkit({
-  plugins: [googleAI({ apiKey: apiKey })],
-  model: 'googleai/gemini-2.0-flash',
+  plugins: configureGenkitDynamic(),
 });
