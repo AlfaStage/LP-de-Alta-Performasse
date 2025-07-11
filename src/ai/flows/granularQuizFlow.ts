@@ -52,8 +52,7 @@ const granularQuizFlow = ai.defineFlow(
     const modelToUse = whitelabelConfig.aiModel || 'googleai/gemini-1.5-flash';
     let userEditablePrompt = '';
     let jsonStructure = '';
-    let modeInstruction = '';
-
+    
     // Select the appropriate prompt based on the generation type
     switch (input.generationType) {
         case 'details':
@@ -75,22 +74,17 @@ const granularQuizFlow = ai.defineFlow(
         default:
             throw new Error(`Invalid generation type: ${input.generationType}`);
     }
-
-    // Select the instruction for the generation mode
-    switch(input.generationMode) {
-        case 'overwrite':
-            modeInstruction = "Your task is to generate the content from scratch based on the topic, overwriting any existing data for this section.";
-            break;
-        case 'improve':
-            modeInstruction = "Your task is to improve the existing data for this section based on the user's instruction (e.g., 'make the tone more professional').";
-            break;
-        case 'complete':
-            modeInstruction = "Your task is to complete the existing data. If a field is empty, fill it. If it's a list (like questions or messages), add 1-2 new relevant items to the end of the list. Do not modify existing items.";
-            break;
-    }
+    
+    // Construct the final, non-editable part of the prompt
+    const responseFormatSection = `
+### 7. Formato de Resposta (Regra Fixa)
+- **IMPORTANTE**: Você deve retornar APENAS um objeto JSON com uma única chave "jsonOutput".
+- O valor de "jsonOutput" deve ser uma STRING JSON válida e minificada (sem quebras de linha).
+- A estrutura da string JSON DEVE seguir este modelo exato: ${jsonStructure}.
+- Não adicione nenhum outro texto, explicações ou formatação de markdown como \`\`\`json ao redor da sua resposta final. Apenas o objeto JSON.`;
 
     // Combine the user-editable prompt with the fixed, non-editable JSON structure instructions.
-    const fullPromptText = `${userEditablePrompt}\n\nMODE OF OPERATION: ${modeInstruction}\n\nIMPORTANT: You must return ONLY a valid JSON object with a single key "jsonOutput" which contains a STRINGIFIED JSON. This stringified JSON must match this exact structure: ${jsonStructure}.\n\nDo not add any other text, markdown formatting like \`\`\`json, or explanations.`;
+    const fullPromptText = `${userEditablePrompt}\n${responseFormatSection}`;
     
     const granularPrompt = ai.definePrompt({
       name: 'dynamicGranularQuizPrompt',

@@ -176,7 +176,7 @@ export default function AiSettingsPage() {
                   name="aiModel"
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value || 'googleai/gemini-2.5-flash'} disabled={!googleApiKey || availableModels.length === 0}>
+                    <Select onValueChange={field.onChange} value={field.value || 'googleai/gemini-1.5-flash'} disabled={!googleApiKey || availableModels.length === 0}>
                       <SelectTrigger id="aiModel" className="w-full md:w-[380px]">
                         <SelectValue placeholder="Selecione um modelo" />
                       </SelectTrigger>
@@ -184,7 +184,7 @@ export default function AiSettingsPage() {
                         {availableModels.map(model => (
                           <SelectItem key={model} value={`googleai/${model}`}>{model}</SelectItem>
                         ))}
-                        {availableModels.length === 0 && <SelectItem value="googleai/gemini-2.5-flash" disabled>Nenhum modelo disponível</SelectItem>}
+                        {availableModels.length === 0 && <SelectItem value="googleai/gemini-1.5-flash" disabled>Nenhum modelo disponível</SelectItem>}
                       </SelectContent>
                     </Select>
                   )}
@@ -211,8 +211,7 @@ export default function AiSettingsPage() {
                     <Info className="h-4 w-4 !text-blue-600" />
                     <AlertTitle>Como Funciona</AlertTitle>
                     <AlertDescription>
-                    Você pode editar a personalidade e as instruções da IA, mas a estrutura de saída do JSON é fixa para garantir a compatibilidade.
-                    Use variáveis como 'topic' para instruções e 'existingData' para contexto.
+                    Você pode editar a personalidade e as instruções da IA (seções 1-6). A seção 7 (Formato de Resposta) é fixa para garantir a compatibilidade e não precisa ser editada.
                     </AlertDescription>
                 </Alert>
 
@@ -224,7 +223,7 @@ export default function AiSettingsPage() {
                         name="generateQuizDetails"
                         control={control}
                         render={({ field }) => (
-                            <Textarea {...field} rows={8} className="font-mono text-xs"/>
+                            <Textarea {...field} rows={12} className="font-mono text-xs"/>
                         )}
                         />
                         {errors.generateQuizDetails && <p className="text-sm text-destructive mt-2">{errors.generateQuizDetails.message}</p>}
@@ -238,7 +237,7 @@ export default function AiSettingsPage() {
                         name="generateQuizQuestions"
                         control={control}
                         render={({ field }) => (
-                            <Textarea {...field} rows={8} className="font-mono text-xs"/>
+                            <Textarea {...field} rows={12} className="font-mono text-xs"/>
                         )}
                         />
                         {errors.generateQuizQuestions && <p className="text-sm text-destructive mt-2">{errors.generateQuizQuestions.message}</p>}
@@ -252,7 +251,7 @@ export default function AiSettingsPage() {
                         name="generateQuizMessages"
                         control={control}
                         render={({ field }) => (
-                            <Textarea {...field} rows={8} className="font-mono text-xs"/>
+                            <Textarea {...field} rows={12} className="font-mono text-xs"/>
                         )}
                         />
                         {errors.generateQuizMessages && <p className="text-sm text-destructive mt-2">{errors.generateQuizMessages.message}</p>}
@@ -266,7 +265,7 @@ export default function AiSettingsPage() {
                         name="generateQuizResultsPages"
                         control={control}
                         render={({ field }) => (
-                            <Textarea {...field} rows={8} className="font-mono text-xs"/>
+                            <Textarea {...field} rows={12} className="font-mono text-xs"/>
                         )}
                         />
                         {errors.generateQuizResultsPages && <p className="text-sm text-destructive mt-2">{errors.generateQuizResultsPages.message}</p>}
