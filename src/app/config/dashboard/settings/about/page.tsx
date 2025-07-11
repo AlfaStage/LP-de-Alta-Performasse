@@ -120,14 +120,16 @@ export default function AboutPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2"><ShieldAlert className="h-6 w-6 text-destructive"/>Confirmar Reset de Fábrica</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Você tem certeza absoluta? Esta ação é <strong>IRREVERSÍVEL</strong> e irá:
-                            <ul className="list-disc list-inside mt-2 space-y-1">
-                                <li>Apagar <strong>TODOS</strong> os quizzes personalizados.</li>
-                                <li>Apagar <strong>TODAS</strong> as estatísticas.</li>
-                                <li>Restaurar <strong>TODAS</strong> as configurações (Aparência, Integrações, IA, etc.) para os valores padrão.</li>
-                            </ul>
-                            O sistema voltará ao seu estado inicial.
+                        <AlertDialogDescription asChild>
+                           <div className="space-y-2">
+                                <p>Você tem certeza absoluta? Esta ação é <strong>IRREVERSÍVEL</strong> e irá:</p>
+                                <ul className="list-disc list-inside space-y-1">
+                                    <li>Apagar <strong>TODOS</strong> os quizzes personalizados.</li>
+                                    <li>Apagar <strong>TODAS</strong> as estatísticas.</li>
+                                    <li>Restaurar <strong>TODAS</strong> as configurações (Aparência, Integrações, IA, etc.) para os valores padrão.</li>
+                                </ul>
+                                <p>O sistema voltará ao seu estado inicial.</p>
+                           </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

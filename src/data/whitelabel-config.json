@@ -1,4 +1,3 @@
-
 {
   "projectName": "Sistema de Quiz Interativo",
   "logoUrl": "https://placehold.co/150x50.png?text=Sua+Logo",
@@ -10,21 +9,21 @@
   "pageBackgroundImageUrl": "",
   "pageBackgroundGradient": "",
   "pageBackgroundType": "color",
-  "quizSubmissionWebhookUrl": "YOUR_WEBHOOK_URL_PLACEHOLDER",
-  "disqualifiedSubmissionWebhookUrl": "YOUR_DISQUALIFIED_WEBHOOK_URL_PLACEHOLDER",
+  "quizSubmissionWebhookUrl": "YOUR_QUIZ_SUBMISSION_WEBHOOK_URL_PLACEHOLDER",
+  "disqualifiedSubmissionWebhookUrl": "",
   "facebookPixelId": "",
   "facebookPixelIdSecondary": "",
   "googleAnalyticsId": "",
-  "footerCopyrightText": "© {YEAR} Sua Empresa. Todos os direitos reservados.",
+  "aiProvider": "google",
+  "googleApiKey": "",
+  "openAiApiKey": "",
+  "openAiBaseUrl": "",
+  "aiModel": "googleai/gemini-1.5-flash",
+  "footerCopyrightText": "© {YEAR} Seu Nome/Empresa. Todos os direitos reservados.",
   "apiStatsAccessToken": "",
   "websiteUrl": "",
   "instagramUrl": "",
   "facebookDomainVerification": "",
   "dashboardDefaultFilter": "last7",
-  "conversionMetric": "start_vs_complete",
-  "aiProvider": "google",
-  "googleApiKey": "",
-  "openAiApiKey": "",
-  "openAiBaseUrl": "",
-  "aiModel": "googleai/gemini-1.5-flash"
+  "conversionMetric": "start_vs_complete"
 }
