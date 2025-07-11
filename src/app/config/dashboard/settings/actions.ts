@@ -1,10 +1,12 @@
 
 "use server";
 
-import { getWhitelabelConfig, saveWhitelabelConfig as saveConfig, generateNewApiToken } from '@/lib/whitelabel.server';
+import { getWhitelabelConfig, saveWhitelabelConfig as saveConfig, generateNewApiToken, resetWhitelabelConfig } from '@/lib/whitelabel.server';
 import type { AiPromptsConfig, WhitelabelConfig } from '@/types/quiz';
 import { revalidatePath } from 'next/cache';
-import { getAiPrompts, saveAiPrompts } from '@/lib/ai.server';
+import { getAiPrompts, saveAiPrompts, resetAiPrompts } from '@/lib/ai.server';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export async function fetchWhitelabelSettings(): Promise<WhitelabelConfig> {
   return await getWhitelabelConfig();
@@ -141,4 +143,40 @@ export async function savePromptsAction(prompts: AiPromptsConfig): Promise<{ suc
     // No specific path needs revalidation for this, as the prompt is read JIT in the flow.
   }
   return result;
+}
+
+export async function factoryResetAction(): Promise<{ success: boolean; message?: string }> {
+    try {
+        const quizzesDir = path.join(process.cwd(), 'src', 'data', 'quizzes');
+        const analyticsDir = path.join(process.cwd(), 'src', 'data', 'analytics');
+
+        // 1. Reset whitelabel config
+        await resetWhitelabelConfig();
+
+        // 2. Reset AI prompts
+        await resetAiPrompts();
+        
+        // 3. Delete custom quizzes (keep default.json)
+        const quizFiles = await fs.readdir(quizzesDir);
+        for (const file of quizFiles) {
+            if (file.endsWith('.json') && file !== 'default.json') {
+                await fs.unlink(path.join(quizzesDir, file));
+            }
+        }
+
+        // 4. Delete analytics files
+        const analyticsFiles = await fs.readdir(analyticsDir);
+        for (const file of analyticsFiles) {
+             await fs.unlink(path.join(analyticsDir, file));
+        }
+
+        // Revalidate all paths to reflect changes immediately
+        revalidatePath('/', 'layout');
+
+        return { success: true, message: "Sistema resetado para as configurações de fábrica." };
+    } catch (error) {
+        console.error("FATAL: Factory Reset Failed:", error);
+        const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+        return { success: false, message: `Falha no reset de fábrica: ${errorMessage}` };
+    }
 }

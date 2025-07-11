@@ -101,6 +101,17 @@ export async function saveWhitelabelConfig(newConfig: WhitelabelConfig): Promise
   }
 }
 
+export async function resetWhitelabelConfig(): Promise<{ success: boolean; message?: string }> {
+    try {
+        await fs.writeFile(configFilePath, JSON.stringify(defaultConfig, null, 2), 'utf8');
+        return { success: true };
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Unknown error';
+        console.error("Failed to reset whitelabel-config.json:", msg);
+        return { success: false, message: msg };
+    }
+}
+
 
 export async function generateNewApiToken(): Promise<string> {
   return crypto.randomBytes(32).toString('hex');
